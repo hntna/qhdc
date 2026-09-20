@@ -60,11 +60,11 @@
         </button>
         <button id="btnExport" class="btn btn-success" disabled title="Cập nhật trực tiếp vào file Masterlist trên đĩa (không download file)">
           <i data-lucide="save" class="w-5 h-5 text-white"></i>
-          <span>Cập nhật vào Masterlist 2027-2028_Mau.xlsx</span>
+          <span>Cập nhật</span>
         </button>
-        <button id="btnOpenResultFile" class="btn btn-outline" title="Mở file Excel trên máy tính và tải file về với tên Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-700"></i>
-          <span>Mở file KQ (Excel)</span>
+        <button id="btnOpenResultFile" class="btn btn-outline" title="Tải file kết quả về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx) và mở file Excel">
+          <i data-lucide="download" class="w-4 h-4 text-emerald-700"></i>
+          <span>Download</span>
         </button>
         <button id="btnReset" class="btn btn-outline" title="Làm mới ứng dụng và khôi phục file Masterlist về phôi mẫu trắng ban đầu">
           <i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-700"></i>
@@ -701,8 +701,8 @@
         </div>
         <div id="completionModalActions" style="display: flex; gap: 10px; justify-content: center;">
           <button class="btn btn-primary" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal(); openResultFile();">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-            <span>Mở file KQ (Excel)</span>
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Download</span>
           </button>
           <button class="btn btn-outline" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal()">
             Đóng
@@ -744,8 +744,8 @@
       <div class="modal-footer">
         <button class="btn btn-outline" style="padding: 0.4rem 1rem;" onclick="closeFolderModal()">Đóng</button>
         <button id="btnOpenResultFileDirect" class="btn btn-success" style="padding: 0.4rem 1rem;" onclick="closeFolderModal(); openResultFile();">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-          <span>Mở file Excel</span>
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Download</span>
         </button>
       </div>
     </div>

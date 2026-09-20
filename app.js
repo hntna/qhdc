@@ -3439,7 +3439,7 @@ function showCompletionModal(isDirectSave) {
     if (actions) {
       actions.innerHTML = `
         <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Mở file KQ (Excel)
+          <i data-lucide="download" class="w-4 h-4"></i> Download
         </button>
         <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
           Đóng
@@ -3458,14 +3458,14 @@ function showCompletionModal(isDirectSave) {
         Không thể ghi trực tiếp vào file <strong>Masterlist 2027-2028_Mau.xlsx</strong> do chưa kết nối được server Python nội bộ.<br><br>
         <div style="background: #fffbeb; border: 1px solid #fef08a; border-radius: 6px; padding: 10px 12px; text-align: left; font-size: 0.8rem; color: #92400e; line-height: 1.45;">
           💡 <strong>Khắc phục:</strong> Chạy file <strong>start_app.bat</strong> trong thư mục dự án để khởi động web qua địa chỉ <code>http://localhost:8080</code>.<br>
-          Hoặc bấm <strong>"Mở file KQ (Excel)"</strong> bên dưới để tải file kết quả về máy.
+          Hoặc bấm <strong>"Download"</strong> bên dưới để tải file kết quả về máy.
         </div>
       `;
     }
     if (actions) {
       actions.innerHTML = `
         <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
-          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Mở file KQ (Excel)
+          <i data-lucide="download" class="w-4 h-4"></i> Download
         </button>
         <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
           Đóng
