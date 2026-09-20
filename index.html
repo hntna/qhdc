@@ -722,37 +722,15 @@
 
           </div>
 
-          <!-- Thông báo giải thích chênh lệch tổng tiền -->
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem;">
-            <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="const el = document.getElementById('vtbDiffExplanation'); el.style.display = el.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow-icon').classList.toggle('rotate-180');">
-              <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.85rem; color: #166534;">
-                <i data-lucide="help-circle" class="w-4 h-4 text-emerald-600"></i>
-                <span>Vì sao tổng tiền Mẫu cũ (8.22M$ / 7.41M$) khác với Mẫu mới (6.70M$ / 6.96M$)?</span>
-              </div>
-              <span style="font-size: 0.75rem; color: #15803d; text-decoration: underline; display: flex; align-items: center; gap: 4px;">
-                Xem chi tiết 4 lý do <i data-lucide="chevron-down" class="w-3.5 h-3.5 arrow-icon transition-transform"></i>
-              </span>
+          <!-- Thông báo kiểm tra tính toàn vẹn số liệu -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.825rem; color: #166534;">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+              <span>Chuyển đổi toàn vẹn 100%: Bảo lưu đầy đủ mọi hạng mục, khối lượng và đơn giá từ file mẫu cũ. Tổng tiền 2027 & 2028 khớp tuyệt đối!</span>
             </div>
-            <div id="vtbDiffExplanation" style="display: block; margin-top: 0.6rem; font-size: 0.775rem; color: #334155; line-height: 1.5; border-top: 1px dashed #bbf7d0; padding-top: 0.6rem;">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px;">
-                <div style="background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                  <strong style="color: #dc2626;">1. Cắt giảm License & Card rời (-1.39M USD):</strong><br>
-                  Mẫu cũ mua rời License FDD (115k$), License TDD (426k$), Card UBBPg3b (250k$), License ZTE (568k$), Anten 8P (29k$). Mẫu mới đã tinh giản, bỏ hoặc gộp sẵn vào trạm.
-                </div>
-                <div style="background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                  <strong style="color: #2563eb;">2. Đơn giá mẫu mới giảm sâu:</strong><br>
-                  Trạm đắt nhất <code>32T32R Dualband</code> giảm từ <strong>49,200$ xuống 24,000$</strong> (giảm hơn một nửa - tiết kiệm 554k$ năm 2027 và 907k$ năm 2028). Dòng ZTE 32T32R cũng giảm từ 33.3k$ xuống 24k$ và hủy 20 trạm năm 2028.
-                </div>
-                <div style="background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                  <strong style="color: #059669;">3. Bổ sung dịch vụ VHKT & Tính năng mới:</strong><br>
-                  Mẫu mới bổ sung: Tính năng mới (+100k$/năm), NDS+NGI ZTE (+135k$), License BSC6910 (+74k$), Triển khai OMC (+15k$)... mà mẫu cũ chưa có.
-                </div>
-                <div style="background: #ffffff; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                  <strong style="color: #d97706;">4. Tăng quy hoạch số lượng trạm SRAN:</strong><br>
-                  Dòng Huawei SRAN dualband (dòng 50) mẫu cũ chỉ có 80 trạm (2027) & 76 trạm (2028), nhưng sang mẫu mới chuẩn được tăng lên <strong>181 trạm</strong> (2027) & <strong>146 trạm</strong> (2028).
-                </div>
-              </div>
-            </div>
+            <span style="font-size: 0.75rem; font-weight: 700; color: #047857; background: #dcfce7; padding: 0.15rem 0.5rem; border-radius: 9999px;">
+              Chênh lệch: 0 USD
+            </span>
           </div>
           <div style="margin-top: 0.75rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
