@@ -12,11 +12,14 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
-    def do_OPTIONS(self):
-        self.send_response(200)
+    def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
         self.end_headers()
 
     def handle_open_file(self):
@@ -42,7 +45,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = {
                     'success': True,
@@ -53,13 +55,11 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 self.send_response(404)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'success': False, 'error': 'Chưa tìm thấy file Masterlist 2027-2028_Mau.xlsx'}, ensure_ascii=False).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False).encode('utf-8'))
 
@@ -84,7 +84,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             response = {
                 'success': True,
@@ -95,7 +94,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False).encode('utf-8'))
 
@@ -107,19 +105,16 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
                     content = f.read()
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(content.encode('utf-8'))
             else:
                 self.send_response(404)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'error': 'Not found'}).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'error': str(e)}).encode('utf-8'))
 
@@ -133,13 +128,11 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
                 json.dump(parsed, f, ensure_ascii=False, indent=2)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'success': True, 'message': 'Đã lưu cấu hình profile chiến lược thành công'}).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}).encode('utf-8'))
 
@@ -147,7 +140,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/ping':
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'ok', 'directory': DIRECTORY}).encode('utf-8'))
             return
@@ -171,7 +163,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
             if len(body) < 1000:
                 self.send_response(400)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 self.wfile.write(json.dumps({'success': False, 'error': 'Dữ liệu file không hợp lệ (kích thước quá nhỏ)'}, ensure_ascii=False).encode('utf-8'))
                 return
@@ -183,7 +174,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
 
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = {
                     'success': True,
@@ -196,7 +186,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
                 # File đang mở trong Excel
                 self.send_response(409)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = {
                     'success': False,
@@ -207,7 +196,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = {
                     'success': False,
@@ -223,10 +211,6 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_response(404)
             self.end_headers()
-
-    def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        super().end_headers()
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True

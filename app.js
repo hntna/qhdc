@@ -4344,7 +4344,7 @@ function fillModalData(mode) {
 }
 
 // Xác nhận lưu Profile từ Modal (hỗ trợ cả Tạo mới và Chỉnh sửa)
-function confirmSaveProfileModal() {
+async function confirmSaveProfileModal() {
   const inputName = document.getElementById('inputNewProfileName');
   const inputDesc = document.getElementById('inputNewProfileDesc');
   const modeEl = document.getElementById('modalProfileMode');
@@ -4352,6 +4352,7 @@ function confirmSaveProfileModal() {
   const editIdEl = document.getElementById('modalProfileEditId');
   const editId = editIdEl ? editIdEl.value : '';
   const tbody = document.getElementById('modalProfileTableBody');
+  const btnSave = document.getElementById('btnConfirmSaveProfile');
 
   const name = inputName ? inputName.value.trim() : '';
   if (!name) {
@@ -4379,35 +4380,55 @@ function confirmSaveProfileModal() {
     };
   }
 
-  if (mode === 'create') {
-    const newProfile = {
-      id: 'profile_' + Date.now(),
-      name: name,
-      description: desc,
-      updatedAt: new Date().toISOString(),
-      data: newData
-    };
-    state.strategyProfiles.push(newProfile);
-    state.activeStrategyProfileId = newProfile.id;
-    showToast(`Đã tạo Profile mới: [${name}]`, 'success');
-  } else {
-    const existing = state.strategyProfiles.find(p => p.id === editId);
-    if (existing) {
-      existing.name = name;
-      existing.description = desc;
-      existing.updatedAt = new Date().toISOString();
-      existing.data = newData;
-      showToast(`Đã cập nhật Profile: [${name}]`, 'success');
-    }
+  if (btnSave) {
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<span class="spinner"></span> Đang lưu...';
   }
 
-  saveStrategyProfiles(true);
-  renderStrategyProfileSelect();
-  renderStrategyComparisonTable();
-  closeProfileModal();
+  try {
+    if (mode === 'create') {
+      const newProfile = {
+        id: 'profile_' + Date.now(),
+        name: name,
+        description: desc,
+        updatedAt: new Date().toISOString(),
+        data: newData
+      };
+      state.strategyProfiles.push(newProfile);
+      state.activeStrategyProfileId = newProfile.id;
+    } else {
+      const existing = state.strategyProfiles.find(p => p.id === editId);
+      if (existing) {
+        existing.name = name;
+        existing.description = desc;
+        existing.updatedAt = new Date().toISOString();
+        existing.data = newData;
+      }
+    }
+
+    const savedOnServer = await saveStrategyProfiles();
+    renderStrategyProfileSelect();
+    renderStrategyComparisonTable();
+    closeProfileModal();
+
+    if (savedOnServer) {
+      showToast(mode === 'create' ? `Đã tạo và lưu Profile [${name}] lên Server thành công!` : `Đã cập nhật và lưu Profile [${name}] lên Server thành công!`, 'success');
+    } else {
+      showToast(`⚠️ Không thể lưu Profile lên server. Vui lòng kiểm tra server.py!`, 'error');
+    }
+  } catch (err) {
+    console.error('Lỗi khi lưu profile:', err);
+    showToast(`Lỗi khi lưu profile: ${err.message}`, 'error');
+  } finally {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span id="modalSaveProfileText">' + (mode === 'create' ? 'Lưu Profile' : 'Cập nhật Profile') + '</span>';
+      if (window.lucide) lucide.createIcons();
+    }
+  }
 }
 
-function cloneCurrentProfile() {
+async function cloneCurrentProfile() {
   const active = getActiveStrategyProfile();
   if (!active) return;
 
@@ -4422,13 +4443,17 @@ function cloneCurrentProfile() {
   state.strategyProfiles.push(cloned);
   state.activeStrategyProfileId = cloned.id;
 
-  saveStrategyProfiles(true);
+  const saved = await saveStrategyProfiles();
   renderStrategyProfileSelect();
   renderStrategyComparisonTable();
-  showToast(`Đã nhân bản Profile [${cloned.name}]`, 'success');
+  if (saved) {
+    showToast(`Đã nhân bản và lưu Profile [${cloned.name}] lên Server!`, 'success');
+  } else {
+    showToast(`⚠️ Không thể lưu Profile nhân bản lên server!`, 'error');
+  }
 }
 
-function deleteCurrentProfile() {
+async function deleteCurrentProfile() {
   if (state.strategyProfiles.length <= 1) {
     showToast('Không thể xóa Profile duy nhất còn lại!', 'warning');
     return;
@@ -4440,10 +4465,14 @@ function deleteCurrentProfile() {
   if (confirm(`Bạn có chắc chắn muốn xóa Profile [${active.name}]?`)) {
     state.strategyProfiles = state.strategyProfiles.filter(p => p.id !== active.id);
     state.activeStrategyProfileId = state.strategyProfiles[0].id;
-    saveStrategyProfiles(true);
+    const saved = await saveStrategyProfiles();
     renderStrategyProfileSelect();
     renderStrategyComparisonTable();
-    showToast(`Đã xóa Profile [${active.name}]`, 'info');
+    if (saved) {
+      showToast(`Đã xóa Profile [${active.name}] trên Server!`, 'info');
+    } else {
+      showToast(`⚠️ Không thể cập nhật trạng thái xóa lên server!`, 'error');
+    }
   }
 }
 
