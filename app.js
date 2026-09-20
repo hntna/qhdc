@@ -3607,39 +3607,6 @@ function initStrategyComparison() {
     btnDelete.addEventListener('click', deleteCurrentProfile);
   }
 
-  // Nút Lưu cấu hình lên Server
-  const btnSaveJson = document.getElementById('btnSaveStrategyJson');
-  if (btnSaveJson) {
-    btnSaveJson.addEventListener('click', async () => {
-      btnSaveJson.disabled = true;
-      btnSaveJson.innerHTML = '<span class="spinner"></span> Đang lưu...';
-      const onServer = await saveStrategyProfiles();
-      btnSaveJson.disabled = false;
-      btnSaveJson.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu lên Server';
-      if (window.lucide) lucide.createIcons();
-      if (onServer) {
-        showToast('Đã lưu cấu hình Profiles trực tiếp vào server (strategy_profiles.json)!', 'success');
-      } else {
-        showToast('Lỗi: Không kết nối được server. Vui lòng bật server.py để lưu cấu hình!', 'error');
-      }
-    });
-  }
-
-  // Nút Tải file JSON về máy
-  const btnDownloadJson = document.getElementById('btnDownloadStrategyJson');
-  if (btnDownloadJson) {
-    btnDownloadJson.addEventListener('click', downloadStrategyJson);
-  }
-
-  // Input Nạp file JSON từ máy
-  const inputImport = document.getElementById('inputImportStrategyJson');
-  if (inputImport) {
-    inputImport.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        importStrategyJson(e.target.files[0]);
-      }
-    });
-  }
 
   // Tải danh sách profiles
   loadStrategyProfiles();
@@ -4496,47 +4463,6 @@ async function deleteCurrentProfile() {
   }
 }
 
-// Tải file JSON cấu hình Profile về máy tính
-function downloadStrategyJson() {
-  const payload = {
-    activeProfileId: state.activeStrategyProfileId,
-    profiles: state.strategyProfiles
-  };
-  const jsonStr = JSON.stringify(payload, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'strategy_profiles.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Đã tải file strategy_profiles.json về máy tính!', 'success');
-}
-
-// Nạp file JSON cấu hình Profile từ máy tính
-function importStrategyJson(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
-        state.strategyProfiles = parsed.profiles;
-        state.activeStrategyProfileId = parsed.activeProfileId || parsed.profiles[0].id;
-        saveStrategyProfiles(true);
-        renderStrategyProfileSelect();
-        renderStrategyComparisonTable();
-        showToast(`Đã nạp thành công ${parsed.profiles.length} Profiles từ file JSON!`, 'success');
-      } else {
-        showToast('File JSON không đúng định dạng Profiles hợp lệ!', 'error');
-      }
-    } catch (err) {
-      showToast('Lỗi khi đọc file JSON: ' + err.message, 'error');
-    }
-  };
-  reader.readAsText(file);
-}
 
 window.closeNewProfileModal = closeProfileModal;
 window.closeProfileModal = closeProfileModal;
