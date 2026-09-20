@@ -3,8 +3,6 @@
    Inspired by Stripe, Vercel, Linear & Shadcn UI
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 :root {
   /* Core Light Palette - Enhanced Material Contrast */
   --bg-app: #edf2f7;         /* high contrast cool gray background for card pop */

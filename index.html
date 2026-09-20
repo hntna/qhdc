@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tổng hợp & So khớp Masterlist QHĐC 2027-2028</title>
   
-  <!-- Tailwind CSS & Lucide Icons -->
+  <!-- Preconnect & Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Tailwind CSS & Cấu hình -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -28,16 +36,12 @@
       }
     }
   </script>
-  <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Stylesheet fallback & custom tokens -->
-  <link rel="stylesheet" href="styles.css">
-
-  <!-- Thư viện xử lý Excel chạy 100% Offline -->
-  <script src="xlsx.full.min.js"></script>
-  <script src="jszip.min.js"></script>
-  <!-- Dữ liệu phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx -->
-  <script src="template_data.js"></script>
+  <!-- Lucide Icons & Thư viện Excel chạy 100% Offline (Tải bất đồng bộ defer không chặn giao diện) -->
+  <script src="lucide.min.js" defer></script>
+  <script src="xlsx.full.min.js" defer></script>
+  <script src="jszip.min.js" defer></script>
+  <script src="template_data.js" defer></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
 
@@ -664,74 +668,7 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Modal Thông Báo Hoàn Thành Cập Nhật -->
-  <div id="completionModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeCompletionModal()">
-    <div class="modal-box" style="max-width: 500px; text-align: center;">
-      <div style="padding: 2rem 1.75rem 1.5rem 1.75rem;">
-        <div id="completionModalIcon" style="width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto; border: 1px solid #a7f3d0;">
-          ✓
-        </div>
-        <div id="completionModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
-          Cập nhật Masterlist thành công!
-        </div>
-        <div id="completionModalBody" style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
-          Dữ liệu của các mảng đã được cập nhật trực tiếp vào file:<br>
-          <strong style="color: #059669; font-size: 0.95rem;">Masterlist 2027-2028_Mau.xlsx</strong><br>
-          <span id="savedPathNote" style="font-size: 0.775rem; color: var(--text-muted);">(Đã lưu trực tiếp tại thư mục ứng dụng, không tải về trình duyệt)</span>
-        </div>
-        <div id="completionModalActions" style="display: flex; gap: 10px; justify-content: center;">
-          <button class="btn btn-primary" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal(); openResultFile();">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Download</span>
-          </button>
-          <button class="btn btn-outline" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal()">
-            Đóng
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal File Kết quả -->
-  <div id="folderModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeFolderModal()">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: var(--text-main);">
-          <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-700"></i>
-          <span>File Kết quả Masterlist</span>
-        </div>
-        <button class="modal-close-btn" onclick="closeFolderModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <p style="margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.875rem;">
-          File kết quả <strong>Masterlist 2027-2028_Mau.xlsx</strong> được lưu tại:
-        </p>
-        <div class="folder-path-box">
-          <input type="text" id="inputFolderPath" value="Masterlist 2027-2028_Mau.xlsx" readonly class="folder-path-input">
-          <button id="btnCopyFolderPath" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
-            <i data-lucide="copy" class="w-4 h-4"></i>
-            <span>Sao chép</span>
-          </button>
-        </div>
-        <div class="folder-tip">
-          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500 shrink-0"></i>
-          <div>
-            Đường dẫn file đã được <strong>tự động sao chép</strong> vào bộ nhớ tạm.<br>
-            Bạn cũng có thể bấm nút <strong>"Mở file Excel"</strong> bên dưới để mở ngay bằng phần mềm bảng tính.
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" style="padding: 0.4rem 1rem;" onclick="closeFolderModal()">Đóng</button>
-        <button id="btnOpenResultFileDirect" class="btn btn-success" style="padding: 0.4rem 1rem;" onclick="closeFolderModal(); openResultFile();">
-          <i data-lucide="download" class="w-4 h-4"></i>
-          <span>Download</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- App Script -->
-  <script src="app.js"></script>
+  <!-- App Script (100% Client-side Offline) -->
+  <script src="app.js" defer></script>
 </body>
 </html>

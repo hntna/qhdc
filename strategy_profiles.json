@@ -1,5 +1,5 @@
 {
-  "activeProfileId": "profile_1789854757103",
+  "activeProfileId": "profile_1789883317033",
   "profiles": [
     {
       "id": "profile_1789854757103",
@@ -51,6 +51,59 @@
           "name": "Ví",
           "strat27": 7777.65,
           "strat28": 7.62
+        }
+      }
+    },
+    {
+      "id": "profile_1789883317033",
+      "name": "Lào",
+      "description": "Kịch bản phân bổ vốn đầu tư chiến lược 5 năm",
+      "updatedAt": "2026-09-20T05:48:37.033Z",
+      "data": {
+        "VT": {
+          "name": "Vô tuyến",
+          "strat27": 11.11,
+          "strat28": 12.11
+        },
+        "ML": {
+          "name": "Mạng lõi",
+          "strat27": 3.79,
+          "strat28": 2.61
+        },
+        "CDBR": {
+          "name": "BRCĐ-TH",
+          "strat27": 3.08,
+          "strat28": 2.09
+        },
+        "CNTT": {
+          "name": "CNTT",
+          "strat27": 2.94,
+          "strat28": 5.81
+        },
+        "TD": {
+          "name": "Truyền dẫn",
+          "strat27": 9.14,
+          "strat28": 6.42
+        },
+        "CD": {
+          "name": "Cơ điện",
+          "strat27": 13.07,
+          "strat28": 26.28
+        },
+        "HT": {
+          "name": "Hạ tầng",
+          "strat27": 2.64,
+          "strat28": 2.56
+        },
+        "ATTT": {
+          "name": "ATTT",
+          "strat27": 0.44,
+          "strat28": 0.51
+        },
+        "VI": {
+          "name": "Ví",
+          "strat27": 0.65,
+          "strat28": 0.65
         }
       }
     }

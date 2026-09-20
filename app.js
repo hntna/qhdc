@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initGroupLevelFilterButtons();
   initActionButtons();
   initEmbeddedTemplate();
-  checkServerStatus();
   makeTableResizable('validationTable');
   initStrategyComparison();
 });
@@ -331,8 +330,6 @@ function rebuildExtractedData() {
   renderStrategyComparisonTable();
 
   const hasData = state.extractedData.length > 0;
-  const btnExport = document.getElementById('btnExport');
-  if (btnExport) btnExport.disabled = !hasData;
   const btnDownload = document.getElementById('btnOpenResultFile');
   if (btnDownload) {
     btnDownload.disabled = !hasData;
@@ -372,8 +369,6 @@ function extractValidMaDVFromTemplate(workbook) {
 function initActionButtons() {
   const btnProcess = document.getElementById('btnProcess');
   if (btnProcess) btnProcess.addEventListener('click', runProcessingPipeline);
-  const btnExport = document.getElementById('btnExport');
-  if (btnExport) btnExport.addEventListener('click', exportToExcel);
 
   const btnDownload = document.getElementById('btnOpenResultFile');
   if (btnDownload) {
@@ -487,16 +482,7 @@ async function getResultFileBlob() {
       console.warn('Lỗi tự động tạo buffer kết quả:', e);
     }
   }
-  // 3. Tải file mới nhất từ server Python
-  for (const url of ['/Masterlist%202027-2028_Mau.xlsx?t=' + Date.now(), 'http://localhost:8080/Masterlist%202027-2028_Mau.xlsx?t=' + Date.now()]) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        return await resp.blob();
-      }
-    } catch (e) {}
-  }
-  // 4. Dự phòng từ buffer template trong bộ nhớ
+  // 3. Dự phòng từ buffer template trong bộ nhớ
   if (state.templateBuffer) {
     return new Blob([state.templateBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
@@ -507,66 +493,17 @@ async function getResultFileBlob() {
   return null;
 }
 
-// Gọi API server Python để mở trực tiếp file Excel trên Windows
-async function triggerNativeOpenFile(downloadFileName) {
-  const filePath = (state.serverDirectory ? `${state.serverDirectory}\\` : '') + 'Masterlist 2027-2028_Mau.xlsx';
-
-  // 1. Tự động sao chép đường dẫn file vào Clipboard
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    try {
-      await navigator.clipboard.writeText(filePath);
-    } catch (e) {}
-  }
-
-  // 2. Gọi API server Python để mở trực tiếp file Excel trên Windows
-  let openedOnServer = false;
-  const apiUrls = ['/api/open-file', 'http://localhost:8080/api/open-file'];
-  for (const apiUrl of apiUrls) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
-      const resp = await fetch(apiUrl, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-      if (resp.ok) {
-        const res = await resp.json();
-        if (res.success) {
-          openedOnServer = true;
-          break;
-        }
-      }
-    } catch (e) {}
-  }
-
-  const modal = document.getElementById('folderModal');
-  if (modal) modal.style.display = 'none';
-
-  if (openedOnServer) {
-    showToast(`Đã mở file Excel và tải về: ${downloadFileName}`, 'success');
-    return true;
-  } else {
-    showToast(`Đã tải về file: ${downloadFileName}`, 'success');
-    return false;
-  }
-}
-
-// Bấm "Mở file KQ (Excel)": Mở file và tải file về máy tính với tên Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx
+// Bấm "Download Excel": Tải file trực tiếp về máy tính với tên Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx
 async function openResultFile() {
   const downloadFileName = getTimestampedExportFileName();
 
-  // 1. Kích hoạt tải file về trình duyệt
   const blob = await getResultFileBlob();
   if (blob) {
     triggerDownloadBlob(blob, downloadFileName);
+    showToast(`Đã tải về file: ${downloadFileName}`, 'success');
   } else {
     showToast('Chưa tìm thấy file kết quả để tải về!', 'error');
   }
-
-  // 2. Mở trực tiếp trên Windows (nếu có server nội bộ)
-  await triggerNativeOpenFile(downloadFileName);
 }
 
 function openResultFolder() {
@@ -3268,103 +3205,6 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   return await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
 }
 
-// Xuất file Excel: Thay thế từng mảng tương ứng vào file kết quả Masterlist 2027-2028_Mau.xlsx
-async function exportToExcel() {
-  const btn = document.getElementById('btnExport');
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span> Đang cập nhật vào file Masterlist...`;
-
-  try {
-    if (!state.templateBuffer) {
-      if (typeof getEmbeddedTemplateBuffer === 'function') {
-        state.templateBuffer = getEmbeddedTemplateBuffer();
-      } else {
-        throw new Error('Chưa tìm thấy dữ liệu phôi mẫu Masterlist!');
-      }
-    }
-
-    // Tự động tính toán lại công thức Subtotal theo cấp bậc mới nhất trước khi build file
-    recalculateSubtotalFormulas();
-
-    // Tạo buffer Excel sạch không lỗi XML (bảo tồn nguyên vẹn 100% các sheet khác, styles, externalLinks)
-    const buffer = await buildCleanMasterlist(state.templateBuffer, state.extractedByMang, state.files);
-
-    // Cập nhật bộ đệm trong memory
-    state.templateBuffer = buffer;
-    state.templateWorkbook = XLSX.read(buffer, { type: 'array', cellFormula: true, cellStyles: true });
-
-    // 4. GHI TRỰC TIẾP VÀO FILE Masterlist 2027-2028_Mau.xlsx
-    let isSavedDirectly = false;
-
-    // Cách A: Thử gọi API lưu trực tiếp của local server Python
-    for (const apiUrl of ['/api/save-masterlist', 'http://localhost:8080/api/save-masterlist']) {
-      try {
-        const resp = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/octet-stream' },
-          body: buffer
-        });
-        const resJson = await resp.json();
-        if (resp.status === 409 && resJson.locked) {
-          // File đang mở trong Excel
-          alert('⚠️ File Masterlist 2027-2028_Mau.xlsx đang được mở trong Microsoft Excel!\nVui lòng đóng file Excel lại trên máy tính rồi bấm "Cập nhật vào Masterlist" để ghi đè.');
-          showToast('Vui lòng đóng file Excel trước khi cập nhật!', 'error');
-          return;
-        }
-        if (resp.ok && resJson.success) {
-          isSavedDirectly = true;
-          break;
-        }
-      } catch (e) {
-        // Tiếp tục thử
-      }
-    }
-
-    // Cách B: Nếu không có local server, thử dùng File System Access API
-    if (!isSavedDirectly && window.showSaveFilePicker) {
-      try {
-        const handle = state.fileHandle || await window.showSaveFilePicker({
-          suggestedName: 'Masterlist 2027-2028_Mau.xlsx',
-          types: [{
-            description: 'Excel Workbook (*.xlsx)',
-            accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
-          }]
-        });
-        state.fileHandle = handle;
-        const writable = await handle.createWritable();
-        await writable.write(buffer);
-        await writable.close();
-        isSavedDirectly = true;
-      } catch (ePicker) {
-        if (ePicker.name === 'AbortError') {
-          showToast('Đã hủy cập nhật.', 'info');
-          return;
-        }
-      }
-    }
-
-    // 5. Kiểm tra kết quả ghi file & phản hồi cho người dùng (TUYỆT ĐỐI KHÔNG DOWNLOAD)
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    state.exportBlob = blob;
-
-    if (isSavedDirectly) {
-      showToast('Đã cập nhật trực tiếp vào file Masterlist 2027-2028_Mau.xlsx thành công!', 'success');
-      showCompletionModal(true);
-    } else {
-      // TUYỆT ĐỐI KHÔNG TỰ ĐỘNG TẢI VỀ KHI BẤM CẬP NHẬT
-      showToast('⚠️ Chưa kết nối server nội bộ. Không thể cập nhật trực tiếp vào file!', 'error');
-      showCompletionModal(false);
-    }
-
-  } catch (err) {
-    console.error('Lỗi khi cập nhật:', err);
-    showToast(`Lỗi khi cập nhật file: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-  }
-}
 
 // Kích hoạt tải file Blob xuống trình duyệt
 function triggerDownloadBlob(blob, fileName) {
@@ -3384,112 +3224,9 @@ function triggerDownloadBlob(blob, fileName) {
   }
 }
 
-// Hiển thị modal hoàn thành rõ ràng minh bạch (chỉ cập nhật vào file, không download)
-function showCompletionModal(isDirectSave) {
-  const compModal = document.getElementById('completionModal');
-  const icon = document.getElementById('completionModalIcon');
-  const title = document.getElementById('completionModalTitle');
-  const body = document.getElementById('completionModalBody');
-  const actions = document.getElementById('completionModalActions');
-  if (!compModal) return;
 
-  if (isDirectSave) {
-    if (icon) {
-      icon.innerHTML = '✓';
-      icon.style.background = '#dcfce7';
-      icon.style.color = '#15803d';
-    }
-    if (title) title.textContent = 'Cập nhật Masterlist thành công!';
-    if (body) {
-      const displayPath = state.serverDirectory ? `${state.serverDirectory}\\Masterlist 2027-2028_Mau.xlsx` : 'Masterlist 2027-2028_Mau.xlsx';
-      body.innerHTML = `
-        Dữ liệu của các mảng đã được <strong>ghi trực tiếp</strong> vào file:<br>
-        <strong style="color: #166534; font-size: 0.95rem;">${escapeHtml(displayPath)}</strong><br>
-        <span style="font-size: 0.775rem; color: #64748b;">(Đã lưu trực tiếp vào file trên server, không tải về trình duyệt)</span>
-      `;
-    }
-    if (actions) {
-      actions.innerHTML = `
-        <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
-          <i data-lucide="download" class="w-4 h-4"></i> Download
-        </button>
-        <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
-          Đóng
-        </button>
-      `;
-    }
-  } else {
-    if (icon) {
-      icon.innerHTML = '⚠️';
-      icon.style.background = '#fee2e2';
-      icon.style.color = '#b91c1c';
-    }
-    if (title) title.textContent = 'Chưa kết nối Server nội bộ';
-    if (body) {
-      body.innerHTML = `
-        Không thể ghi trực tiếp vào file <strong>Masterlist 2027-2028_Mau.xlsx</strong> do chưa kết nối được server Python nội bộ.<br><br>
-        <div style="background: #fffbeb; border: 1px solid #fef08a; border-radius: 6px; padding: 10px 12px; text-align: left; font-size: 0.8rem; color: #92400e; line-height: 1.45;">
-          💡 <strong>Khắc phục:</strong> Chạy file <strong>start_app.bat</strong> trong thư mục dự án để khởi động web qua địa chỉ <code>http://localhost:8080</code>.<br>
-          Hoặc bấm <strong>"Download"</strong> bên dưới để tải file kết quả về máy.
-        </div>
-      `;
-    }
-    if (actions) {
-      actions.innerHTML = `
-        <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
-          <i data-lucide="download" class="w-4 h-4"></i> Download
-        </button>
-        <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
-          Đóng
-        </button>
-      `;
-    }
-  }
 
-  compModal.style.display = 'flex';
-  if (window.lucide) lucide.createIcons();
-}
 
-window.closeCompletionModal = function() {
-  const modal = document.getElementById('completionModal');
-  if (modal) modal.style.display = 'none';
-};
-
-// Kiểm tra trạng thái kết nối server nội bộ
-async function checkServerStatus() {
-  const badge = document.getElementById('serverStatusBadge');
-  for (const url of ['/api/ping', 'http://localhost:8080/api/ping']) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const res = await resp.json();
-        if (res.status === 'ok') {
-          state.serverDirectory = res.directory || '';
-          if (state.serverDirectory) {
-            const inputFolder = document.getElementById('inputFolderPath');
-            if (inputFolder) inputFolder.value = `${state.serverDirectory}\\Masterlist 2027-2028_Mau.xlsx`;
-            const savedNote = document.getElementById('savedPathNote');
-            if (savedNote) savedNote.textContent = `(Đã lưu trực tiếp tại ${state.serverDirectory}, không tải về trình duyệt)`;
-          }
-          if (badge) {
-            badge.className = 'server-status-pill online';
-            badge.innerHTML = '🟢 Server: Sẵn sàng (Ghi trực tiếp)';
-            badge.title = `Server nội bộ đang hoạt động tại ${state.serverDirectory || 'thư mục app'}. Bấm "Cập nhật vào Masterlist" sẽ tự động lưu thẳng vào file trên ổ đĩa.`;
-          }
-          // Tự động đồng bộ Profiles từ file server strategy_profiles.json để mọi người cùng xem
-          loadStrategyProfiles();
-          return true;
-        }
-      }
-    } catch (e) {}
-  }
-  if (badge) {
-    badge.className = 'server-status-pill offline';
-    badge.innerHTML = '🟡 Chế độ Offline (Chạy start_app.bat để ghi trực tiếp)';
-    badge.title = 'Chưa bật server.py. Khi cập nhật, file sẽ được tải về máy thay vì ghi đè trực tiếp.';
-  }
-  return false;
-}
 
 // ==================== TIỆN ÍCH DÙNG CHUNG ====================
 
@@ -3612,83 +3349,70 @@ function initStrategyComparison() {
   loadStrategyProfiles();
 }
 
-// Nạp danh sách profiles DUY NHẤT từ server (strategy_profiles.json), tuyệt đối không lưu hay đọc từ localStorage
+// Nạp danh sách profiles: ưu tiên localStorage, nếu chưa có thì nạp từ file tĩnh strategy_profiles.json
 async function loadStrategyProfiles() {
-  let loaded = false;
-
-  // Xóa sạch cache cũ trong localStorage nếu có
+  // 1. Kiểm tra trong localStorage (nếu người dùng đã từng lưu/sửa trên trình duyệt)
   try {
-    localStorage.removeItem('QHDC_STRATEGY_PROFILES');
+    const cached = localStorage.getItem('QHDC_STRATEGY_PROFILES');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+        state.strategyProfiles = parsed.profiles;
+        state.activeStrategyProfileId = parsed.activeProfileId || parsed.profiles[0].id;
+        renderStrategyProfileSelect();
+        renderStrategyComparisonTable();
+        return;
+      }
+    }
   } catch (e) {}
 
-  // Lấy dữ liệu duy nhất từ API server Python (file strategy_profiles.json)
-  for (const url of ['/api/strategy-profiles', 'http://localhost:8080/api/strategy-profiles']) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
-          state.strategyProfiles = data.profiles;
-          state.activeStrategyProfileId = data.activeProfileId || data.profiles[0].id;
-          loaded = true;
-          break;
-        }
+  // 2. Nạp từ file tĩnh strategy_profiles.json đi kèm dự án trên GitHub Pages
+  try {
+    const resp = await fetch('strategy_profiles.json');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
+        state.strategyProfiles = data.profiles;
+        state.activeStrategyProfileId = data.activeProfileId || data.profiles[0].id;
+        renderStrategyProfileSelect();
+        renderStrategyComparisonTable();
+        return;
       }
-    } catch (e) {}
-  }
-
-  // Nếu không kết nối được server
-  if (!loaded) {
-    console.warn('Chưa kết nối được server để lấy strategy_profiles.json');
-    if (!state.strategyProfiles || state.strategyProfiles.length === 0) {
-      state.strategyProfiles = [
-        {
-          id: 'profile_default',
-          name: 'Chiến lược 5 năm (Phương án Chuẩn)',
-          description: 'Dữ liệu kế hoạch chiến lược 5 năm 2026-2030 theo phê duyệt',
-          updatedAt: new Date().toISOString(),
-          data: JSON.parse(JSON.stringify(DEFAULT_STRATEGY_DATA))
-        }
-      ];
-      state.activeStrategyProfileId = 'profile_default';
     }
+  } catch (e) {}
+
+  // 3. Phương án mặc định nếu chưa có dữ liệu
+  if (!state.strategyProfiles || state.strategyProfiles.length === 0) {
+    state.strategyProfiles = [
+      {
+        id: 'profile_default',
+        name: 'Chiến lược 5 năm (Phương án Chuẩn)',
+        description: 'Dữ liệu kế hoạch chiến lược 5 năm 2026-2030 theo phê duyệt',
+        updatedAt: new Date().toISOString(),
+        data: JSON.parse(JSON.stringify(DEFAULT_STRATEGY_DATA))
+      }
+    ];
+    state.activeStrategyProfileId = 'profile_default';
   }
 
   renderStrategyProfileSelect();
   renderStrategyComparisonTable();
 }
 
-// Lưu profiles DUY NHẤT vào file strategy_profiles.json trên server (không lưu gì vào localStorage)
+// Lưu profiles vào localStorage của trình duyệt (100% Client-side, không cần server)
 async function saveStrategyProfiles() {
   const payload = {
     activeProfileId: state.activeStrategyProfileId,
     profiles: state.strategyProfiles
   };
 
-  // Đảm bảo không lưu bất kỳ gì vào localStorage
   try {
-    localStorage.removeItem('QHDC_STRATEGY_PROFILES');
-  } catch (e) {}
-
-  // Ghi trực tiếp vào file strategy_profiles.json trên server
-  let savedOnServer = false;
-  for (const url of ['/api/strategy-profiles', 'http://localhost:8080/api/strategy-profiles']) {
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload, null, 2)
-      });
-      if (resp.ok) {
-        const res = await resp.json();
-        if (res.success) {
-          savedOnServer = true;
-          break;
-        }
-      }
-    } catch (e) {}
+    localStorage.setItem('QHDC_STRATEGY_PROFILES', JSON.stringify(payload));
+    return true;
+  } catch (e) {
+    console.warn('Lỗi khi lưu vào localStorage:', e);
+    return false;
   }
-  return savedOnServer;
 }
 
 // Lấy profile đang active
@@ -4393,15 +4117,15 @@ async function confirmSaveProfileModal() {
       }
     }
 
-    const savedOnServer = await saveStrategyProfiles();
+    const saved = await saveStrategyProfiles();
     renderStrategyProfileSelect();
     renderStrategyComparisonTable();
     closeProfileModal();
 
-    if (savedOnServer) {
-      showToast(mode === 'create' ? `Đã tạo và lưu Profile [${name}] lên Server thành công!` : `Đã cập nhật và lưu Profile [${name}] lên Server thành công!`, 'success');
+    if (saved) {
+      showToast(mode === 'create' ? `Đã tạo Profile [${name}] thành công!` : `Đã cập nhật Profile [${name}] thành công!`, 'success');
     } else {
-      showToast(`⚠️ Không thể lưu Profile lên server. Vui lòng kiểm tra server.py!`, 'error');
+      showToast(`⚠️ Không thể lưu Profile vào bộ nhớ trình duyệt!`, 'error');
     }
   } catch (err) {
     console.error('Lỗi khi lưu profile:', err);
@@ -4434,9 +4158,9 @@ async function cloneCurrentProfile() {
   renderStrategyProfileSelect();
   renderStrategyComparisonTable();
   if (saved) {
-    showToast(`Đã nhân bản và lưu Profile [${cloned.name}] lên Server!`, 'success');
+    showToast(`Đã nhân bản Profile [${cloned.name}] thành công!`, 'success');
   } else {
-    showToast(`⚠️ Không thể lưu Profile nhân bản lên server!`, 'error');
+    showToast(`⚠️ Không thể lưu Profile nhân bản!`, 'error');
   }
 }
 
@@ -4456,9 +4180,9 @@ async function deleteCurrentProfile() {
     renderStrategyProfileSelect();
     renderStrategyComparisonTable();
     if (saved) {
-      showToast(`Đã xóa Profile [${active.name}] trên Server!`, 'info');
+      showToast(`Đã xóa Profile [${active.name}] thành công!`, 'info');
     } else {
-      showToast(`⚠️ Không thể cập nhật trạng thái xóa lên server!`, 'error');
+      showToast(`⚠️ Không thể cập nhật trạng thái xóa!`, 'error');
     }
   }
 }
