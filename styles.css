@@ -1012,17 +1012,19 @@ body {
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
-/* 2 Dòng riêng biệt cho Toolbar Tab Kiểm tra */
+/* ==========================================================================
+   TOOLBAR TAB KIỂM TRA (TAB 1) - THIẾT KẾ CARD & BADGE NỔI BẬT, SÁT LÊN
+   ========================================================================== */
 .toolbar.validation-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.35rem; /* Sát lên, giảm tối đa khoảng trống thừa */
   align-items: stretch;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: #f1f5f9; /* Frame nền xám sáng nổi bật, tách biệt hẳn với nền trắng của bảng */
+  border: 1.5px solid #cbd5e1;
   border-radius: 12px;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
+  padding: 0.5rem 0.8rem; /* Gọn gàng, thanh thoát */
+  box-shadow: 0 3px 10px -2px rgba(15, 23, 42, 0.08);
 }
 
 .toolbar-line {
@@ -1033,18 +1035,22 @@ body {
 
 .filter-line {
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  align-items: center;
 }
 
 .filter-header-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.775rem;
+  gap: 0.35rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  color: #475569;
-  letter-spacing: 0.06em;
-  margin-right: 0.5rem;
+  color: #1e293b;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
@@ -1052,154 +1058,291 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
-/* Chip Styling - Hiện Đại, Ẩn Radio Thô, Bo Góc Nhẹ */
+/* Base Chip / Card Styling */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.38rem 0.75rem;
+  padding: 0.32rem 0.7rem;
   border-radius: 8px;
   font-size: 0.8125rem;
-  font-weight: 500;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
-  transition: all 0.16s ease;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* Ẩn hoàn toàn nút radio tròn thô bên trong */
 .chip input[type="checkbox"],
 .chip input[type="radio"] {
   display: none !important;
 }
 
 .chip:hover {
-  background: #f8fafc;
-  color: #0f172a;
-  border-color: #94a3b8;
   transform: translateY(-1px);
+  filter: brightness(0.96);
 }
 
-/* Badge số đếm bên trong Chip */
+/* Badge số đếm bên trong Card */
 .chip-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
+  min-width: 22px;
   height: 20px;
   padding: 0 6px;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  background: #f1f5f9;
-  color: #94a3b8;
-  transition: all 0.16s ease;
-}
-
-/* Nổi bật khi có lỗi (> 0) ngay từ trạng thái chưa chọn */
-.chip-badge.badge-has-error {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
   font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.18s ease;
 }
 
-.chip-badge.badge-zero {
-  background: #f1f5f9;
-  color: #94a3b8;
-}
+/* -------------------------------------------------------------
+   MÀU NỀN NỔI BẬT CHO TỪNG CARD & BADGE (THEMED COLOR SYSTEM)
+   ------------------------------------------------------------- */
 
-/* Trạng thái Active khi chọn từng loại - Nền Đậm & Chữ Trắng Rõ Ràng */
-.chip.active, .chip:has(input:checked) {
-  background: #1e293b;
-  border-color: #0f172a;
+/* 1. Tất cả (All) */
+.chip.chip-all,
+.chip:has(input[value="ALL"]) {
+  background: #e2e8f0;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+}
+.chip.chip-all .chip-badge,
+.chip:has(input[value="ALL"]) .chip-badge {
+  background: #cbd5e1;
+  color: #0f172a;
+}
+.chip.chip-all.active,
+.chip:has(input[value="ALL"]:checked) {
+  background: #0f172a !important;
+  border-color: #020617 !important;
   color: #ffffff !important;
-  font-weight: 600;
-  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.4) !important;
 }
-
-.chip.active .chip-badge,
-.chip:has(input:checked) .chip-badge {
+.chip.chip-all.active .chip-badge,
+.chip:has(input[value="ALL"]:checked) .chip-badge {
   background: rgba(255, 255, 255, 0.25) !important;
   color: #ffffff !important;
-  border: none !important;
 }
 
-.chip:has(input[value="ALL"]:checked) {
-  background: #1e293b !important;
-  border-color: #0f172a !important;
-  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.25) !important;
+/* 2. Lỗi Thành tiền (Math Error - Red) */
+.chip.chip-math,
+.chip:has(input[value="MATH"]) {
+  background: #fee2e2;
+  border: 1.5px solid #fca5a5;
+  color: #991b1b;
 }
-
+.chip.chip-math .chip-badge,
+.chip:has(input[value="MATH"]) .chip-badge {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+.chip.chip-math.has-error .chip-badge,
+.chip:has(input[value="MATH"]) .chip-badge.badge-has-error {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+}
+.chip.chip-math.active,
 .chip:has(input[value="MATH"]:checked) {
-  background: #be123c !important;
-  border-color: #9f1239 !important;
-  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+  background: #dc2626 !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+}
+.chip.chip-math.active .chip-badge,
+.chip:has(input[value="MATH"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #dc2626 !important;
 }
 
+/* 3. Thiếu Mã loại / mảng / DV (Missing Code - Orange) */
+.chip.chip-missing-code,
+.chip:has(input[value="MISSING_CODE"]) {
+  background: #ffedd5;
+  border: 1.5px solid #fdba74;
+  color: #9a3412;
+}
+.chip.chip-missing-code .chip-badge,
+.chip:has(input[value="MISSING_CODE"]) .chip-badge {
+  background: #fed7aa;
+  color: #7c2d12;
+}
+.chip.chip-missing-code.has-error .chip-badge,
+.chip:has(input[value="MISSING_CODE"]) .chip-badge.badge-has-error {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(234, 88, 12, 0.3);
+}
+.chip.chip-missing-code.active,
 .chip:has(input[value="MISSING_CODE"]:checked) {
   background: #ea580c !important;
   border-color: #c2410c !important;
-  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4) !important;
+}
+.chip.chip-missing-code.active .chip-badge,
+.chip:has(input[value="MISSING_CODE"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #ea580c !important;
 }
 
+/* 4. Lệch Subtotal G/H (Subtotal Mismatch - Purple) */
+.chip.chip-subtotal,
+.chip:has(input[value="SUBTOTAL_MISMATCH"]) {
+  background: #f3e8ff;
+  border: 1.5px solid #d8b4fe;
+  color: #6b21a8;
+}
+.chip.chip-subtotal .chip-badge,
+.chip:has(input[value="SUBTOTAL_MISMATCH"]) .chip-badge {
+  background: #e9d5ff;
+  color: #581c87;
+}
+.chip.chip-subtotal.has-error .chip-badge,
+.chip:has(input[value="SUBTOTAL_MISMATCH"]) .chip-badge.badge-has-error {
+  background: #9333ea !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(147, 51, 234, 0.3);
+}
+.chip.chip-subtotal.active,
 .chip:has(input[value="SUBTOTAL_MISMATCH"]:checked) {
-  background: #be123c !important;
-  border-color: #9f1239 !important;
-  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+  background: #9333ea !important;
+  border-color: #7e22ce !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.4) !important;
+}
+.chip.chip-subtotal.active .chip-badge,
+.chip:has(input[value="SUBTOTAL_MISMATCH"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #9333ea !important;
 }
 
+/* 5. Mã DV ngoài TH DV (MaDV - Amber / Yellow) */
+.chip.chip-madv,
+.chip:has(input[value="MADV"]) {
+  background: #fef3c7;
+  border: 1.5px solid #fde047;
+  color: #854d0e;
+}
+.chip.chip-madv .chip-badge,
+.chip:has(input[value="MADV"]) .chip-badge {
+  background: #fef08a;
+  color: #713f12;
+}
+.chip.chip-madv.has-error .chip-badge,
+.chip:has(input[value="MADV"]) .chip-badge.badge-has-error {
+  background: #d97706 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);
+}
+.chip.chip-madv.active,
 .chip:has(input[value="MADV"]:checked) {
   background: #d97706 !important;
   border-color: #b45309 !important;
-  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4) !important;
+}
+.chip.chip-madv.active .chip-badge,
+.chip:has(input[value="MADV"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #d97706 !important;
 }
 
+/* 6. Thiếu Đơn giá / ĐVT (Info - Sky Blue) */
+.chip.chip-info,
+.chip:has(input[value="INFO"]) {
+  background: #e0f2fe;
+  border: 1.5px solid #7dd3fc;
+  color: #075985;
+}
+.chip.chip-info .chip-badge,
+.chip:has(input[value="INFO"]) .chip-badge {
+  background: #bae6fd;
+  color: #0c4a6e;
+}
+.chip.chip-info.has-error .chip-badge,
+.chip:has(input[value="INFO"]) .chip-badge.badge-has-error {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+.chip.chip-info.active,
 .chip:has(input[value="INFO"]:checked) {
-  background: #7c3aed !important;
-  border-color: #6d28d9 !important;
-  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3) !important;
+  background: #0284c7 !important;
+  border-color: #0369a1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4) !important;
+}
+.chip.chip-info.active .chip-badge,
+.chip:has(input[value="INFO"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #0284c7 !important;
 }
 
+/* 7. Lỗi công thức Excel (Formula - Rose) */
+.chip.chip-formula,
+.chip:has(input[value="FORMULA"]) {
+  background: #ffe4e6;
+  border: 1.5px solid #fda4af;
+  color: #9f1239;
+}
+.chip.chip-formula .chip-badge,
+.chip:has(input[value="FORMULA"]) .chip-badge {
+  background: #fecdd3;
+  color: #881337;
+}
+.chip.chip-formula.has-error .chip-badge,
+.chip:has(input[value="FORMULA"]) .chip-badge.badge-has-error {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(225, 29, 72, 0.3);
+}
+.chip.chip-formula.active,
 .chip:has(input[value="FORMULA"]:checked) {
-  background: #be123c !important;
-  border-color: #9f1239 !important;
-  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+  background: #e11d48 !important;
+  border-color: #be123c !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.4) !important;
+}
+.chip.chip-formula.active .chip-badge,
+.chip:has(input[value="FORMULA"]:checked) .chip-badge {
+  background: #ffffff !important;
+  color: #e11d48 !important;
 }
 
-/* Dòng 2: Thanh tìm kiếm & Nút thao tác */
+/* Dòng 2: Sát lên, cân đối và nổi bật */
 .search-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f1f5f9;
+  gap: 0.75rem;
+  padding-top: 0.35rem; /* Sát lên dòng 1 */
+  border-top: 1.5px solid #cbd5e1; /* Đường ngăn cách rõ nét */
 }
 
 .search-box {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1.5px solid #94a3b8;
   border-radius: 8px;
-  padding: 0.45rem 0.85rem;
+  padding: 0.35rem 0.75rem;
   flex: 1;
-  max-width: 480px;
-  transition: all 0.2s ease;
+  max-width: 460px;
+  transition: all 0.18s ease;
 }
 
 .search-box:focus-within {
   background: #ffffff;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.15);
 }
 
 .search-box .search-input {
@@ -1207,7 +1350,8 @@ body {
   background: transparent;
   padding: 0;
   width: 100%;
-  font-size: 0.85rem;
+  font-size: 0.835rem;
+  font-weight: 500;
   color: #0f172a;
 }
 
@@ -1219,44 +1363,48 @@ body {
 .search-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .val-status-pill {
   font-size: 0.8rem;
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 0.4rem 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1.5px solid #94a3b8;
+  padding: 0.35rem 0.75rem;
   border-radius: 8px;
   white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .val-status-pill strong {
   color: #0f172a;
+  font-weight: 800;
 }
 
 .btn-copy-action {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #4338ca;
-  padding: 0.45rem 1rem;
+  background: #4338ca;
+  border: 1.5px solid #3730a3;
+  color: #ffffff;
+  padding: 0.38rem 0.95rem;
   border-radius: 8px;
   font-size: 0.825rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(67, 56, 202, 0.25);
   transition: all 0.18s ease;
   white-space: nowrap;
 }
 
 .btn-copy-action:hover {
-  background: #4338ca;
-  border-color: #3730a3;
-  color: #ffffff;
-  box-shadow: 0 3px 10px rgba(67, 56, 202, 0.25);
+  background: #3730a3;
+  border-color: #312e81;
+  box-shadow: 0 3px 10px rgba(67, 56, 202, 0.35);
+  transform: translateY(-1px);
 }
 
 /* Tông màu riêng theo từng cấp lọc Masterlist */
@@ -2277,5 +2425,37 @@ tr.row-cap-4 {
   color: #94a3b8;
   font-weight: 600;
 }
+
+/* ==================== VTB CONVERTER STYLES ==================== */
+.vtb-drop-zone {
+  border: 2px dashed #a5b4fc;
+  border-radius: 12px;
+  background-color: #f5f7ff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.vtb-drop-zone:hover {
+  border-color: #6366f1;
+  background-color: #eef2ff;
+}
+.vtb-drop-zone.drag-over {
+  border-color: #4f46e5;
+  background-color: #e0e7ff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+.vtb-mapping-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  font-weight: 700;
+}
+.vtb-pill-vp { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.vtb-pill-dl { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.vtb-pill-uctt { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.vtb-pill-vhkt { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
 
 

@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initEmbeddedTemplate();
   makeTableResizable('validationTable');
   initStrategyComparison();
+  initVTBConverter();
 });
 
 // Nạp tự động file phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx từ template_data.js
@@ -1860,6 +1861,11 @@ function updateValidationKPIs() {
     el.textContent = formatNumber(count);
     el.classList.toggle('badge-has-error', count > 0);
     el.classList.toggle('badge-zero', count === 0);
+    const chip = el.closest('.chip');
+    if (chip) {
+      chip.classList.toggle('has-error', count > 0);
+      chip.classList.toggle('has-zero', count === 0);
+    }
   };
 
   updateBadge('countAllIssues', total);
@@ -4193,4 +4199,227 @@ window.closeNewProfileModal = closeProfileModal;
 window.closeProfileModal = closeProfileModal;
 window.openProfileModal = openProfileModal;
 window.openNewProfileModal = openProfileModal;
+
+// ==================== TÍCH HỢP CÔNG CỤ CHUYỂN ĐỔI MẪU CŨ VTB ====================
+
+function initVTBConverter() {
+  const btnOpen = document.getElementById('btnOpenVTBConverter');
+  if (btnOpen) {
+    btnOpen.addEventListener('click', openVTBConverterModal);
+  }
+
+  const inputOld = document.getElementById('inputVTBFileOld');
+  if (inputOld) {
+    inputOld.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        await handleVTBFileFromInput(e.target.files[0]);
+      }
+    });
+  }
+
+  const dropZone = document.getElementById('vtbDropZone');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('drag-over');
+    });
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        await handleVTBFileFromInput(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  const btnDownload = document.getElementById('btnDownloadConvertedVTB');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', downloadConvertedVTBFile);
+  }
+
+  const btnApply = document.getElementById('btnApplyConvertedToVT');
+  if (btnApply) {
+    btnApply.addEventListener('click', applyConvertedVTBToAppState);
+  }
+}
+
+function openVTBConverterModal() {
+  const modal = document.getElementById('vtbConverterModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+function closeVTBConverterModal() {
+  const modal = document.getElementById('vtbConverterModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+window.openVTBConverterModal = openVTBConverterModal;
+window.closeVTBConverterModal = closeVTBConverterModal;
+
+async function handleVTBFileFromInput(file) {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellStyles: true });
+    handleVTBFileObject(file, workbook);
+  } catch (err) {
+    console.error('Lỗi khi đọc file VTB:', err);
+    showToast(`Không thể đọc file: ${err.message}`, 'error');
+  }
+}
+
+function handleVTBFileObject(file, workbook) {
+  if (!window.VTBConverter) {
+    showToast('Chưa nạp module VTBConverter!', 'error');
+    return;
+  }
+
+  const isOld = window.VTBConverter.isOldVTBFormat(workbook);
+  if (!isOld) {
+    showToast('File này không thuộc định dạng Mẫu cũ 37 cột của Vô tuyến!', 'warning');
+  }
+
+  // Cập nhật tên file trên giao diện
+  const infoBar = document.getElementById('vtbSelectedFileInfo');
+  const nameSpan = document.getElementById('vtbSelectedFileName');
+  if (infoBar && nameSpan) {
+    nameSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    infoBar.style.display = 'inline-block';
+  }
+
+  // Thực hiện chuyển đổi
+  try {
+    const result = window.VTBConverter.convertOldVTBToNewFormat(workbook);
+    state.vtbConversion = {
+      result: result,
+      originalFile: file,
+      originalFileName: file.name,
+      convertedBuffer: result.convertedBuffer,
+      convertedWorkbook: result.convertedWorkbook
+    };
+
+    renderVTBConversionResult(result, file.name);
+    showToast(`Đã chuyển đổi thành công ${result.mappedCount} dòng sang Masterlist mẫu mới!`, 'success');
+  } catch (err) {
+    console.error('Lỗi khi chuyển đổi file VTB:', err);
+    showToast(`Lỗi khi chuyển đổi: ${err.message}`, 'error');
+  }
+}
+
+function formatNumberVTB(num) {
+  if (num === null || num === undefined || isNaN(num)) return '-';
+  return Number(num).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+}
+
+function renderVTBConversionResult(res, fileName) {
+  const kpiSection = document.getElementById('vtbKPISection');
+  if (kpiSection) kpiSection.style.display = 'block';
+
+  const kpiOldCount = document.getElementById('kpiOldItemCount');
+  const kpiMappedCount = document.getElementById('kpiMappedCount');
+  if (kpiOldCount) kpiOldCount.textContent = res.oldItemsCount;
+  if (kpiMappedCount) kpiMappedCount.textContent = res.mappedCount;
+
+  const kpiOld27 = document.getElementById('kpiOldTotal27');
+  const kpiNew27 = document.getElementById('kpiNewTotal27');
+  const kpiOld28 = document.getElementById('kpiOldTotal28');
+  const kpiNew28 = document.getElementById('kpiNewTotal28');
+
+  if (kpiOld27) kpiOld27.textContent = formatNumberVTB(res.totalOld27);
+  if (kpiNew27) kpiNew27.textContent = formatNumberVTB(res.newTotal27);
+  if (kpiOld28) kpiOld28.textContent = formatNumberVTB(res.totalOld28);
+  if (kpiNew28) kpiNew28.textContent = formatNumberVTB(res.newTotal28);
+
+  // Render bảng mapping
+  const tbody = document.getElementById('vtbMappingTableBody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    res.mappedResults.forEach(item => {
+      const tr = document.createElement('tr');
+      let pillClass = 'vtb-pill-vp';
+      if (item.targetDV === 'DLDĐ') pillClass = 'vtb-pill-dl';
+      if (item.targetDV === 'ƯCTT') pillClass = 'vtb-pill-uctt';
+      if (item.targetDV === 'VHKT') pillClass = 'vtb-pill-vhkt';
+
+      tr.innerHTML = `
+        <td style="text-align: center; font-weight: 700; color: #64748b;">${item.targetRow}</td>
+        <td style="font-weight: 600; color: #1e293b;" title="${escapeHtml(item.targetName)}">${escapeHtml(item.targetName)}</td>
+        <td style="text-align: center;"><span class="vtb-mapping-pill ${pillClass}">${item.targetDV}</span></td>
+        <td style="text-align: right; font-weight: 700; color: ${item.kl27 ? '#047857' : '#94a3b8'};">${item.kl27 ? formatNumberVTB(item.kl27) : '-'}</td>
+        <td style="text-align: right; font-weight: 700; color: ${item.kl28 ? '#047857' : '#94a3b8'};">${item.kl28 ? formatNumberVTB(item.kl28) : '-'}</td>
+        <td style="text-align: right; color: #475569;">${item.dg ? formatNumberVTB(item.dg) : '-'}</td>
+        <td style="color: #64748b;" title="${escapeHtml(item.oldName)}">
+          <span style="font-weight: 600; color: #334155;">[${escapeHtml(item.oldPurpose)}]</span> ${escapeHtml(item.oldName)}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Enable buttons
+  const btnDownload = document.getElementById('btnDownloadConvertedVTB');
+  const btnApply = document.getElementById('btnApplyConvertedToVT');
+  if (btnDownload) btnDownload.disabled = false;
+  if (btnApply) btnApply.disabled = false;
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function downloadConvertedVTBFile() {
+  if (!state.vtbConversion || !state.vtbConversion.convertedBuffer) {
+    showToast('Chưa có dữ liệu chuyển đổi để tải về!', 'error');
+    return;
+  }
+  const blob = new Blob([state.vtbConversion.convertedBuffer], { 
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+  });
+  const originalName = state.vtbConversion.originalFileName || 'Masterlist_VTB';
+  const exportName = originalName.replace(/\.xlsx$/i, '') + '_Mau_moi.xlsx';
+  triggerDownloadBlob(blob, exportName);
+  showToast(`Đã tải về file Mẫu mới: ${exportName}`, 'success');
+}
+
+function applyConvertedVTBToAppState() {
+  if (!state.vtbConversion || !state.vtbConversion.convertedBuffer) {
+    showToast('Chưa có dữ liệu chuyển đổi để nạp vào App!', 'error');
+    return;
+  }
+
+  const originalName = state.vtbConversion.originalFileName || 'Masterlist_VTB';
+  const convertedFileName = originalName.replace(/\.xlsx$/i, '') + '_Mau_moi.xlsx';
+  const convertedBuf = state.vtbConversion.convertedBuffer;
+  const convertedWb = state.vtbConversion.convertedWorkbook;
+
+  // Gán vào state.files['VT']
+  state.files['VT'] = {
+    file: new File([convertedBuf], convertedFileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+    name: convertedFileName,
+    size: convertedBuf.byteLength,
+    buffer: convertedBuf,
+    workbook: convertedWb
+  };
+
+  const mang = MANG_CONFIG.find(m => m.code === 'VT');
+  if (mang) {
+    const items = extractItemsForMang(mang, state.files['VT']);
+    state.extractedByMang['VT'] = items;
+    showToast(`Đã nạp thành công ${items.length} dòng vào Mảng Vô Tuyến!`, 'success');
+  }
+
+  updateUploadBoxUI('VT', convertedFileName, convertedBuf.byteLength);
+  rebuildExtractedData();
+  closeVTBConverterModal();
+}
+
 

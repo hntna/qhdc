@@ -42,6 +42,7 @@
   <script src="xlsx.full.min.js" defer></script>
   <script src="jszip.min.js" defer></script>
   <script src="template_data.js" defer></script>
+  <script src="vtb_converter.js" defer></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
 
@@ -58,6 +59,10 @@
       </div>
 
       <div class="header-actions">
+        <button id="btnOpenVTBConverter" class="btn btn-outline" style="border-color: #6366f1; color: #4338ca; background: #eef2ff;" title="Công cụ chuyển đổi file đầu vào Mẫu cũ (37 cột) sang Mẫu mới">
+          <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
+          <span>Chuyển đổi Mẫu cũ (VTB)</span>
+        </button>
         <button id="btnOpenResultFile" class="btn btn-primary" disabled title="Tải file kết quả hoàn chỉnh về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx)">
           <i data-lucide="download" class="w-4 h-4 text-white"></i>
           <span>Download Excel</span>
@@ -218,37 +223,37 @@
             <span>PHÂN LOẠI:</span>
           </div>
           <div class="filter-chips-wrapper">
-            <label class="chip active">
+            <label class="chip chip-all active">
               <input type="radio" name="filterIssueType" value="ALL" checked>
               <span>Tất cả</span>
               <span class="chip-badge" id="countAllIssues">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-math">
               <input type="radio" name="filterIssueType" value="MATH">
               <span>Lỗi Thành tiền</span>
               <span class="chip-badge" id="countMathIssues">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-missing-code">
               <input type="radio" name="filterIssueType" value="MISSING_CODE">
               <span>Thiếu Mã loại / mảng / DV</span>
               <span class="chip-badge" id="countCodeIssues">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-subtotal">
               <input type="radio" name="filterIssueType" value="SUBTOTAL_MISMATCH">
               <span>Lệch Subtotal G/H</span>
               <span class="chip-badge" id="countSubtotalMismatch">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-madv">
               <input type="radio" name="filterIssueType" value="MADV">
               <span>Mã DV ngoài TH DV</span>
               <span class="chip-badge" id="countMaDVIssues">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-info">
               <input type="radio" name="filterIssueType" value="INFO">
               <span>Thiếu Đơn giá / ĐVT</span>
               <span class="chip-badge" id="countInfoIssues">0</span>
             </label>
-            <label class="chip">
+            <label class="chip chip-formula">
               <input type="radio" name="filterIssueType" value="FORMULA">
               <span>Lỗi công thức Excel</span>
               <span class="chip-badge" id="countFormulaIssues">0</span>
@@ -256,7 +261,7 @@
           </div>
         </div>
 
-        <!-- Dòng 2: Tìm kiếm & Sao chép -->
+        <!-- Dòng 2: Tìm kiếm & Sao chép (Sát lên dòng 1) -->
         <div class="toolbar-line search-line">
           <div class="search-box">
             <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
@@ -631,6 +636,145 @@
           <span id="btnModalSaveText">Lưu Profile</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal Chuyển đổi File Vô Tuyến Mẫu Cũ (37 cột) sang Mẫu Mới -->
+  <div id="vtbConverterModal" class="modal" style="display: none;">
+    <div class="modal-backdrop" onclick="closeVTBConverterModal()"></div>
+    <div class="modal-dialog" style="max-width: 950px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+      
+      <!-- Modal Header -->
+      <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" style="color: white; font-size: 1.05rem; font-weight: 800; margin: 0;">
+              CHUYỂN ĐỔI MẪU CŨ VÔ TUYẾN SANG MASTERLIST 2027-2028
+            </h3>
+            <p style="font-size: 0.775rem; color: #e0e7ff; margin: 0.2rem 0 0 0;">
+              Tự động phân rã bảng 37 cột ma trận (Vùng phủ, Dung lượng, ƯCTT, Củng cố) sang Cây phân cấp chuẩn
+            </p>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeVTBConverterModal()" style="color: white; opacity: 0.85;">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+
+        <!-- Khu vực Kéo thả / Chọn file mẫu cũ -->
+        <div id="vtbDropZone" class="vtb-drop-zone" onclick="document.getElementById('inputVTBFileOld').click()">
+          <input type="file" id="inputVTBFileOld" accept=".xlsx,.xls" style="display: none;">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.5rem; padding: 1.2rem;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; color: #4f46e5;">
+              <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
+                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: #4f46e5; text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
+              </div>
+              <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
+                Hỗ trợ file: <code>Master list VTB 2027-2028_mau cu.xlsx</code> (Bảng 37 cột chia Khối lượng & Giá trị theo mục đích)
+              </div>
+            </div>
+            <div id="vtbSelectedFileInfo" style="display: none; margin-top: 0.5rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #065f46; font-weight: 600;">
+              <i data-lucide="check-circle-2" class="w-4 h-4 inline-block mr-1 text-emerald-600"></i>
+              <span id="vtbSelectedFileName">Đã nạp file thành công</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng KPI Đối Soát Số Liệu (Chỉ hiện khi đã convert) -->
+        <div id="vtbKPISection" style="display: none; margin-top: 1rem;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem;">
+            
+            <!-- Card 1: Số dòng -->
+            <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">SỐ DÒNG THIẾT BỊ BÓC TÁCH</div>
+              <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 0.25rem;">
+                <span id="kpiOldItemCount" style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">0</span>
+                <span style="font-size: 0.8rem; color: #64748b;">dòng cũ</span>
+                <span style="color: #cbd5e1;">➔</span>
+                <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: #4f46e5;">0</span>
+                <span style="font-size: 0.8rem; color: #4f46e5;">dòng mới</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Thành tiền 2027 -->
+            <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">TỔNG THÀNH TIỀN 2027</div>
+              <div style="margin-top: 0.25rem;">
+                <div style="font-size: 0.8rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal27" style="font-weight: 700; color: #334155;">-</span> USD</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: #047857;">Mẫu mới: <span id="kpiNewTotal27">-</span> USD</div>
+              </div>
+            </div>
+
+            <!-- Card 3: Thành tiền 2028 -->
+            <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">TỔNG THÀNH TIỀN 2028</div>
+              <div style="margin-top: 0.25rem;">
+                <div style="font-size: 0.8rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal28" style="font-weight: 700; color: #334155;">-</span> USD</div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: #047857;">Mẫu mới: <span id="kpiNewTotal28">-</span> USD</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bảng Chi tiết Xem trước Ánh xạ -->
+          <div style="margin-top: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <span style="font-weight: 700; font-size: 0.85rem; color: #1e293b;">
+                Chi tiết ánh xạ phân bổ vào Cây Masterlist Mẫu mới:
+              </span>
+              <span id="vtbMappingBadge" style="font-size: 0.725rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px; background: #dbeafe; color: #1e40af;">
+                Đã ánh xạ thành công
+              </span>
+            </div>
+            
+            <div style="max-height: 260px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <table class="data-table" style="width: 100%; font-size: 0.775rem;">
+                <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 5;">
+                  <tr>
+                    <th style="padding: 0.4rem 0.6rem; text-align: center; width: 45px;">Dòng</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: left;">Thiết bị / Hạng mục ở Mẫu mới</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: center; width: 65px;">Mã DV</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: right; width: 75px;">KL 2027</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: right; width: 75px;">KL 2028</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: right; width: 90px;">Đơn giá</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: left;">Nguồn bóc tách từ file cũ</th>
+                  </tr>
+                </thead>
+                <tbody id="vtbMappingTableBody">
+                  <!-- Dữ liệu render tự động -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 0.775rem; color: #64748b;">
+          💡 Chuyển đổi 100% trong RAM trình duyệt, không làm thay đổi file gốc.
+        </span>
+        <div style="display: flex; gap: 0.6rem;">
+          <button type="button" class="btn btn-outline" onclick="closeVTBConverterModal()">Đóng</button>
+          <button type="button" class="btn btn-outline" id="btnDownloadConvertedVTB" disabled style="border-color: #059669; color: #047857;" title="Tải file Excel mẫu mới đã điền số liệu">
+            <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
+            <span>Tải Excel Mẫu Mới</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="btnApplyConvertedToVT" disabled title="Nạp trực tiếp vào Mảng Vô Tuyến để so khớp ngay">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Nạp thẳng vào Mảng VT</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 
