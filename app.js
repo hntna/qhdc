@@ -367,8 +367,56 @@ function extractValidMaDVFromTemplate(workbook) {
 function initActionButtons() {
   document.getElementById('btnProcess').addEventListener('click', runProcessingPipeline);
   document.getElementById('btnExport').addEventListener('click', exportToExcel);
-  document.getElementById('btnReset').addEventListener('click', () => {
-    if (confirm('Bạn có chắc chắn muốn làm mới toàn bộ dữ liệu?')) {
+  document.getElementById('btnReset').addEventListener('click', async () => {
+    const choice = confirm(
+      'Bạn muốn làm mới toàn bộ dữ liệu để làm lại một bản khác?\n\n' +
+      '• Bấm [OK]: KHÔI PHỤC file Masterlist về PHÔI TRẮNG BAN ĐẦU (Xóa sạch toàn bộ dữ liệu các mảng đã lưu trước đó để bắt đầu lại từ đầu).\n' +
+      '• Bấm [Cancel]: Hủy bỏ, giữ nguyên dữ liệu hiện tại.'
+    );
+    if (!choice) return;
+
+    const btnReset = document.getElementById('btnReset');
+    const originalHtml = btnReset.innerHTML;
+    btnReset.disabled = true;
+    btnReset.innerHTML = '<span class="spinner"></span> Đang đặt lại...';
+
+    let resetOnServer = false;
+    if (typeof getEmbeddedTemplateBuffer === 'function') {
+      const cleanBuffer = getEmbeddedTemplateBuffer();
+      for (const apiUrl of ['/api/save-masterlist', 'http://localhost:8080/api/save-masterlist']) {
+        try {
+          const resp = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: cleanBuffer
+          });
+          const resJson = await resp.json().catch(() => ({}));
+          if (resp.status === 409 && resJson.locked) {
+            alert('⚠️ File Masterlist 2027-2028_Mau.xlsx đang mở trong Microsoft Excel!\nVui lòng đóng file Excel lại trên máy tính rồi bấm "Làm mới" để khôi phục.');
+            btnReset.disabled = false;
+            btnReset.innerHTML = originalHtml;
+            return;
+          }
+          if (resp.ok && resJson.success) {
+            resetOnServer = true;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+
+    // Xóa sạch bộ nhớ tạm trình duyệt
+    state.exportBlob = null;
+    state.extractedData = [];
+    state.extractedByMang = {};
+    if (typeof getEmbeddedTemplateBuffer === 'function') {
+      state.templateBuffer = getEmbeddedTemplateBuffer();
+    }
+
+    if (resetOnServer) {
+      showToast('Đã khôi phục file Masterlist về phôi mẫu trắng ban đầu!', 'success');
+      setTimeout(() => location.reload(), 600);
+    } else {
       location.reload();
     }
   });
