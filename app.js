@@ -1854,17 +1854,21 @@ function updateValidationKPIs() {
   const groupCount = state.extractedData.filter(x => x.isGroup).length;
   document.getElementById('badgeGroupCount').textContent = `${groupCount} nhóm`;
 
-  document.getElementById('countAllIssues').textContent = total;
-  document.getElementById('countMathIssues').textContent = mathCount;
-  if (document.getElementById('countCodeIssues')) {
-    document.getElementById('countCodeIssues').textContent = missingCodeCount;
-  }
-  document.getElementById('countMaDVIssues').textContent = madvCount;
-  document.getElementById('countInfoIssues').textContent = infoCount;
-  document.getElementById('countFormulaIssues').textContent = formulaCount;
-  if (document.getElementById('countSubtotalMismatch')) {
-    document.getElementById('countSubtotalMismatch').textContent = formatNumber(subtotalMismatchCount);
-  }
+  const updateBadge = (id, count) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = formatNumber(count);
+    el.classList.toggle('badge-has-error', count > 0);
+    el.classList.toggle('badge-zero', count === 0);
+  };
+
+  updateBadge('countAllIssues', total);
+  updateBadge('countMathIssues', mathCount);
+  updateBadge('countCodeIssues', missingCodeCount);
+  updateBadge('countMaDVIssues', madvCount);
+  updateBadge('countInfoIssues', infoCount);
+  updateBadge('countFormulaIssues', formulaCount);
+  updateBadge('countSubtotalMismatch', subtotalMismatchCount);
 
   const madvAlert = document.getElementById('missingMaDVAlert');
   if (madvCount > 0) {
@@ -1953,7 +1957,14 @@ function renderValidationTable() {
 
   tbody.innerHTML = rowsHtml;
   if (window.lucide) lucide.createIcons();
-  document.getElementById('validationFooterText').textContent = `Hiển thị ${filtered.length} / ${state.validationIssues.length} cảnh báo`;
+
+  const footerText = document.getElementById('validationFooterText');
+  if (footerText) footerText.textContent = `Hiển thị ${filtered.length} / ${state.validationIssues.length} cảnh báo`;
+
+  const visibleCountEl = document.getElementById('valVisibleCount');
+  if (visibleCountEl) visibleCountEl.textContent = formatNumber(filtered.length);
+  const totalCountEl = document.getElementById('valTotalCount');
+  if (totalCountEl) totalCountEl.textContent = formatNumber(state.validationIssues.length);
 }
 
 // Helper lấy giá trị số Thành tiền 2027 của 1 dòng

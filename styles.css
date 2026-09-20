@@ -1016,8 +1016,13 @@ body {
 .toolbar.validation-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   align-items: stretch;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.05);
 }
 
 .toolbar-line {
@@ -1031,6 +1036,18 @@ body {
   gap: 0.5rem;
 }
 
+.filter-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.775rem;
+  font-weight: 800;
+  color: #475569;
+  letter-spacing: 0.06em;
+  margin-right: 0.5rem;
+  white-space: nowrap;
+}
+
 .filter-chips-wrapper {
   display: flex;
   align-items: center;
@@ -1038,25 +1055,144 @@ body {
   gap: 0.45rem;
 }
 
+/* Chip Styling - Hiện Đại, Ẩn Radio Thô, Bo Góc Nhẹ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.16s ease;
+}
+
+/* Ẩn hoàn toàn nút radio tròn thô bên trong */
+.chip input[type="checkbox"],
+.chip input[type="radio"] {
+  display: none !important;
+}
+
+.chip:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+/* Badge số đếm bên trong Chip */
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  background: #f1f5f9;
+  color: #94a3b8;
+  transition: all 0.16s ease;
+}
+
+/* Nổi bật khi có lỗi (> 0) ngay từ trạng thái chưa chọn */
+.chip-badge.badge-has-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-weight: 800;
+}
+
+.chip-badge.badge-zero {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+/* Trạng thái Active khi chọn từng loại - Nền Đậm & Chữ Trắng Rõ Ràng */
+.chip.active, .chip:has(input:checked) {
+  background: #1e293b;
+  border-color: #0f172a;
+  color: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.2);
+}
+
+.chip.active .chip-badge,
+.chip:has(input:checked) .chip-badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.chip:has(input[value="ALL"]:checked) {
+  background: #1e293b !important;
+  border-color: #0f172a !important;
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.25) !important;
+}
+
+.chip:has(input[value="MATH"]:checked) {
+  background: #be123c !important;
+  border-color: #9f1239 !important;
+  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+}
+
+.chip:has(input[value="MISSING_CODE"]:checked) {
+  background: #ea580c !important;
+  border-color: #c2410c !important;
+  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3) !important;
+}
+
+.chip:has(input[value="SUBTOTAL_MISMATCH"]:checked) {
+  background: #be123c !important;
+  border-color: #9f1239 !important;
+  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+}
+
+.chip:has(input[value="MADV"]:checked) {
+  background: #d97706 !important;
+  border-color: #b45309 !important;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3) !important;
+}
+
+.chip:has(input[value="INFO"]:checked) {
+  background: #7c3aed !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3) !important;
+}
+
+.chip:has(input[value="FORMULA"]:checked) {
+  background: #be123c !important;
+  border-color: #9f1239 !important;
+  box-shadow: 0 3px 10px rgba(190, 18, 60, 0.3) !important;
+}
+
+/* Dòng 2: Thanh tìm kiếm & Nút thao tác */
 .search-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding-top: 0.65rem;
+  padding-top: 0.75rem;
   border-top: 1px solid #f1f5f9;
 }
 
 .search-box {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   background: #f8fafc;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 0.4rem 0.75rem;
+  padding: 0.45rem 0.85rem;
   flex: 1;
-  max-width: 420px;
+  max-width: 480px;
   transition: all 0.2s ease;
 }
 
@@ -1070,9 +1206,8 @@ body {
   border: none;
   background: transparent;
   padding: 0;
-  min-width: unset;
   width: 100%;
-  font-size: 0.825rem;
+  font-size: 0.85rem;
   color: #0f172a;
 }
 
@@ -1081,102 +1216,47 @@ body {
   box-shadow: none;
 }
 
-.filter-group {
+.search-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
-.filter-label {
-  font-size: 0.775rem;
-  font-weight: 800;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-right: 0.25rem;
+.val-status-pill {
+  font-size: 0.8rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem 0.85rem;
+  border-radius: 8px;
   white-space: nowrap;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.32rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.15s ease;
-}
-.chip input[type="checkbox"],
-.chip input[type="radio"] {
-  accent-color: #334155;
-  cursor: pointer;
-}
-.chip:hover {
-  background: #f1f5f9;
+.val-status-pill strong {
   color: #0f172a;
-  border-color: #94a3b8;
-}
-.chip.active, .chip:has(input:checked) {
-  background: #334155;
-  border-color: #1e293b;
-  color: #ffffff !important;
-  font-weight: 700;
-  box-shadow: 0 2px 5px rgba(30, 41, 59, 0.25);
-}
-.chip.active input[type="checkbox"],
-.chip.active input[type="radio"],
-.chip:has(input:checked) input {
-  accent-color: #ffffff;
 }
 
-/* Tông màu riêng sắc nét theo từng loại cảnh báo khi chọn */
-.chip:has(input[value="ALL"]:checked) {
-  background: #334155 !important;
-  border-color: #1e293b !important;
-  color: #ffffff !important;
+.btn-copy-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
 }
-.chip:has(input[value="MATH"]:checked) {
-  background: #e11d48 !important;
-  border-color: #be123c !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.3) !important;
-}
-.chip:has(input[value="MISSING_CODE"]:checked) {
-  background: #ea580c !important;
-  border-color: #c2410c !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.3) !important;
-}
-.chip:has(input[value="SUBTOTAL_MISMATCH"]:checked) {
-  background: #be123c !important;
-  border-color: #9f1239 !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(190, 18, 60, 0.3) !important;
-}
-.chip:has(input[value="MADV"]:checked) {
-  background: #d97706 !important;
-  border-color: #b45309 !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3) !important;
-}
-.chip:has(input[value="INFO"]:checked) {
-  background: #7c3aed !important;
-  border-color: #6d28d9 !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.3) !important;
-}
-.chip:has(input[value="FORMULA"]:checked) {
-  background: #be123c !important;
-  border-color: #9f1239 !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(190, 18, 60, 0.3) !important;
+
+.btn-copy-action:hover {
+  background: #4338ca;
+  border-color: #3730a3;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(67, 56, 202, 0.25);
 }
 
 /* Tông màu riêng theo từng cấp lọc Masterlist */
