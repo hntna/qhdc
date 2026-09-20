@@ -1847,16 +1847,6 @@ function updateValidationKPIs() {
   const formulaCount = state.validationIssues.filter(x => x.type === 'FORMULA').length;
   const subtotalMismatchCount = state.validationIssues.filter(x => x.type === 'SUBTOTAL_MISMATCH').length;
 
-  document.getElementById('kpiTotalRows').textContent = formatNumber(state.extractedData.length);
-  document.getElementById('kpiMathErrors').textContent = formatNumber(mathCount);
-  if (document.getElementById('kpiMissingCode')) {
-    document.getElementById('kpiMissingCode').textContent = formatNumber(missingCodeCount);
-  }
-  document.getElementById('kpiMissingMaDV').textContent = formatNumber(madvCount);
-  document.getElementById('kpiMissingInfo').textContent = formatNumber(infoCount);
-  if (document.getElementById('kpiSubtotalMismatch')) {
-    document.getElementById('kpiSubtotalMismatch').textContent = formatNumber(subtotalMismatchCount);
-  }
 
   document.getElementById('badgeValidationCount').textContent = total;
   document.getElementById('badgeRowCount').textContent = `${formatNumber(state.extractedData.length)} dòng`;
