@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tổng hợp & So khớp Masterlist QHĐC 2027-2028</title>
+  
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Stylesheet fallback & custom tokens -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Thư viện xử lý Excel chạy 100% Offline -->
+  <script src="xlsx.full.min.js"></script>
+  <script src="jszip.min.js"></script>
+  <!-- Dữ liệu phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx -->
+  <script src="template_data.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
+
+  <!-- Header: Modern SaaS Glassmorphism -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <div class="brand-title">TỔNG HỢP & SO KHỚP MASTERLIST QHĐC 2027-2028</div>
+          <div class="brand-subtitle">
+            <span>Ứng dụng xử lý dữ liệu trực tiếp trên trình duyệt (No-Server, Chạy Offline)</span>
+            <span id="serverStatusBadge" class="server-status-pill">Đang kiểm tra server...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnProcess" class="btn btn-primary" title="Tổng hợp dữ liệu và quét tìm lỗi sai sót">
+          <i data-lucide="zap" class="w-5 h-5 text-amber-300"></i>
+          <span>Tổng hợp & Kiểm tra</span>
+        </button>
+        <button id="btnExport" class="btn btn-success" disabled title="Ghi trực tiếp vào file kết quả Masterlist">
+          <i data-lucide="save" class="w-5 h-5 text-white"></i>
+          <span>Cập nhật vào Masterlist 2027-2028_Mau.xlsx</span>
+        </button>
+        <button id="btnOpenResultFile" class="btn btn-outline" title="Mở trực tiếp file kết quả Masterlist (Masterlist 2027-2028_Mau.xlsx)">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-700"></i>
+          <span>Mở file KQ (Excel)</span>
+        </button>
+        <button id="btnReset" class="btn btn-outline" title="Làm mới trạng thái ứng dụng">
+          <i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-700"></i>
+          <span>Làm mới</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="main-layout">
+
+    <!-- Section 1: File Uploads -->
+    <section class="card" id="uploadCard">
+      <!-- Upload Grid: 7 Mảng -->
+      <div class="upload-grid">
+
+        <!-- VT -->
+        <div class="upload-box box-VT" id="box_VT" onclick="document.getElementById('input_VT').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">VT</span>
+            <span class="mang-desc">Vô tuyến</span>
+          </div>
+          <div class="file-info-bar" id="info_VT">
+            <span class="file-name-text" id="name_VT">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_VT').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_VT" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- ML -->
+        <div class="upload-box box-ML" id="box_ML" onclick="document.getElementById('input_ML').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">ML</span>
+            <span class="mang-desc">Mạng lõi</span>
+          </div>
+          <div class="file-info-bar" id="info_ML">
+            <span class="file-name-text" id="name_ML">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_ML').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_ML" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- CDBR -->
+        <div class="upload-box box-CDBR" id="box_CDBR" onclick="document.getElementById('input_CDBR').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">CĐBR</span>
+            <span class="mang-desc">Cố định BR</span>
+          </div>
+          <div class="file-info-bar" id="info_CDBR">
+            <span class="file-name-text" id="name_CDBR">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_CDBR').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_CDBR" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- CNTT -->
+        <div class="upload-box box-CNTT" id="box_CNTT" onclick="document.getElementById('input_CNTT').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">CNTT</span>
+            <span class="mang-desc">CNTT + Ví</span>
+          </div>
+          <div class="file-info-bar" id="info_CNTT">
+            <span class="file-name-text" id="name_CNTT">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_CNTT').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_CNTT" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- TD -->
+        <div class="upload-box box-TD" id="box_TD" onclick="document.getElementById('input_TD').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">TD</span>
+            <span class="mang-desc">Truyền dẫn</span>
+          </div>
+          <div class="file-info-bar" id="info_TD">
+            <span class="file-name-text" id="name_TD">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_TD').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_TD" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- CĐ -->
+        <div class="upload-box box-CD" id="box_CD" onclick="document.getElementById('input_CD').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">CĐ</span>
+            <span class="mang-desc">Cơ điện</span>
+          </div>
+          <div class="file-info-bar" id="info_CD">
+            <span class="file-name-text" id="name_CD">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_CD').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_CD" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- HT -->
+        <div class="upload-box box-HT" id="box_HT" onclick="document.getElementById('input_HT').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">HT</span>
+            <span class="mang-desc">Hạ tầng</span>
+          </div>
+          <div class="file-info-bar" id="info_HT">
+            <span class="file-name-text" id="name_HT">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_HT').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_HT" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Navigation Tabs (Shadcn Pill Design) -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="tabValidation">
+        <i data-lucide="shield-check" class="w-4 h-4"></i>
+        <span>Kiểm tra & So khớp</span>
+        <span class="tab-badge badge-danger" id="badgeValidationCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tabPreview">
+        <i data-lucide="table-2" class="w-4 h-4"></i>
+        <span>Xem trước Masterlist Tổng hợp</span>
+        <span class="tab-badge badge-info" id="badgeRowCount">0 dòng</span>
+      </button>
+      <button class="tab-btn" data-tab="tabHierarchy">
+        <i data-lucide="git-merge" class="w-4 h-4"></i>
+        <span>Cấu hình Nhóm hạng mục & Subtotal</span>
+        <span class="tab-badge badge-warning" id="badgeGroupCount">0 nhóm</span>
+      </button>
+      <button class="tab-btn" data-tab="tabStrategy">
+        <i data-lucide="scale" class="w-4 h-4"></i>
+        <span>So sánh với Chiến lược 5 năm</span>
+        <span class="tab-badge" style="background: #e11d48; color: #ffffff;">5 Năm</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: KIỂM TRA & SO KHỚP -->
+    <div id="tabValidation" class="tab-content active">
+
+      <!-- KPI Stats Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-card-info">
+          <div class="kpi-icon-box">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiTotalRows">0</div>
+            <div class="kpi-label">Tổng số dòng quét</div>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-danger">
+          <div class="kpi-icon-box">
+            <i data-lucide="alert-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiMathErrors">0</div>
+            <div class="kpi-label">Lỗi Thành tiền (G ≠ D*F, H ≠ E*F)</div>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-danger">
+          <div class="kpi-icon-box">
+            <i data-lucide="tag" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiMissingCode">0</div>
+            <div class="kpi-label">Thiếu Mã loại / mảng / DV (KL # 0)</div>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-warning">
+          <div class="kpi-icon-box">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiMissingMaDV">0</div>
+            <div class="kpi-label">Mã DV ngoài sheet 'TH theo DV'</div>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-purple">
+          <div class="kpi-icon-box">
+            <i data-lucide="help-circle" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiMissingInfo">0</div>
+            <div class="kpi-label">Thiếu Đơn giá / ĐVT</div>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-card-rose">
+          <div class="kpi-icon-box">
+            <i data-lucide="git-branch" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="kpi-val" id="kpiSubtotalMismatch">0</div>
+            <div class="kpi-label">Lệch dải Subtotal (Cột G ≠ H)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missing Ma DV Alert Banner -->
+      <div id="missingMaDVAlert" class="banner banner-warning" style="display: none;">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-700 shrink-0"></i>
+        <div id="missingMaDVText">
+          Phát hiện các <strong>Mã DV</strong> chưa có trong cột C sheet <strong>"TH theo DV"</strong>.
+        </div>
+      </div>
+
+      <!-- Validation Filters & Toolbar -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Loại cảnh báo:</span>
+          <label class="chip active">
+            <input type="radio" name="filterIssueType" value="ALL" checked> Tất cả (<span id="countAllIssues">0</span>)
+          </label>
+          <label class="chip">
+            <input type="radio" name="filterIssueType" value="MATH"> Lỗi Thành tiền (<span id="countMathIssues">0</span>)
+          </label>
+          <label class="chip" style="border-color: #fca5a5; background: #fff1f2;">
+            <input type="radio" name="filterIssueType" value="MISSING_CODE"> Thiếu Mã loại / mảng / DV (<span id="countCodeIssues">0</span>)
+          </label>
+          <label class="chip" style="border-color: #fecdd3; background: #fff1f2;">
+            <input type="radio" name="filterIssueType" value="SUBTOTAL_MISMATCH"> Lệch Subtotal G/H (<span id="countSubtotalMismatch">0</span>)
+          </label>
+          <label class="chip">
+            <input type="radio" name="filterIssueType" value="MADV"> Mã DV ngoài TH DV (<span id="countMaDVIssues">0</span>)
+          </label>
+          <label class="chip">
+            <input type="radio" name="filterIssueType" value="INFO"> Thiếu Đơn giá / ĐVT (<span id="countInfoIssues">0</span>)
+          </label>
+          <label class="chip">
+            <input type="radio" name="filterIssueType" value="FORMULA"> Lỗi công thức Excel (<span id="countFormulaIssues">0</span>)
+          </label>
+        </div>
+        <div class="filter-group" style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="text" id="searchValidationInput" class="search-input" placeholder="Tìm kiếm nội dung, dòng, file...">
+          <button id="btnCopyValidationTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng kết quả kiểm tra để dán vào Excel">
+            <span id="copyValBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-orange-600"></i></span>
+            <span id="copyValBtnText">Sao chép bảng (Excel)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Validation Table -->
+      <div class="table-wrapper">
+        <table class="data-table" id="validationTable">
+          <thead>
+            <tr>
+              <th style="width: 55px; text-align: center;">STT</th>
+              <th style="width: 75px; text-align: center;">Mảng</th>
+              <th style="width: 90px; text-align: center;">Dòng gốc</th>
+              <th style="width: 300px;">Hạng mục đầu tư / mua sắm</th>
+              <th class="num-cell" style="width: 95px;">KL 2027</th>
+              <th class="num-cell" style="width: 95px;">KL 2028</th>
+              <th class="num-cell" style="width: 115px;">Đơn giá hiện tại</th>
+              <th style="width: 170px; text-align: center;">Loại lỗi</th>
+              <th style="width: 380px;">Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody id="validationTableBody">
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Chưa có dữ liệu kiểm tra. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="validationFooterText">Hiển thị 0 / 0 cảnh báo</span>
+      </div>
+    </div>
+
+    <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
+    <div id="tabPreview" class="tab-content">
+
+      <!-- Filter Toolbar -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Bộ lọc Cấp bậc:</span>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel1" checked> Cấp 1 (Mảng)
+          </label>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel2" checked> Cấp 2 (Nhóm chính)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel3"> Cấp 3 (Nhóm phụ)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel4"> Cấp 4+ (Nhóm con)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevelLeaf"> Chi tiết (Vật tư mua sắm)
+          </label>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Mảng:</span>
+          <select id="selectMangFilter" class="select-input">
+            <option value="ALL">Tất cả các mảng</option>
+            <option value="VT">VT (Vô tuyến)</option>
+            <option value="ML">ML (Mạng lõi)</option>
+            <option value="CDBR">CĐBR (Cố định băng rộng)</option>
+            <option value="CNTT">CNTT (Công nghệ thông tin)</option>
+            <option value="TD">TD (Truyền dẫn)</option>
+            <option value="CD">CĐ (Cơ điện)</option>
+            <option value="HT">HT (Hạ tầng)</option>
+          </select>
+          <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
+          <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
+            <span id="copyBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-700"></i></span>
+            <span id="copyBtnText">Sao chép bảng (Excel)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Table -->
+      <div class="table-wrapper">
+        <table class="data-table" id="previewTable">
+          <thead>
+            <tr>
+              <th style="width: 75px; text-align: center;">TT</th>
+              <th>Nội dung / Hạng mục đầu tư, mua sắm (Cấp 2)</th>
+              <th class="num-cell" style="width: 180px;">Năm 2027</th>
+              <th class="num-cell" style="width: 180px;">Năm 2028</th>
+              <th class="num-cell" style="width: 180px;">Tổng</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody">
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Chưa có dữ liệu tổng hợp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="previewFooterText">Hiển thị 0 / 0 dòng</span>
+        <div style="font-weight: 700; display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace;">
+          <span class="summary-pill summary-pill-2027">Năm 2027: <span id="sumTT2027">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-2028">Năm 2028: <span id="sumTT2028">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-total">Tổng: <span id="sumTTTotal">0</span> VNĐ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CẤU HÌNH NHÓM HẠNG MỤC & SUBTOTAL -->
+    <div id="tabHierarchy" class="tab-content">
+      <!-- Level Filter Bar -->
+      <div class="level-filter-card">
+        <span class="level-filter-title">Hiển thị theo cấp</span>
+        <div class="level-btn-group" id="groupLevelButtons">
+          <button type="button" class="btn-level-pill pill-all" data-level="ALL">Tất cả</button>
+          <button type="button" class="btn-level-pill active" data-level="1">Cấp 1</button>
+          <button type="button" class="btn-level-pill active" data-level="2">Cấp 2</button>
+          <button type="button" class="btn-level-pill" data-level="3">Cấp 3</button>
+          <button type="button" class="btn-level-pill" data-level="4">Cấp 4</button>
+          <button type="button" class="btn-level-pill" data-level="5">Cấp 5</button>
+          <button type="button" class="btn-level-pill" data-level="6">Cấp 6</button>
+          <button type="button" class="btn-level-pill" data-level="99">Chi tiết</button>
+        </div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+          <button id="btnExpandAllGroups" class="btn btn-light" style="padding: 0.32rem 0.75rem; font-size: 0.775rem;" title="Mở rộng tất cả các cấp">
+            <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
+            <span>Mở rộng tất cả</span>
+          </button>
+          <button id="btnCollapseAllGroups" class="btn btn-light" style="padding: 0.32rem 0.75rem; font-size: 0.775rem;" title="Thu gọn tất cả các cấp">
+            <i data-lucide="chevrons-down-up" class="w-3.5 h-3.5"></i>
+            <span>Thu gọn tất cả</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action toolbar for Hierarchy -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <button id="btnReindexTT" class="btn btn-success" title="Tự động đánh lại toàn bộ số thứ tự/chỉ mục (I, II, 1, 1.1...) theo đúng cây phân cấp chuẩn">
+            <i data-lucide="binary" class="w-4 h-4"></i>
+            <span>Cập nhật lại Chỉ mục</span>
+          </button>
+          <button id="btnFixOutlineGroups" class="btn btn-warning" title="Tự động chuẩn hóa và gán lại toàn bộ Group dòng (Outline Level 1..5) trong Excel theo đúng cây phân cấp đã nhận dạng">
+            <i data-lucide="list-tree" class="w-4 h-4"></i>
+            <span>Fix Group dòng (Outline)</span>
+          </button>
+          <button id="btnRestoreOriginalTT" class="btn btn-outline" title="Khôi phục lại giá trị cột TT nguyên gốc từ các file đầu vào" style="display: none;">
+            <i data-lucide="undo" class="w-4 h-4"></i>
+            <span>Khôi phục TT gốc</span>
+          </button>
+        </div>
+        <div class="filter-group">
+          <input type="text" id="searchGroupInput" class="search-input" placeholder="Tìm tên nhóm hạng mục, TT...">
+        </div>
+      </div>
+
+      <!-- Hierarchy Table -->
+      <div class="table-wrapper">
+        <table class="data-table" id="hierarchyTable">
+          <thead>
+            <tr>
+              <th style="width: 55px; text-align: center;">Dòng</th>
+              <th style="width: 65px; text-align: center;">TT</th>
+              <th style="width: 130px; text-align: center;">Cấp bậc</th>
+              <th style="width: 90px; text-align: center;">Là Nhóm?</th>
+              <th>Cây Hạng mục (Thụt lùi & Mở rộng / Thu gọn)</th>
+              <th style="width: 65px; text-align: center;">ĐVT</th>
+              <th class="num-cell" style="width: 90px;">KL 2027</th>
+              <th class="num-cell" style="width: 90px;">KL 2028</th>
+              <th class="num-cell" style="width: 110px;">Đơn giá (USD)</th>
+              <th>Công thức Subtotal G (2027)</th>
+              <th>Công thức Subtotal H (2028)</th>
+            </tr>
+          </thead>
+          <tbody id="hierarchyTableBody">
+            <tr>
+              <td colspan="11" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Chưa có dữ liệu phân cấp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="hierarchyFooterText">Hiển thị 0 nhóm hạng mục</span>
+      </div>
+    </div>
+
+    <!-- TAB 4: SO SÁNH VỚI CHIẾN LƯỢC 5 NĂM -->
+    <div id="tabStrategy" class="tab-content">
+      <!-- Clean Modern Header Banner -->
+      <div class="strat-header-banner">
+        <div class="strat-title-wrap">
+          <div class="strat-title-icon">
+            <i data-lucide="scale" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="strat-title-text">
+              So Sánh Với Chiến Lược 5 Năm
+            </h2>
+            <p class="strat-title-sub">
+              Đối chiếu chi tiết Nhu cầu Quy hoạch đầu tư (QHĐC 2027-2028) với Kế hoạch Chiến lược 5 năm theo từng mảng nghiệp vụ (đơn vị: <strong>M$ - Triệu USD</strong>).
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+          <button id="btnCopyStrategyTable" class="btn btn-outline" title="Sao chép toàn bộ bảng so sánh để dán trực tiếp vào Excel">
+            <span id="copyStratBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-600"></i></span>
+            <span id="copyStratBtnText">Sao chép bảng (Excel)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Profile Management Toolbar -->
+      <div class="toolbar" id="stratToolbar">
+        <div class="filter-group">
+          <span class="filter-label" style="display: inline-flex; align-items: center; gap: 5px; color: #be123c;">
+            <i data-lucide="folder-kanban" class="w-4 h-4 text-rose-600"></i> Profile Chiến lược:
+          </span>
+          <select id="selectStrategyProfile" class="select-input" style="min-width: 260px; font-weight: 700; color: #0f172a;">
+            <!-- Dynamic Options rendered from JS -->
+          </select>
+          <button id="btnOpenNewProfileModal" class="btn btn-outline btn-sm" title="Tạo mới kịch bản Profile Chiến lược">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Profile
+          </button>
+          <button id="btnEditProfileModal" class="btn btn-outline btn-sm" title="Chỉnh sửa số liệu Profile đang chọn">
+            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i> Sửa số liệu
+          </button>
+          <button id="btnCloneProfile" class="btn btn-outline btn-sm" title="Nhân bản Profile đang chọn">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Nhân bản
+          </button>
+          <button id="btnDeleteProfile" class="btn btn-outline btn-sm" style="color: #e11d48;" title="Xóa Profile đang chọn">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="filter-group">
+          <button id="btnSaveStrategyJson" class="btn btn-primary btn-sm" title="Lưu cấu hình Profile vào bộ nhớ trình duyệt (localStorage)">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu cấu hình
+          </button>
+          <button id="btnDownloadStrategyJson" class="btn btn-outline btn-sm" title="Tải file JSON về máy tính">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải file JSON
+          </button>
+          <label class="btn btn-outline btn-sm" style="cursor: pointer; margin: 0;" title="Nạp file JSON từ máy tính">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> Nạp JSON
+            <input type="file" id="inputImportStrategyJson" accept=".json" style="display: none;">
+          </label>
+        </div>
+      </div>
+
+      <!-- Comparison Table Container -->
+      <div class="table-wrapper strat-table-wrapper">
+        <table class="data-table strategy-table" id="strategyComparisonTable">
+          <thead>
+            <tr class="strat-row-header-top">
+              <th rowspan="2" class="strat-th-mang">Mảng nghiệp vụ</th>
+              <th colspan="3" class="strat-th-group strat-group-qhdc strat-border-group-right">
+                <div class="strat-group-title">
+                  <i data-lucide="database" class="w-4 h-4"></i> QHĐC 2027-2028 (M$)
+                </div>
+              </th>
+              <th colspan="3" class="strat-th-group strat-group-strat strat-border-group-right">
+                <div class="strat-group-title">
+                  <i data-lucide="target" class="w-4 h-4"></i> CHIẾN LƯỢC 5 NĂM (M$)
+                </div>
+              </th>
+              <th colspan="3" class="strat-th-group strat-group-diff">
+                <div class="strat-group-title">
+                  <i data-lucide="git-compare" class="w-4 h-4"></i> CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (M$)
+                </div>
+              </th>
+            </tr>
+            <tr class="strat-row-header-sub">
+              <!-- Under QHDC -->
+              <th class="strat-th-sub strat-sub-qhdc">Tổng</th>
+              <th class="strat-th-sub strat-sub-qhdc">2027</th>
+              <th class="strat-th-sub strat-sub-qhdc strat-border-group-right">2028</th>
+              <!-- Under Chiến lược -->
+              <th class="strat-th-sub strat-sub-strat">Tổng</th>
+              <th class="strat-th-sub strat-sub-strat">2027</th>
+              <th class="strat-th-sub strat-sub-strat strat-border-group-right">2028</th>
+              <!-- Under Chênh lệch -->
+              <th class="strat-th-sub strat-sub-diff">Tổng</th>
+              <th class="strat-th-sub strat-sub-diff">2027</th>
+              <th class="strat-th-sub strat-sub-diff">2028</th>
+            </tr>
+          </thead>
+          <tbody id="strategyTableBody">
+            <!-- Dynamic Rows rendered from JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Quick note / instructions -->
+      <div style="margin-top: 0.9rem; font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 0.5rem;">
+        <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
+        <span><strong>Ghi chú:</strong> Bảng so sánh là dạng xem trực quan (Read-only). Cột <em>QHĐC</em> tự động đồng bộ realtime từ Masterlist. Cột <em>Chiến lược</em> hiển thị theo Profile đã chọn. Bấm <strong>Thêm Profile</strong> hoặc <strong>Sửa số liệu</strong> để tùy chỉnh số liệu Chiến lược.</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL TẠO / CHỈNH SỬA PROFILE CHIẾN LƯỢC -->
+  <div id="modalNewProfile" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeProfileModal()">
+    <div class="modal-box" style="max-width: 680px; width: 95%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.1rem; color: #be123c;">
+          <i id="modalProfileHeaderIcon" data-lucide="folder-plus" class="w-5 h-5 text-rose-600"></i>
+          <span id="modalProfileTitle">Thêm Profile Chiến lược Mới</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeProfileModal()">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem 1.5rem; max-height: 75vh; overflow-y: auto;">
+        <input type="hidden" id="modalProfileMode" value="create">
+        <input type="hidden" id="modalProfileEditId" value="">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0.85rem;">
+          <div>
+            <label style="display: block; font-weight: 700; font-size: 0.825rem; margin-bottom: 0.35rem; color: #1e293b;">
+              Tên Profile Chiến lược: <span style="color: #e11d48;">*</span>
+            </label>
+            <input type="text" id="inputNewProfileName" class="search-input" placeholder="Ví dụ: Chiến lược 5 năm (Phương án B)..." style="width: 100%;">
+          </div>
+          <div>
+            <label style="display: block; font-weight: 700; font-size: 0.825rem; margin-bottom: 0.35rem; color: #1e293b;">
+              Mô tả / Ghi chú:
+            </label>
+            <input type="text" id="inputNewProfileDesc" class="search-input" placeholder="Ghi chú chi tiết cho kịch bản..." style="width: 100%;">
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 0.65rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">
+            Nhập số liệu Chiến lược 5 năm (đơn vị: <strong>M$ - Triệu USD</strong>):
+          </span>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn btn-outline btn-xs" id="btnModalFillCurrent" title="Lấy nhanh số liệu từ Profile đang chọn">
+              Lấy từ Profile hiện tại
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" id="btnModalFillDefault" title="Khởi tạo theo số liệu mẫu chuẩn">
+              Số liệu chuẩn
+            </button>
+            <button type="button" class="btn btn-outline btn-xs" id="btnModalFillZero" title="Đặt lại tất cả ô về 0">
+              Đặt về 0
+            </button>
+          </div>
+        </div>
+
+        <!-- Bảng nhập liệu số liệu Chiến lược từng mảng -->
+        <div style="border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #ffffff;">
+          <table class="data-table" id="modalProfileTable" style="width: 100%; border-collapse: separate; border-spacing: 0;">
+            <thead>
+              <tr style="background: linear-gradient(180deg, #f8fafc 0%, #ede9fe 100%);">
+                <th style="padding: 0.5rem 0.75rem; text-align: left; width: 170px; color: #0f172a;">Mảng nghiệp vụ</th>
+                <th style="padding: 0.5rem 0.75rem; text-align: center; color: #5b21b6;">Năm 2027 (M$)</th>
+                <th style="padding: 0.5rem 0.75rem; text-align: center; color: #5b21b6;">Năm 2028 (M$)</th>
+                <th style="padding: 0.5rem 0.75rem; text-align: center; color: #0f172a; width: 130px;">Tổng 2 năm</th>
+              </tr>
+            </thead>
+            <tbody id="modalProfileTableBody">
+              <!-- Render 9 mảng + 2 dòng tổng tính toán tự động -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.6rem;">
+        <button type="button" class="btn btn-outline" style="padding: 0.45rem 1rem;" onclick="closeProfileModal()">Hủy</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmCreateProfile" style="padding: 0.45rem 1.35rem;">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span id="btnModalSaveText">Lưu Profile</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Modal Thông Báo Hoàn Thành Cập Nhật -->
+  <div id="completionModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeCompletionModal()">
+    <div class="modal-box" style="max-width: 500px; text-align: center;">
+      <div style="padding: 2rem 1.75rem 1.5rem 1.75rem;">
+        <div id="completionModalIcon" style="width: 56px; height: 56px; border-radius: 50%; background: #ecfdf5; color: #059669; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto; border: 1px solid #a7f3d0;">
+          ✓
+        </div>
+        <div id="completionModalTitle" style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.5rem;">
+          Cập nhật Masterlist thành công!
+        </div>
+        <div id="completionModalBody" style="font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+          Dữ liệu của các mảng đã được cập nhật trực tiếp vào file:<br>
+          <strong style="color: #059669; font-size: 0.95rem;">Masterlist 2027-2028_Mau.xlsx</strong><br>
+          <span id="savedPathNote" style="font-size: 0.775rem; color: var(--text-muted);">(Đã lưu trực tiếp tại thư mục ứng dụng, không tải về trình duyệt)</span>
+        </div>
+        <div id="completionModalActions" style="display: flex; gap: 10px; justify-content: center;">
+          <button class="btn btn-primary" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal(); openResultFile();">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Mở file KQ (Excel)</span>
+          </button>
+          <button class="btn btn-outline" style="padding: 0.55rem 1.35rem;" onclick="closeCompletionModal()">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal File Kết quả -->
+  <div id="folderModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeFolderModal()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: var(--text-main);">
+          <i data-lucide="file-spreadsheet" class="w-5 h-5 text-indigo-700"></i>
+          <span>File Kết quả Masterlist</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeFolderModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.875rem;">
+          File kết quả <strong>Masterlist 2027-2028_Mau.xlsx</strong> được lưu tại:
+        </p>
+        <div class="folder-path-box">
+          <input type="text" id="inputFolderPath" value="Masterlist 2027-2028_Mau.xlsx" readonly class="folder-path-input">
+          <button id="btnCopyFolderPath" class="btn btn-primary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem; white-space: nowrap;">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Sao chép</span>
+          </button>
+        </div>
+        <div class="folder-tip">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500 shrink-0"></i>
+          <div>
+            Đường dẫn file đã được <strong>tự động sao chép</strong> vào bộ nhớ tạm.<br>
+            Bạn cũng có thể bấm nút <strong>"Mở file Excel"</strong> bên dưới để mở ngay bằng phần mềm bảng tính.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" style="padding: 0.4rem 1rem;" onclick="closeFolderModal()">Đóng</button>
+        <button id="btnOpenResultFileDirect" class="btn btn-success" style="padding: 0.4rem 1rem;" onclick="closeFolderModal(); openResultFile();">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+          <span>Mở file Excel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

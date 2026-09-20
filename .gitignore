@@ -1,0 +1,17 @@
+# Excel files with actual data (keep only the master template)
+Masterlist 2027-2028 (Gui cac mang)*.xlsx
+*.tmp
+~$*.xlsx
+~$*.xls
+
+# Python cache & runtime
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store

@@ -1,0 +1,111 @@
+{
+  "activeProfileId": "profile_1789854757103",
+  "profiles": [
+    {
+      "id": "profile_default",
+      "name": "Chiến lược 5 năm (Phương án Chuẩn)",
+      "description": "Dữ liệu kế hoạch chiến lược 5 năm 2026-2030 theo phê duyệt",
+      "updatedAt": "2026-09-19T21:40:24.632Z",
+      "data": {
+        "VT": {
+          "name": "Vô tuyến",
+          "strat27": 37.06,
+          "strat28": 28.27
+        },
+        "ML": {
+          "name": "Mạng lõi",
+          "strat27": 4.14,
+          "strat28": 5.15
+        },
+        "CDBR": {
+          "name": "BRCĐ-TH",
+          "strat27": 0.95,
+          "strat28": 0.96
+        },
+        "CNTT": {
+          "name": "CNTT",
+          "strat27": 12.92,
+          "strat28": 5.66
+        },
+        "TD": {
+          "name": "Truyền dẫn",
+          "strat27": 21.02,
+          "strat28": 18.51
+        },
+        "CD": {
+          "name": "Cơ điện",
+          "strat27": 13.07,
+          "strat28": 26.28
+        },
+        "HT": {
+          "name": "Hạ tầng",
+          "strat27": 14.21,
+          "strat28": 18.04
+        },
+        "ATTT": {
+          "name": "ATTT",
+          "strat27": 0.58,
+          "strat28": 0.68
+        },
+        "VI": {
+          "name": "Ví",
+          "strat27": 7.62,
+          "strat28": 7.62
+        }
+      }
+    },
+    {
+      "id": "profile_1789854757103",
+      "name": "Chiến lược 5 năm (Phương án 2)",
+      "description": "Kịch bản phân bổ vốn đầu tư chiến lược 5 năm",
+      "updatedAt": "2026-09-19T21:52:37.103Z",
+      "data": {
+        "VT": {
+          "name": "Vô tuyến",
+          "strat27": 37.06,
+          "strat28": 28.27
+        },
+        "ML": {
+          "name": "Mạng lõi",
+          "strat27": 4.14,
+          "strat28": 5.15
+        },
+        "CDBR": {
+          "name": "BRCĐ-TH",
+          "strat27": 0.95,
+          "strat28": 0.96
+        },
+        "CNTT": {
+          "name": "CNTT",
+          "strat27": 12.92,
+          "strat28": 5.66
+        },
+        "TD": {
+          "name": "Truyền dẫn",
+          "strat27": 21.02,
+          "strat28": 18.51
+        },
+        "CD": {
+          "name": "Cơ điện",
+          "strat27": 13.07,
+          "strat28": 26.28
+        },
+        "HT": {
+          "name": "Hạ tầng",
+          "strat27": 14.21,
+          "strat28": 18.04
+        },
+        "ATTT": {
+          "name": "ATTT",
+          "strat27": 0.58,
+          "strat28": 0.68
+        },
+        "VI": {
+          "name": "Ví",
+          "strat27": 7777.65,
+          "strat28": 7.62
+        }
+      }
+    }
+  ]
+}
