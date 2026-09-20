@@ -333,6 +333,11 @@ function rebuildExtractedData() {
   const hasData = state.extractedData.length > 0;
   const btnExport = document.getElementById('btnExport');
   if (btnExport) btnExport.disabled = !hasData;
+  const btnDownload = document.getElementById('btnOpenResultFile');
+  if (btnDownload) {
+    btnDownload.disabled = !hasData;
+    btnDownload.title = hasData ? 'Tải file kết quả hoàn chỉnh về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx)' : 'Vui lòng nạp ít nhất một file mảng để tải kết quả';
+  }
   const banner = document.getElementById('exportReadyBanner');
   if (banner) banner.style.display = hasData ? 'flex' : 'none';
   if (hasData) prepareQuickDownload();
@@ -365,61 +370,28 @@ function extractValidMaDVFromTemplate(workbook) {
 // ==================== ENGINE TRÍCH XUẤT & SO KHỚP ====================
 
 function initActionButtons() {
-  document.getElementById('btnProcess').addEventListener('click', runProcessingPipeline);
-  document.getElementById('btnExport').addEventListener('click', exportToExcel);
-  document.getElementById('btnReset').addEventListener('click', async () => {
-    const choice = confirm(
-      'Bạn muốn làm mới toàn bộ dữ liệu để làm lại một bản khác?\n\n' +
-      '• Bấm [OK]: KHÔI PHỤC file Masterlist về PHÔI TRẮNG BAN ĐẦU (Xóa sạch toàn bộ dữ liệu các mảng đã lưu trước đó để bắt đầu lại từ đầu).\n' +
-      '• Bấm [Cancel]: Hủy bỏ, giữ nguyên dữ liệu hiện tại.'
-    );
-    if (!choice) return;
+  const btnProcess = document.getElementById('btnProcess');
+  if (btnProcess) btnProcess.addEventListener('click', runProcessingPipeline);
+  const btnExport = document.getElementById('btnExport');
+  if (btnExport) btnExport.addEventListener('click', exportToExcel);
 
-    const btnReset = document.getElementById('btnReset');
-    const originalHtml = btnReset.innerHTML;
-    btnReset.disabled = true;
-    btnReset.innerHTML = '<span class="spinner"></span> Đang đặt lại...';
+  const btnDownload = document.getElementById('btnOpenResultFile');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', openResultFile);
+  }
 
-    let resetOnServer = false;
-    if (typeof getEmbeddedTemplateBuffer === 'function') {
-      const cleanBuffer = getEmbeddedTemplateBuffer();
-      for (const apiUrl of ['/api/save-masterlist', 'http://localhost:8080/api/save-masterlist']) {
-        try {
-          const resp = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/octet-stream' },
-            body: cleanBuffer
-          });
-          const resJson = await resp.json().catch(() => ({}));
-          if (resp.status === 409 && resJson.locked) {
-            alert('⚠️ File Masterlist 2027-2028_Mau.xlsx đang mở trong Microsoft Excel!\nVui lòng đóng file Excel lại trên máy tính rồi bấm "Làm mới" để khôi phục.');
-            btnReset.disabled = false;
-            btnReset.innerHTML = originalHtml;
-            return;
-          }
-          if (resp.ok && resJson.success) {
-            resetOnServer = true;
-            break;
-          }
-        } catch (e) {}
+  const btnReset = document.getElementById('btnReset');
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      if (state.extractedData && state.extractedData.length > 0) {
+        if (confirm('Bạn có chắc chắn muốn làm mới toàn bộ dữ liệu để bắt đầu bản khác?')) {
+          location.reload();
+        }
+      } else {
+        location.reload();
       }
-    }
-
-    // Xóa sạch bộ nhớ tạm trình duyệt
-    state.exportBlob = null;
-    state.extractedData = [];
-    state.extractedByMang = {};
-    if (typeof getEmbeddedTemplateBuffer === 'function') {
-      state.templateBuffer = getEmbeddedTemplateBuffer();
-    }
-
-    if (resetOnServer) {
-      showToast('Đã khôi phục file Masterlist về phôi mẫu trắng ban đầu!', 'success');
-      setTimeout(() => location.reload(), 600);
-    } else {
-      location.reload();
-    }
-  });
+    });
+  }
   const btnApply = document.getElementById('btnApplyHierarchy');
   if (btnApply) {
     btnApply.addEventListener('click', () => {
