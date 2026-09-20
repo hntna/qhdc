@@ -3412,6 +3412,8 @@ async function checkServerStatus() {
             badge.innerHTML = '🟢 Server: Sẵn sàng (Ghi trực tiếp)';
             badge.title = `Server nội bộ đang hoạt động tại ${state.serverDirectory || 'thư mục app'}. Bấm "Cập nhật vào Masterlist" sẽ tự động lưu thẳng vào file trên ổ đĩa.`;
           }
+          // Tự động đồng bộ Profiles từ file server strategy_profiles.json để mọi người cùng xem
+          loadStrategyProfiles();
           return true;
         }
       }
@@ -3541,12 +3543,21 @@ function initStrategyComparison() {
     btnDelete.addEventListener('click', deleteCurrentProfile);
   }
 
-  // Nút Lưu cấu hình vào trình duyệt
+  // Nút Lưu cấu hình lên Server & Trình duyệt
   const btnSaveJson = document.getElementById('btnSaveStrategyJson');
   if (btnSaveJson) {
-    btnSaveJson.addEventListener('click', () => {
-      saveStrategyProfiles();
-      showToast('Đã lưu cấu hình Profiles vào bộ nhớ trình duyệt (localStorage)!', 'success');
+    btnSaveJson.addEventListener('click', async () => {
+      btnSaveJson.disabled = true;
+      btnSaveJson.innerHTML = '<span class="spinner"></span> Đang lưu...';
+      const onServer = await saveStrategyProfiles();
+      btnSaveJson.disabled = false;
+      btnSaveJson.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5"></i> Lưu cấu hình';
+      if (window.lucide) lucide.createIcons();
+      if (onServer) {
+        showToast('Đã lưu cấu hình Profiles vào server (strategy_profiles.json)! Mọi người đều có thể xem.', 'success');
+      } else {
+        showToast('Đã lưu vào bộ nhớ trình duyệt (localStorage). Bật server.py để lưu dùng chung cho mọi người.', 'info');
+      }
     });
   }
 
@@ -3570,25 +3581,46 @@ function initStrategyComparison() {
   loadStrategyProfiles();
 }
 
-// Nạp danh sách profiles từ localStorage (hoặc dữ liệu mặc định)
-function loadStrategyProfiles() {
+// Nạp danh sách profiles từ server (strategy_profiles.json) để mọi người cùng xem, dự phòng bằng localStorage
+async function loadStrategyProfiles() {
   let loaded = false;
 
-  try {
-    const localStr = localStorage.getItem('QHDC_STRATEGY_PROFILES');
-    if (localStr) {
-      const parsed = JSON.parse(localStr);
-      if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
-        state.strategyProfiles = parsed.profiles;
-        state.activeStrategyProfileId = parsed.activeProfileId || parsed.profiles[0].id;
-        loaded = true;
+  // 1. Ưu tiên tải từ API server Python (file strategy_profiles.json dùng chung cho mọi người)
+  for (const url of ['/api/strategy-profiles', 'http://localhost:8080/api/strategy-profiles']) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
+          state.strategyProfiles = data.profiles;
+          state.activeStrategyProfileId = data.activeProfileId || data.profiles[0].id;
+          loaded = true;
+          // Lưu cache vào localStorage
+          try {
+            localStorage.setItem('QHDC_STRATEGY_PROFILES', JSON.stringify(data));
+          } catch (e) {}
+          break;
+        }
       }
-    }
-  } catch (e) {
-    console.warn('Lỗi đọc localStorage:', e);
+    } catch (e) {}
   }
 
-  // Khởi tạo mặc định nếu chưa có
+  // 2. Thử tải từ localStorage nếu chưa có từ server (khi chạy offline)
+  if (!loaded) {
+    try {
+      const localStr = localStorage.getItem('QHDC_STRATEGY_PROFILES');
+      if (localStr) {
+        const parsed = JSON.parse(localStr);
+        if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+          state.strategyProfiles = parsed.profiles;
+          state.activeStrategyProfileId = parsed.activeProfileId || parsed.profiles[0].id;
+          loaded = true;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 3. Khởi tạo mặc định nếu chưa có dữ liệu ở cả 2 nguồn
   if (!loaded || !state.strategyProfiles || state.strategyProfiles.length === 0) {
     state.strategyProfiles = [
       {
@@ -3606,20 +3638,39 @@ function loadStrategyProfiles() {
   renderStrategyComparisonTable();
 }
 
-// Lưu profiles vào localStorage
-function saveStrategyProfiles() {
+// Lưu profiles vào cả localStorage và file strategy_profiles.json trên server
+async function saveStrategyProfiles() {
   const payload = {
     activeProfileId: state.activeStrategyProfileId,
     profiles: state.strategyProfiles
   };
 
+  // Luôn lưu vào localStorage của trình duyệt
   try {
     localStorage.setItem('QHDC_STRATEGY_PROFILES', JSON.stringify(payload));
-    return true;
   } catch (e) {
     console.warn('Lỗi lưu localStorage:', e);
-    return false;
   }
+
+  // Ghi đè vào file strategy_profiles.json trên server để chia sẻ cho mọi người
+  let savedOnServer = false;
+  for (const url of ['/api/strategy-profiles', 'http://localhost:8080/api/strategy-profiles']) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload, null, 2)
+      });
+      if (resp.ok) {
+        const res = await resp.json();
+        if (res.success) {
+          savedOnServer = true;
+          break;
+        }
+      }
+    } catch (e) {}
+  }
+  return savedOnServer;
 }
 
 // Lấy profile đang active
