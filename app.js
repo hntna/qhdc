@@ -439,7 +439,56 @@ function initActionButtons() {
 
 // ==================== CHỨC NĂNG MỞ FILE KẾT QUẢ TRỰC TIẾP ====================
 
-async function triggerNativeOpenFile() {
+// Sinh tên file kết quả kèm dấu thời gian: Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx
+function getTimestampedExportFileName() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const yyyy = now.getFullYear();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  return `Masterlist 2027-2028_KQ_${dd}${mm}${yyyy}_${hh}${min}.xlsx`;
+}
+
+// Lấy buffer / blob của file kết quả mới nhất
+async function getResultFileBlob() {
+  // 1. Ưu tiên blob đã được build gần nhất trong phiên làm việc
+  if (state.exportBlob) {
+    return state.exportBlob;
+  }
+  // 2. Nếu đã có dữ liệu bóc tách từ các mảng, tự động build buffer mới nhất
+  if (state.extractedData && state.extractedData.length > 0 && state.templateBuffer) {
+    try {
+      recalculateSubtotalFormulas();
+      const buffer = await buildCleanMasterlist(state.templateBuffer, state.extractedByMang, state.files);
+      state.exportBlob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      return state.exportBlob;
+    } catch (e) {
+      console.warn('Lỗi tự động tạo buffer kết quả:', e);
+    }
+  }
+  // 3. Tải file mới nhất từ server Python
+  for (const url of ['/Masterlist%202027-2028_Mau.xlsx?t=' + Date.now(), 'http://localhost:8080/Masterlist%202027-2028_Mau.xlsx?t=' + Date.now()]) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        return await resp.blob();
+      }
+    } catch (e) {}
+  }
+  // 4. Dự phòng từ buffer template trong bộ nhớ
+  if (state.templateBuffer) {
+    return new Blob([state.templateBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  if (typeof getEmbeddedTemplateBuffer === 'function') {
+    const buf = getEmbeddedTemplateBuffer();
+    if (buf) return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  return null;
+}
+
+// Gọi API server Python để mở trực tiếp file Excel trên Windows
+async function triggerNativeOpenFile(downloadFileName) {
   const filePath = (state.serverDirectory ? `${state.serverDirectory}\\` : '') + 'Masterlist 2027-2028_Mau.xlsx';
 
   // 1. Tự động sao chép đường dẫn file vào Clipboard
@@ -449,9 +498,8 @@ async function triggerNativeOpenFile() {
     } catch (e) {}
   }
 
-  showToast('Đang mở file Masterlist 2027-2028_Mau.xlsx trong Microsoft Excel...', 'info');
-
   // 2. Gọi API server Python để mở trực tiếp file Excel trên Windows
+  let openedOnServer = false;
   const apiUrls = ['/api/open-file', 'http://localhost:8080/api/open-file'];
   for (const apiUrl of apiUrls) {
     try {
@@ -466,32 +514,43 @@ async function triggerNativeOpenFile() {
       if (resp.ok) {
         const res = await resp.json();
         if (res.success) {
-          showToast('Đã mở file Masterlist 2027-2028_Mau.xlsx thành công!', 'success');
-          const modal = document.getElementById('folderModal');
-          if (modal) modal.style.display = 'none';
-          return true;
+          openedOnServer = true;
+          break;
         }
       }
-    } catch (e) {
-      // Tiếp tục thử URL khác
-    }
+    } catch (e) {}
   }
 
-  // 3. Nếu không kết nối được server (chạy offline trực tiếp file://)
-  showToast(`Đã sao chép đường dẫn: ${filePath}. Nhấn Win + R và Ctrl + V để mở file!`, 'info');
   const modal = document.getElementById('folderModal');
-  if (modal) {
-    modal.style.display = 'flex';
+  if (modal) modal.style.display = 'none';
+
+  if (openedOnServer) {
+    showToast(`Đã mở file Excel và tải về: ${downloadFileName}`, 'success');
+    return true;
+  } else {
+    showToast(`Đã tải về file: ${downloadFileName}`, 'success');
+    return false;
   }
-  return false;
 }
 
-function openResultFile() {
-  triggerNativeOpenFile();
+// Bấm "Mở file KQ (Excel)": Mở file và tải file về máy tính với tên Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx
+async function openResultFile() {
+  const downloadFileName = getTimestampedExportFileName();
+
+  // 1. Kích hoạt tải file về trình duyệt
+  const blob = await getResultFileBlob();
+  if (blob) {
+    triggerDownloadBlob(blob, downloadFileName);
+  } else {
+    showToast('Chưa tìm thấy file kết quả để tải về!', 'error');
+  }
+
+  // 2. Mở trực tiếp trên Windows (nếu có server nội bộ)
+  await triggerNativeOpenFile(downloadFileName);
 }
 
 function openResultFolder() {
-  triggerNativeOpenFile();
+  openResultFile();
 }
 
 window.openResultFile = openResultFile;
@@ -503,26 +562,12 @@ window.closeFolderModal = function() {
 };
 
 window.openFolderViaProtocol = function() {
-  triggerNativeOpenFile();
+  openResultFile();
 };
 
 // Tải hoặc mở file kết quả
 function downloadOrExportResultFile() {
-  if (state.extractedData.length > 0) {
-    exportToExcel();
-  } else if (state.templateBuffer) {
-    const blob = new Blob([state.templateBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = url;
-    downloadLink.download = state.exportFileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-    showToast('Đang tải file kết quả Masterlist 2027-2028_Mau.xlsx', 'success');
-  } else {
-    showToast('Chưa có file kết quả để mở', 'error');
-  }
+  openResultFile();
 }
 
 // Pipeline chính khi bấm nút "⚡ Tổng hợp & Kiểm tra"
@@ -3279,17 +3324,16 @@ async function exportToExcel() {
       }
     }
 
-    // 5. Kiểm tra kết quả ghi file & phản hồi chuẩn xác cho người dùng
+    // 5. Kiểm tra kết quả ghi file & phản hồi cho người dùng (TUYỆT ĐỐI KHÔNG DOWNLOAD)
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     state.exportBlob = blob;
 
     if (isSavedDirectly) {
-      showToast('Đã cập nhật trực tiếp thành công vào Masterlist 2027-2028_Mau.xlsx!', 'success');
+      showToast('Đã cập nhật trực tiếp vào file Masterlist 2027-2028_Mau.xlsx thành công!', 'success');
       showCompletionModal(true);
     } else {
-      // Nếu không thể ghi trực tiếp (chưa bật server hoặc mở offline file://) -> TỰ ĐỘNG TẢI FILE VỀ
-      triggerDownloadBlob(blob, 'Masterlist 2027-2028_Mau.xlsx');
-      showToast('Chưa kết nối server nội bộ. Đã tự động TẢI FILE VỀ máy tính của bạn!', 'warning');
+      // TUYỆT ĐỐI KHÔNG TỰ ĐỘNG TẢI VỀ KHI BẤM CẬP NHẬT
+      showToast('⚠️ Chưa kết nối server nội bộ. Không thể cập nhật trực tiếp vào file!', 'error');
       showCompletionModal(false);
     }
 
@@ -3320,7 +3364,7 @@ function triggerDownloadBlob(blob, fileName) {
   }
 }
 
-// Hiển thị modal hoàn thành rõ ràng minh bạch (ghi trực tiếp hay tải về)
+// Hiển thị modal hoàn thành rõ ràng minh bạch (chỉ cập nhật vào file, không download)
 function showCompletionModal(isDirectSave) {
   const compModal = document.getElementById('completionModal');
   const icon = document.getElementById('completionModalIcon');
@@ -3341,13 +3385,13 @@ function showCompletionModal(isDirectSave) {
       body.innerHTML = `
         Dữ liệu của các mảng đã được <strong>ghi trực tiếp</strong> vào file:<br>
         <strong style="color: #166534; font-size: 0.95rem;">${escapeHtml(displayPath)}</strong><br>
-        <span style="font-size: 0.775rem; color: #64748b;">(Đã lưu trực tiếp lên ổ cứng máy tính qua server nội bộ)</span>
+        <span style="font-size: 0.775rem; color: #64748b;">(Đã lưu trực tiếp vào file trên server, không tải về trình duyệt)</span>
       `;
     }
     if (actions) {
       actions.innerHTML = `
         <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
-          <span>📊</span> Mở file KQ (Excel)
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Mở file KQ (Excel)
         </button>
         <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
           Đóng
@@ -3356,25 +3400,24 @@ function showCompletionModal(isDirectSave) {
     }
   } else {
     if (icon) {
-      icon.innerHTML = '⬇️';
-      icon.style.background = '#fef3c7';
-      icon.style.color = '#b45309';
+      icon.innerHTML = '⚠️';
+      icon.style.background = '#fee2e2';
+      icon.style.color = '#b91c1c';
     }
-    if (title) title.textContent = 'Đã xuất và tải file về máy tính!';
+    if (title) title.textContent = 'Chưa kết nối Server nội bộ';
     if (body) {
       body.innerHTML = `
-        File kết quả <strong style="color: #166534;">Masterlist 2027-2028_Mau.xlsx</strong> đã được <strong>tự động tải xuống</strong> (kiểm tra thư mục Downloads của bạn).<br><br>
+        Không thể ghi trực tiếp vào file <strong>Masterlist 2027-2028_Mau.xlsx</strong> do chưa kết nối được server Python nội bộ.<br><br>
         <div style="background: #fffbeb; border: 1px solid #fef08a; border-radius: 6px; padding: 10px 12px; text-align: left; font-size: 0.8rem; color: #92400e; line-height: 1.45;">
-          ⚠️ <strong>Lưu ý:</strong> Do web đang mở trực tiếp từ file (file:///) hoặc chưa bật server Python nội bộ, trình duyệt không thể tự ghi đè lên ổ cứng.
-          <br><br>
-          💡 <strong>Để lưu trực tiếp không cần tải về:</strong> Bạn chỉ cần chạy file <strong>start_app.bat</strong> trong thư mục dự án để khởi động web qua địa chỉ <code>http://localhost:8080</code>!
+          💡 <strong>Khắc phục:</strong> Chạy file <strong>start_app.bat</strong> trong thư mục dự án để khởi động web qua địa chỉ <code>http://localhost:8080</code>.<br>
+          Hoặc bấm <strong>"Mở file KQ (Excel)"</strong> bên dưới để tải file kết quả về máy.
         </div>
       `;
     }
     if (actions) {
       actions.innerHTML = `
-        <button class="btn btn-success" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="if(state.exportBlob) triggerDownloadBlob(state.exportBlob, 'Masterlist 2027-2028_Mau.xlsx');">
-          <span>⬇️</span> Tải lại file
+        <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight: 700;" onclick="closeCompletionModal(); openResultFile();">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Mở file KQ (Excel)
         </button>
         <button class="btn btn-outline" style="padding: 0.5rem 1.25rem;" onclick="closeCompletionModal()">
           Đóng
@@ -3384,6 +3427,7 @@ function showCompletionModal(isDirectSave) {
   }
 
   compModal.style.display = 'flex';
+  if (window.lucide) lucide.createIcons();
 }
 
 window.closeCompletionModal = function() {
