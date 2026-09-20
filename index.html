@@ -61,7 +61,7 @@
       <div class="header-actions">
         <button id="btnOpenVTBConverter" class="btn btn-outline" style="border-color: #6366f1; color: #4338ca; background: #eef2ff;" title="Công cụ chuyển đổi file đầu vào Mẫu cũ (37 cột) sang Mẫu mới">
           <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
-          <span>Chuyển đổi Mẫu cũ (VTB)</span>
+          <span>Chuyển đổi Mẫu cũ</span>
         </button>
         <button id="btnOpenResultFile" class="btn btn-primary" disabled title="Tải file kết quả hoàn chỉnh về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx)">
           <i data-lucide="download" class="w-4 h-4 text-white"></i>
@@ -640,9 +640,8 @@
   </div>
 
   <!-- Modal Chuyển đổi File Vô Tuyến Mẫu Cũ (37 cột) sang Mẫu Mới -->
-  <div id="vtbConverterModal" class="modal" style="display: none;">
-    <div class="modal-backdrop" onclick="closeVTBConverterModal()"></div>
-    <div class="modal-dialog" style="max-width: 950px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
+  <div id="vtbConverterModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeVTBConverterModal()">
+    <div class="modal-box" style="max-width: 950px; width: 95vw; max-height: 90vh; display: flex; flex-direction: column; background: #ffffff;">
       
       <!-- Modal Header -->
       <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
@@ -659,7 +658,7 @@
             </p>
           </div>
         </div>
-        <button type="button" class="btn-close-modal" onclick="closeVTBConverterModal()" style="color: white; opacity: 0.85;">✕</button>
+        <button type="button" class="modal-close-btn" onclick="closeVTBConverterModal()" style="color: white; opacity: 0.85;">✕</button>
       </div>
 
       <!-- Modal Body -->
