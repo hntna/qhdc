@@ -209,36 +209,44 @@
         </div>
       </div>
 
-      <!-- Validation Filters & Toolbar -->
-      <div class="toolbar">
-        <div class="filter-group">
-          <span class="filter-label">Loại cảnh báo:</span>
-          <label class="chip active">
-            <input type="radio" name="filterIssueType" value="ALL" checked> Tất cả (<span id="countAllIssues">0</span>)
-          </label>
-          <label class="chip">
-            <input type="radio" name="filterIssueType" value="MATH"> Lỗi Thành tiền (<span id="countMathIssues">0</span>)
-          </label>
-          <label class="chip" style="border-color: #fca5a5; background: #fff1f2;">
-            <input type="radio" name="filterIssueType" value="MISSING_CODE"> Thiếu Mã loại / mảng / DV (<span id="countCodeIssues">0</span>)
-          </label>
-          <label class="chip" style="border-color: #fecdd3; background: #fff1f2;">
-            <input type="radio" name="filterIssueType" value="SUBTOTAL_MISMATCH"> Lệch Subtotal G/H (<span id="countSubtotalMismatch">0</span>)
-          </label>
-          <label class="chip">
-            <input type="radio" name="filterIssueType" value="MADV"> Mã DV ngoài TH DV (<span id="countMaDVIssues">0</span>)
-          </label>
-          <label class="chip">
-            <input type="radio" name="filterIssueType" value="INFO"> Thiếu Đơn giá / ĐVT (<span id="countInfoIssues">0</span>)
-          </label>
-          <label class="chip">
-            <input type="radio" name="filterIssueType" value="FORMULA"> Lỗi công thức Excel (<span id="countFormulaIssues">0</span>)
-          </label>
+      <!-- Validation Filters & Toolbar (2 Dòng Tinh Gọn) -->
+      <div class="toolbar validation-toolbar">
+        <!-- Dòng 1: Bộ lọc loại cảnh báo -->
+        <div class="toolbar-line filter-line">
+          <span class="filter-label">LOẠI CẢNH BÁO:</span>
+          <div class="filter-chips-wrapper">
+            <label class="chip active">
+              <input type="radio" name="filterIssueType" value="ALL" checked> Tất cả (<span id="countAllIssues">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="MATH"> Lỗi Thành tiền (<span id="countMathIssues">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="MISSING_CODE"> Thiếu Mã loại / mảng / DV (<span id="countCodeIssues">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="SUBTOTAL_MISMATCH"> Lệch Subtotal G/H (<span id="countSubtotalMismatch">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="MADV"> Mã DV ngoài TH DV (<span id="countMaDVIssues">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="INFO"> Thiếu Đơn giá / ĐVT (<span id="countInfoIssues">0</span>)
+            </label>
+            <label class="chip">
+              <input type="radio" name="filterIssueType" value="FORMULA"> Lỗi công thức Excel (<span id="countFormulaIssues">0</span>)
+            </label>
+          </div>
         </div>
-        <div class="filter-group" style="display: flex; align-items: center; gap: 0.75rem;">
-          <input type="text" id="searchValidationInput" class="search-input" placeholder="Tìm kiếm nội dung, dòng, file...">
-          <button id="btnCopyValidationTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng kết quả kiểm tra để dán vào Excel">
-            <span id="copyValBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-orange-600"></i></span>
+
+        <!-- Dòng 2: Tìm kiếm & Sao chép -->
+        <div class="toolbar-line search-line">
+          <div class="search-box">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+            <input type="text" id="searchValidationInput" class="search-input" placeholder="Tìm kiếm nội dung, dòng, file...">
+          </div>
+          <button id="btnCopyValidationTable" class="btn btn-outline" title="Sao chép bảng kết quả kiểm tra để dán vào Excel">
+            <span id="copyValBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-600"></i></span>
             <span id="copyValBtnText">Sao chép bảng (Excel)</span>
           </button>
         </div>
