@@ -28,10 +28,8 @@ function isOldVTBFormat(workbook) {
   if (!ws || !ws['!ref']) return false;
 
   const range = XLSX.utils.decode_range(ws['!ref']);
-  // File cũ có khoảng 37 cột (tối thiểu từ cột A đến AJ/AK >= 35 cột)
   if (range.e.c < 30) return false;
 
-  // Quét các ô trong 10 dòng đầu tìm từ khóa đặc trưng của mẫu cũ
   let foundOldKeywords = 0;
   for (let r = 0; r <= Math.min(10, range.e.r); r++) {
     for (let c = 0; c <= Math.min(36, range.e.c); c++) {
@@ -52,14 +50,209 @@ function isOldVTBFormat(workbook) {
   return foundOldKeywords >= 3;
 }
 
+// ==================== QUẢN LÝ PROFILE PHÂN CẤP TỰ ĐỘNG ====================
+
+const VTB_PROFILES_STORAGE_KEY = 'vtb_dynamic_profiles_v2';
+
+const DEFAULT_VT_PROFILES = [
+  {
+    id: 'vt_tech_hierarchy',
+    domain: 'VT',
+    name: 'Phân cấp Công nghệ (5G / 4G / 3G / 2G / ƯCTT)',
+    description: 'Phân cấp thiết bị theo thế hệ mạng 5G, 4G, 3G, 2G và Đầu tư bắt buộc',
+    isDefault: true,
+    categories: [
+      { id: 'cat_5g', code: '5G', label: 'Cấp 2: Mạng 5G', group: 'Mạng 5G', dv: '5G' },
+      { id: 'cat_4g', code: 'DLDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 4G (Dung lượng)', group: 'Mạng 2G/3G/4G', dv: 'DLDĐ' },
+      { id: 'cat_3g', code: 'DLDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 3G (Dung lượng)', group: 'Mạng 2G/3G/4G', dv: 'DLDĐ' },
+      { id: 'cat_2g', code: 'VHKT', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 2G / Củng cố', group: 'Mạng 2G/3G/4G', dv: 'VHKT' },
+      { id: 'cat_vp', code: 'VPDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: Vùng phủ chung', group: 'Mạng 2G/3G/4G', dv: 'VPDĐ' },
+      { id: 'cat_uctt', code: 'ƯCTT', label: 'Cấp 2: Đầu tư bắt buộc > Cấp 3: ƯCTT', group: 'Đầu tư bắt buộc', dv: 'ƯCTT' },
+      { id: 'cat_vhkt', code: 'VHKT', label: 'Cấp 2: Nâng cao CLM > Cấp 3: Hiện đại hóa / VHKT', group: 'Nâng cao CLM', dv: 'VHKT' }
+    ],
+    savedMappings: {}
+  },
+  {
+    id: 'vt_standard_ml',
+    domain: 'VT',
+    name: 'Phân cấp Chuẩn Masterlist (VPDĐ / DLDĐ / VHKT / ƯCTT / 5G)',
+    description: 'Phân cấp trực tiếp theo 5 nhánh dịch vụ chuẩn của Masterlist 2027-2028',
+    isDefault: false,
+    categories: [
+      { id: 'cat_std_5g', code: '5G', label: 'Mạng 5G (Mã DV: 5G)', group: 'Mạng 5G', dv: '5G' },
+      { id: 'cat_std_vp', code: 'VPDĐ', label: 'Vùng phủ di động (Mã DV: VPDĐ)', group: 'Phát triển mạng', dv: 'VPDĐ' },
+      { id: 'cat_std_dl', code: 'DLDĐ', label: 'Dung lượng di động (Mã DV: DLDĐ)', group: 'Phát triển mạng', dv: 'DLDĐ' },
+      { id: 'cat_std_vhkt', code: 'VHKT', label: 'Củng cố / Nâng cao CLM (Mã DV: VHKT)', group: 'Vận hành kỹ thuật', dv: 'VHKT' },
+      { id: 'cat_std_uctt', code: 'ƯCTT', label: 'Đầu tư bắt buộc / ƯCTT (Mã DV: ƯCTT)', group: 'ƯCTT', dv: 'ƯCTT' }
+    ],
+    savedMappings: {}
+  }
+];
+
+const VTBProfileManager = {
+  getProfiles(domain = 'VT') {
+    try {
+      const raw = localStorage.getItem(VTB_PROFILES_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const list = parsed[domain] || [];
+        if (list.length > 0) return list;
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc profiles VTB từ localStorage:', e);
+    }
+    // Trả về mặc định nếu chưa có
+    if (domain === 'VT') {
+      this.saveAllProfiles('VT', DEFAULT_VT_PROFILES);
+      return JSON.parse(JSON.stringify(DEFAULT_VT_PROFILES));
+    }
+    return [];
+  },
+
+  saveAllProfiles(domain, list) {
+    try {
+      const raw = localStorage.getItem(VTB_PROFILES_STORAGE_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      data[domain] = list;
+      localStorage.setItem(VTB_PROFILES_STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error('Lỗi ghi profiles VTB:', e);
+    }
+  },
+
+  getProfile(domain, profileId) {
+    const profiles = this.getProfiles(domain);
+    return profiles.find(p => p.id === profileId) || profiles[0] || null;
+  },
+
+  saveProfile(domain, profile) {
+    const profiles = this.getProfiles(domain);
+    const idx = profiles.findIndex(p => p.id === profile.id);
+    if (idx >= 0) {
+      profiles[idx] = profile;
+    } else {
+      profiles.push(profile);
+    }
+    this.saveAllProfiles(domain, profiles);
+    return profile;
+  },
+
+  deleteProfile(domain, profileId) {
+    let profiles = this.getProfiles(domain);
+    profiles = profiles.filter(p => p.id !== profileId);
+    if (profiles.length === 0 && domain === 'VT') {
+      profiles = JSON.parse(JSON.stringify(DEFAULT_VT_PROFILES));
+    }
+    this.saveAllProfiles(domain, profiles);
+    return profiles;
+  },
+
+  saveMapping(domain, profileId, itemName, categoryId) {
+    const profile = this.getProfile(domain, profileId);
+    if (!profile) return;
+    if (!profile.savedMappings) profile.savedMappings = {};
+    const norm = normalizeItemName(itemName);
+    profile.savedMappings[norm] = categoryId;
+    this.saveProfile(domain, profile);
+  },
+
+  saveBatchMappings(domain, profileId, mappingMap) {
+    const profile = this.getProfile(domain, profileId);
+    if (!profile) return;
+    if (!profile.savedMappings) profile.savedMappings = {};
+    for (const [name, catId] of Object.entries(mappingMap)) {
+      const norm = normalizeItemName(name);
+      profile.savedMappings[norm] = catId;
+    }
+    this.saveProfile(domain, profile);
+  }
+};
+
+/**
+ * Chuẩn hóa chuỗi để so khớp ánh xạ
+ */
+function normalizeItemName(str) {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .replace(/^huawei_/i, '')
+    .replace(/^zte_/i, '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Tự động gợi ý nhóm phân cấp cho một mục bóc tách dựa vào Profile đã chọn
+ */
+function autoSuggestCategory(item, profile) {
+  if (!profile || !profile.categories || profile.categories.length === 0) return '';
+  const cats = profile.categories;
+  const norm = normalizeItemName(item.name);
+  const purpose = (item.purpose || '').toUpperCase();
+
+  // 1. Kiểm tra ánh xạ đã lưu trước đó trong Profile
+  if (profile.savedMappings && profile.savedMappings[norm]) {
+    const savedId = profile.savedMappings[norm];
+    if (cats.some(c => c.id === savedId)) return savedId;
+  }
+
+  // 2. ƯCTT / Đầu tư bắt buộc
+  if (purpose.includes('ƯCTT') || purpose.includes('BẮT BUỘC') || item.subType === 'uctt') {
+    const ucttCat = cats.find(c => c.code === 'ƯCTT' || c.id.includes('uctt') || c.label.includes('ƯCTT'));
+    if (ucttCat) return ucttCat.id;
+  }
+
+  // 3. Mạng 5G
+  if (norm.includes('5g')) {
+    const g5Cat = cats.find(c => c.code === '5G' || c.id.includes('5g') || c.label.includes('5G'));
+    if (g5Cat) return g5Cat.id;
+  }
+
+  // 4. Mạng 2G / Củng cố / VHKT
+  if (purpose.includes('CỦNG CỐ') || purpose.includes('VHKT') || item.subType === 'vhkt' || norm.includes('2g')) {
+    const g2Cat = cats.find(c => c.label.includes('2G') || c.code === 'VHKT' || c.id.includes('vhkt'));
+    if (g2Cat) return g2Cat.id;
+  }
+
+  // 5. Mạng 3G
+  if (norm.includes('3g')) {
+    const g3Cat = cats.find(c => c.label.includes('3G') || c.code === 'DLDĐ');
+    if (g3Cat) return g3Cat.id;
+  }
+
+  // 6. Mạng 4G
+  if (norm.includes('4g')) {
+    const g4Cat = cats.find(c => c.label.includes('4G') || c.code === 'DLDĐ');
+    if (g4Cat) return g4Cat.id;
+  }
+
+  // 7. Vùng phủ
+  if (purpose.includes('VÙNG PHỦ') || item.subType === 'vp') {
+    const vpCat = cats.find(c => c.code === 'VPDĐ' || c.label.includes('Vùng phủ') || c.id.includes('vp'));
+    if (vpCat) return vpCat.id;
+  }
+
+  // 8. Dung lượng
+  if (purpose.includes('DUNG LƯỢNG') || item.subType === 'dl') {
+    const dlCat = cats.find(c => c.code === 'DLDĐ' || c.label.includes('Dung lượng') || c.id.includes('dl'));
+    if (dlCat) return dlCat.id;
+  }
+
+  // Mặc định chọn category đầu tiên
+  return cats[0].id;
+}
+
 /**
  * Phân tích và trích xuất dữ liệu từ file mẫu cũ VTB (37 cột)
+ * Trả về danh sách gốc items và danh sách phân rã splitItems để người dùng ánh xạ
  */
-function parseOldVTBWorkbook(workbook) {
+function parseOldVTBWorkbook(workbook, profile = null) {
   const ws = workbook.Sheets[workbook.SheetNames[0]];
   const range = XLSX.utils.decode_range(ws['!ref']);
 
   const items = [];
+  const splitItems = [];
   let currentVendor = '';
   let totalOld27 = 0;
   let totalOld28 = 0;
@@ -75,28 +268,23 @@ function parseOldVTBWorkbook(workbook) {
 
     if (!name && !tt) continue;
 
-    // Lấy giá trị tổng từ dòng TỔNG ĐẦU TƯ hoặc VÔ TUYẾN
     const nameUpper = name.toUpperCase();
     if (nameUpper.includes('TỔNG ĐẦU TƯ') || nameUpper.includes('VÔ TUYẾN')) {
-      const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })]; // Col AB (Tổng 2027)
-      const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })]; // Col AJ (Tổng 2028)
+      const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })];
+      const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })];
       if (cellAB && typeof cellAB.v === 'number') totalOld27 = cellAB.v;
       if (cellAJ && typeof cellAJ.v === 'number') totalOld28 = cellAJ.v;
     }
 
-    // Dòng nhóm / vendor (VD: Huawei, ZTE, Antena, Củng cố mạng lưới...)
     if (['2.1', '2.2', '2.3', '5'].includes(tt) || nameUpper === 'HUAWEI' || nameUpper === 'ZTE' || nameUpper === 'ANTENA' || nameUpper.includes('CỦNG CỐ MẠNG LƯỚI')) {
       currentVendor = name;
       continue;
     }
 
-    // Lấy Đơn giá (Col T - index 19)
     const cellT = ws[XLSX.utils.encode_cell({ r: r, c: 19 })];
     const dg = cellT && typeof cellT.v === 'number' ? cellT.v : (cellT && !isNaN(Number(cellT.v)) ? Number(cellT.v) : null);
     if (!dg) continue;
 
-    // Bóc tách Khối lượng 2027:
-    // Col D(3): UCTT, Col E(4): BB khác, Col F(5): Vùng phủ, Col G(6): DL Giải nghẽn, Col H(7): DL Tăng trưởng, Col I(8): Củng cố, Col J(9): Hiện đại hóa, Col K(10): Tổng KL 2027
     const getNum = (cIdx) => {
       const cell = ws[XLSX.utils.encode_cell({ r: r, c: cIdx })];
       if (!cell || cell.v === undefined || cell.v === null || cell.v === '') return 0;
@@ -113,8 +301,6 @@ function parseOldVTBWorkbook(workbook) {
     const kl_hd_27   = getNum(9);
     const kl_tong_27 = getNum(10);
 
-    // Bóc tách Khối lượng 2028:
-    // Col L(11): UCTT, Col M(12): BB khác, Col N(13): Vùng phủ, Col O(14): DL Giải nghẽn, Col P(15): DL Tăng trưởng, Col Q(16): Củng cố, Col R(17): Hiện đại hóa, Col S(18): Tổng KL 2028
     const kl_uctt_28 = getNum(11);
     const kl_bbk_28  = getNum(12);
     const kl_vp_28   = getNum(13);
@@ -124,73 +310,150 @@ function parseOldVTBWorkbook(workbook) {
     const kl_hd_28   = getNum(17);
     const kl_tong_28 = getNum(18);
 
-    // Thành tiền 2027 & 2028 dòng này
+    const kl_dl_27 = kl_gn_27 + kl_tt_27;
+    const kl_dl_28 = kl_gn_28 + kl_tt_28;
+    const kl_cg_tot_27 = kl_cg_27 + kl_hd_27;
+    const kl_cg_tot_28 = kl_cg_28 + kl_hd_28;
+
     const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })];
     const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })];
     const tt27 = cellAB && typeof cellAB.v === 'number' ? cellAB.v : (dg ? kl_tong_27 * dg : 0);
     const tt28 = cellAJ && typeof cellAJ.v === 'number' ? cellAJ.v : (dg ? kl_tong_28 * dg : 0);
 
-    items.push({
+    const rawItem = {
       row: r + 1,
       tt: tt,
       vendor: currentVendor,
       name: name,
       dvt: dvt,
       dg: dg,
-      kl_uctt_27: kl_uctt_27,
-      kl_vp_27: kl_vp_27,
-      kl_dl_27: kl_gn_27 + kl_tt_27,
-      kl_cg_27: kl_cg_27 + kl_hd_27,
-      kl_tong_27: kl_tong_27,
-      kl_uctt_28: kl_uctt_28,
-      kl_vp_28: kl_vp_28,
-      kl_dl_28: kl_gn_28 + kl_tt_28,
-      kl_cg_28: kl_cg_28 + kl_hd_28,
-      kl_tong_28: kl_tong_28,
-      tt27: tt27,
-      tt28: tt28
-    });
+      kl_uctt_27, kl_vp_27, kl_dl_27, kl_cg_tot_27, kl_tong_27,
+      kl_uctt_28, kl_vp_28, kl_dl_28, kl_cg_tot_28, kl_tong_28,
+      tt27, tt28
+    };
+    items.push(rawItem);
+
+    // Phân rã dòng thành các mục chi tiết theo mục đích để người dùng tự do ánh xạ
+    let hasSplit = false;
+
+    if (kl_uctt_27 > 0 || kl_uctt_28 > 0) {
+      hasSplit = true;
+      splitItems.push({
+        id: `split_${r + 1}_uctt`,
+        rawRow: r + 1,
+        vendor: currentVendor,
+        name: name,
+        dvt: dvt,
+        dg: dg,
+        purpose: 'Đầu tư bắt buộc (ƯCTT)',
+        subType: 'uctt',
+        kl27: kl_uctt_27,
+        kl28: kl_uctt_28,
+        tt27: kl_uctt_27 * dg,
+        tt28: kl_uctt_28 * dg
+      });
+    }
+
+    if (kl_vp_27 > 0 || kl_vp_28 > 0) {
+      hasSplit = true;
+      splitItems.push({
+        id: `split_${r + 1}_vp`,
+        rawRow: r + 1,
+        vendor: currentVendor,
+        name: name,
+        dvt: dvt,
+        dg: dg,
+        purpose: 'Đầu tư phát triển (Vùng phủ)',
+        subType: 'vp',
+        kl27: kl_vp_27,
+        kl28: kl_vp_28,
+        tt27: kl_vp_27 * dg,
+        tt28: kl_vp_28 * dg
+      });
+    }
+
+    if (kl_dl_27 > 0 || kl_dl_28 > 0) {
+      hasSplit = true;
+      splitItems.push({
+        id: `split_${r + 1}_dl`,
+        rawRow: r + 1,
+        vendor: currentVendor,
+        name: name,
+        dvt: dvt,
+        dg: dg,
+        purpose: 'Đầu tư phát triển (Dung lượng)',
+        subType: 'dl',
+        kl27: kl_dl_27,
+        kl28: kl_dl_28,
+        tt27: kl_dl_27 * dg,
+        tt28: kl_dl_28 * dg
+      });
+    }
+
+    if (kl_cg_tot_27 > 0 || kl_cg_tot_28 > 0) {
+      hasSplit = true;
+      splitItems.push({
+        id: `split_${r + 1}_vhkt`,
+        rawRow: r + 1,
+        vendor: currentVendor,
+        name: name,
+        dvt: dvt,
+        dg: dg,
+        purpose: 'Củng cố / Hiện đại hóa (VHKT)',
+        subType: 'vhkt',
+        kl27: kl_cg_tot_27,
+        kl28: kl_cg_tot_28,
+        tt27: kl_cg_tot_27 * dg,
+        tt28: kl_cg_tot_28 * dg
+      });
+    }
+
+    // Nếu không thuộc các mục trên mà có khối lượng tổng
+    if (!hasSplit && (kl_tong_27 > 0 || kl_tong_28 > 0)) {
+      splitItems.push({
+        id: `split_${r + 1}_other`,
+        rawRow: r + 1,
+        vendor: currentVendor,
+        name: name,
+        dvt: dvt,
+        dg: dg,
+        purpose: 'Khác / Tổng hợp',
+        subType: 'other',
+        kl27: kl_tong_27,
+        kl28: kl_tong_28,
+        tt27: kl_tong_27 * dg,
+        tt28: kl_tong_28 * dg
+      });
+    }
   }
 
-  let sumCalculated27 = 0;
-  let sumCalculated28 = 0;
-  items.forEach(it => {
-    sumCalculated27 += it.tt27;
-    sumCalculated28 += it.tt28;
+  // Tính tổng
+  let sum27 = 0;
+  let sum28 = 0;
+  splitItems.forEach(it => {
+    sum27 += it.tt27;
+    sum28 += it.tt28;
+    if (profile) {
+      it.selectedCategoryId = autoSuggestCategory(it, profile);
+    }
   });
-  if (!totalOld27 || Math.abs(totalOld27 - sumCalculated27) > 1) totalOld27 = sumCalculated27;
-  if (!totalOld28 || Math.abs(totalOld28 - sumCalculated28) > 1) totalOld28 = sumCalculated28;
+
+  if (!totalOld27 || Math.abs(totalOld27 - sum27) > 1) totalOld27 = sum27;
+  if (!totalOld28 || Math.abs(totalOld28 - sum28) > 1) totalOld28 = sum28;
 
   return {
     items: items,
+    splitItems: splitItems,
     totalOld27: totalOld27,
     totalOld28: totalOld28
   };
 }
 
 /**
- * Chuẩn hóa chuỗi để so sánh (bỏ dấu cách thừa, dấu gạch nối, chữ hoa thường)
+ * Thực hiện chuyển đổi từ file cũ sang file mới dựa trên ánh xạ tùy biến của người dùng
  */
-function normalizeItemName(str) {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .replace(/^huawei_/i, '')
-    .replace(/^zte_/i, '')
-    .replace(/[\r\n]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Thực hiện chuyển đổi từ file cũ sang file mới
- */
-function convertOldVTBToNewFormat(oldWorkbook) {
-  // 1. Phân tích file cũ
-  const oldData = parseOldVTBWorkbook(oldWorkbook);
-  const oldItems = oldData.items;
-
-  // 2. Nạp phôi mẫu mới từ template base64 nhúng sẵn
+function convertWithUserMapping(oldWorkbook, splitItems, profile) {
+  // 1. Nạp phôi mẫu mới từ template base64 nhúng sẵn
   const templateBuffer = getVTBNewTemplateBuffer();
   const newWorkbook = XLSX.read(templateBuffer, { type: 'array', cellFormula: true, cellStyles: true });
   const sheetName = newWorkbook.SheetNames[0]; // 'PL1.1 ML2027-2028'
@@ -216,8 +479,8 @@ function convertOldVTBToNewFormat(oldWorkbook) {
     }
   }
 
-  // 3. XÓA SẠCH toàn bộ số liệu mẫu có sẵn trong phôi (D, E, F, G, H trên các dòng lá)
-  // để đảm bảo kết quả phản ánh đúng và chỉ đúng các hạng mục từ file cũ
+  // 2. XÓA SẠCH toàn bộ số liệu mẫu có sẵn trong phôi (D, E, F, G, H trên các dòng lá)
+  // để bảo toàn 100% tính nguyên vẹn: chỉ có số liệu từ file cũ được đưa vào
   for (let r = 7; r <= 95; r++) {
     const cellA = wsNew[XLSX.utils.encode_cell({ r: r, c: 0 })];
     const tt = cellA ? String(cellA.v || '').trim() : '';
@@ -232,7 +495,7 @@ function convertOldVTBToNewFormat(oldWorkbook) {
     }
   }
 
-  // Helper ghi một dòng thiết bị vào wsNew với đúng đơn giá và khối lượng từ file cũ
+  // Helper ghi một dòng thiết bị vào wsNew
   function writeItemToRow(rowIdx, item, kl27, kl28, customName) {
     if (customName) setCellText(rowIdx, 1, customName);
     if (item.dvt) setCellText(rowIdx, 2, item.dvt);
@@ -255,141 +518,66 @@ function convertOldVTBToNewFormat(oldWorkbook) {
     }
   }
 
+  // Tạo map id -> category
+  const catMap = {};
+  if (profile && profile.categories) {
+    profile.categories.forEach(c => {
+      catMap[c.id] = c;
+    });
+  }
+
+  // Định nghĩa các dải hàng cho từng mã DV trong phôi Masterlist
+  // 5G: Row 13..21 (index 12..20)
+  // VPDĐ: Row 25..44 (index 24..43)
+  // DLDĐ: Row 47..73 (index 46..72)
+  // VHKT: Row 79..85 (index 78..84)
+  // ƯCTT: Row 90..93 (index 89..92)
+  const slotCursors = {
+    '5G': 12,
+    'VPDĐ': 24,
+    'DLDĐ': 46,
+    'VHKT': 78,
+    'ƯCTT': 89
+  };
+
   const mappedResults = [];
-  let extraDLRow = 57; // Hàng bắt đầu (0-based) cho các mục DL phụ (R58 trở đi)
 
-  // 4. Ánh xạ từng dòng từ file cũ vào mẫu mới
-  oldItems.forEach(item => {
-    const norm = normalizeItemName(item.name);
-    const isHW = (item.vendor || '').toUpperCase().includes('HUAWEI');
-    const isZTE = (item.vendor || '').toUpperCase().includes('ZTE');
-    const isAnten = (item.vendor || '').toUpperCase().includes('ANTEN') || norm.includes('anten');
+  splitItems.forEach(item => {
+    const cat = catMap[item.selectedCategoryId] || profile?.categories?.[0] || { code: 'DLDĐ', label: 'Dung lượng', dv: 'DLDĐ' };
+    const code = cat.code || 'DLDĐ';
 
-    // Rule 1: ƯCTT (Đầu tư bắt buộc) -> Nhánh A3 (Mã DV: ƯCTT)
-    if (item.kl_uctt_27 > 0 || item.kl_uctt_28 > 0) {
-      let r = null;
-      if (isHW && norm.includes('tripband')) r = 89; // R90
-      else if (isHW && norm.includes('dualband')) r = 90; // R91
-      else if (isZTE && norm.includes('tripband')) r = 91; // R92
-      else if (isZTE && norm.includes('dualband')) r = 92; // R93
+    let r = slotCursors[code];
+    if (r === undefined) r = slotCursors['DLDĐ'];
 
-      if (r !== null) {
-        writeItemToRow(r, item, item.kl_uctt_27, item.kl_uctt_28);
-        setCellText(r, 10, 'ƯCTT');
-        const targetName = wsNew[XLSX.utils.encode_cell({ r: r, c: 1 })]?.v || item.name;
-        mappedResults.push({
-          oldName: item.name,
-          oldVendor: item.vendor,
-          oldPurpose: 'Đầu tư bắt buộc (ƯCTT)',
-          targetRow: r + 1,
-          targetName: targetName,
-          targetDV: 'ƯCTT',
-          kl27: item.kl_uctt_27,
-          kl28: item.kl_uctt_28,
-          dg: item.dg,
-          tt27: item.kl_uctt_27 * item.dg,
-          tt28: item.kl_uctt_28 * item.dg
-        });
-      }
+    // Bỏ qua dòng subtotal nếu lấn vào (dòng 59 là subtotal nhóm anten)
+    if (code === 'DLDĐ' && r === 59) {
+      r++;
+      slotCursors['DLDĐ'] = r;
     }
 
-    // Rule 2: Vùng phủ -> Nhánh A2 > I. Vùng phủ (Mã DV: VPDĐ)
-    if (item.kl_vp_27 > 0 || item.kl_vp_28 > 0) {
-      let r = null;
-      if (isHW && norm.includes('exclude bbu')) r = 24; // R25
-      else if (isHW && norm.includes('ubbp')) r = 25; // R26
-      else if (isZTE && norm.includes('vbpe3p')) r = 27; // R28
-      else if (isAnten && norm.includes('4 port 700-900')) r = 28; // R29
+    slotCursors[code] = r + 1;
 
-      if (r !== null) {
-        writeItemToRow(r, item, item.kl_vp_27, item.kl_vp_28);
-        setCellText(r, 10, 'VPDĐ');
-        const targetName = wsNew[XLSX.utils.encode_cell({ r: r, c: 1 })]?.v || item.name;
-        mappedResults.push({
-          oldName: item.name,
-          oldVendor: item.vendor,
-          oldPurpose: 'Đầu tư phát triển (Vùng phủ)',
-          targetRow: r + 1,
-          targetName: targetName,
-          targetDV: 'VPDĐ',
-          kl27: item.kl_vp_27,
-          kl28: item.kl_vp_28,
-          dg: item.dg,
-          tt27: item.kl_vp_27 * item.dg,
-          tt28: item.kl_vp_28 * item.dg
-        });
-      }
-    }
+    // Ghi vào dòng
+    writeItemToRow(r, item, item.kl27, item.kl28, item.name);
+    setCellText(r, 10, cat.dv || code);
 
-    // Rule 3: Dung lượng -> Nhánh A2 > II. Dung lượng (Mã DV: DLDĐ)
-    if (item.kl_dl_27 > 0 || item.kl_dl_28 > 0) {
-      let r = null;
-      if (isHW && norm.includes('tripband') && norm.includes('exclude bbu')) r = 46; // R47
-      else if (isHW && norm.includes('tripband') && norm.includes('ubbp')) r = 47; // R48
-      else if (isHW && norm.includes('dual band') && norm.includes('ubbph3a')) r = 48; // R49
-      else if (isHW && norm.includes('dual band') && norm.includes('excluse baseband')) r = 49; // R50
-      else if (isHW && norm.includes('8t8r')) r = 50; // R51
-      else if (isHW && norm.includes('32t32r')) r = 51; // R52
-      else if (isZTE && norm.includes('tripband') && norm.includes('excluse bbu')) r = 52; // R53
-      else if (isZTE && norm.includes('dual band') && norm.includes('vbpe3p')) r = 53; // R54
-      else if (isZTE && norm.includes('dual band') && norm.includes('excluse bbu box and bb card')) r = 54; // R55
-      else if (isZTE && norm.includes('32t32r')) r = 55; // R56
-      else if (isZTE && norm.includes('8t8r')) r = 56; // R57
-      else {
-        // Các mục dung lượng khác (License, Card BB, Anten 8P)
-        r = extraDLRow;
-        extraDLRow++;
-        if (extraDLRow === 59) extraDLRow = 60; // Bỏ qua dòng subtotal 60 nếu chạm tới
-      }
-
-      if (r !== null) {
-        writeItemToRow(r, item, item.kl_dl_27, item.kl_dl_28, item.name);
-        setCellText(r, 10, 'DLDĐ');
-        mappedResults.push({
-          oldName: item.name,
-          oldVendor: item.vendor,
-          oldPurpose: 'Đầu tư phát triển (Dung lượng)',
-          targetRow: r + 1,
-          targetName: item.name,
-          targetDV: 'DLDĐ',
-          kl27: item.kl_dl_27,
-          kl28: item.kl_dl_28,
-          dg: item.dg,
-          tt27: item.kl_dl_27 * item.dg,
-          tt28: item.kl_dl_28 * item.dg
-        });
-      }
-    }
-
-    // Rule 4: Củng cố mạng lưới / Hiện đại hóa -> Nhánh A2 > III. Nâng cao chất lượng mạng (Mã DV: VHKT)
-    const kl_vhkt_27 = item.kl_cg_27 || 0;
-    const kl_vhkt_28 = item.kl_cg_28 || 0;
-    if (kl_vhkt_27 > 0 || kl_vhkt_28 > 0) {
-      let r = null;
-      if (norm.includes('2g')) r = 78; // R79
-      else if (norm.includes('4g')) r = 79; // R80
-
-      if (r !== null) {
-        writeItemToRow(r, item, kl_vhkt_27, kl_vhkt_28, item.name);
-        setCellText(r, 10, 'VHKT');
-        mappedResults.push({
-          oldName: item.name,
-          oldVendor: item.vendor,
-          oldPurpose: 'Củng cố / Hiện đại hóa',
-          targetRow: r + 1,
-          targetName: item.name,
-          targetDV: 'VHKT',
-          kl27: kl_vhkt_27,
-          kl28: kl_vhkt_28,
-          dg: item.dg,
-          tt27: kl_vhkt_27 * item.dg,
-          tt28: kl_vhkt_28 * item.dg
-        });
-      }
-    }
+    mappedResults.push({
+      oldName: item.name,
+      oldVendor: item.vendor,
+      oldPurpose: item.purpose,
+      targetRow: r + 1,
+      targetName: item.name,
+      targetDV: cat.dv || code,
+      targetCategoryLabel: cat.label,
+      kl27: item.kl27,
+      kl28: item.kl28,
+      dg: item.dg,
+      tt27: item.tt27,
+      tt28: item.tt28
+    });
   });
 
-  // 5. Xuất ArrayBuffer của Workbook mới đã cập nhật
+  // 3. Xuất ArrayBuffer của Workbook mới đã cập nhật
   const convertedBuffer = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
 
   // Tính tổng thành tiền sau chuyển đổi
@@ -403,20 +591,43 @@ function convertOldVTBToNewFormat(oldWorkbook) {
   return {
     convertedWorkbook: newWorkbook,
     convertedBuffer: convertedBuffer,
-    totalOld27: oldData.totalOld27,
-    totalOld28: oldData.totalOld28,
     newTotal27: newTotal27,
     newTotal28: newTotal28,
     mappedResults: mappedResults,
-    oldItemsCount: oldItems.length,
     mappedCount: mappedResults.length
+  };
+}
+
+/**
+ * Hàm tương thích ngược: tự động bóc tách và chuyển đổi với profile mặc định
+ */
+function convertOldVTBToNewFormat(oldWorkbook) {
+  const profile = VTBProfileManager.getProfile('VT', 'vt_tech_hierarchy');
+  const parsed = parseOldVTBWorkbook(oldWorkbook, profile);
+  const conv = convertWithUserMapping(oldWorkbook, parsed.splitItems, profile);
+
+  return {
+    convertedWorkbook: conv.convertedWorkbook,
+    convertedBuffer: conv.convertedBuffer,
+    totalOld27: parsed.totalOld27,
+    totalOld28: parsed.totalOld28,
+    newTotal27: conv.newTotal27,
+    newTotal28: conv.newTotal28,
+    mappedResults: conv.mappedResults,
+    oldItemsCount: parsed.items.length,
+    mappedCount: conv.mappedCount
   };
 }
 
 // Xuất các hàm ra phạm vi toàn cục window
 window.VTBConverter = {
   isOldVTBFormat: isOldVTBFormat,
+  ProfileManager: VTBProfileManager,
   parseOldVTBWorkbook: parseOldVTBWorkbook,
+  autoSuggestCategory: autoSuggestCategory,
+  convertWithUserMapping: convertWithUserMapping,
   convertOldVTBToNewFormat: convertOldVTBToNewFormat,
-  getVTBNewTemplateBuffer: getVTBNewTemplateBuffer
+  getVTBNewTemplateBuffer: getVTBNewTemplateBuffer,
+  normalizeItemName: normalizeItemName
 };
+
