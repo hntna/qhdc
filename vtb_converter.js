@@ -227,7 +227,7 @@ function convertOldVTBToNewFormat(oldWorkbook) {
   function setCellNumber(r, c, val) {
     const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
     if (val === null || val === undefined || val === 0) {
-      wsNew[cellRef] = { t: 'n', v: 0 };
+      delete wsNew[cellRef];
     } else {
       wsNew[cellRef] = { t: 'n', v: Number(val) };
     }
@@ -361,8 +361,8 @@ function convertOldVTBToNewFormat(oldWorkbook) {
           kl28 = null;
         }
 
-        if (target.origKL27 !== null && isAnten) kl27 = target.origKL27;
-        if (target.origKL28 !== null && isAnten) kl28 = target.origKL28;
+        if (target.origKL27 !== null && (isAnten || (isHuawei && oldNorm.includes('excluse baseband')))) kl27 = target.origKL27;
+        if (target.origKL28 !== null && (isAnten || (isHuawei && oldNorm.includes('excluse baseband')))) kl28 = target.origKL28;
 
         setCellNumber(target.rowIdx, 3, kl27);
         setCellNumber(target.rowIdx, 4, kl28);
