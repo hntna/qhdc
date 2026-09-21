@@ -4518,7 +4518,7 @@ async function performVTBConversion() {
   if (button) button.disabled = true;
   try {
     const templateBuffer = await window.VTBConverter.loadVTBNewTemplateBuffer();
-    const result = window.VTBConverter.convertOldVTBToNewFormat(
+    const result = await window.VTBConverter.convertOldVTBToNewFormat(
       conversion.oldWorkbook,
       conversion.assignments,
       templateBuffer
