@@ -641,7 +641,7 @@
 
   <!-- Modal Chuyển đổi File Vô Tuyến Mẫu Cũ (37 cột) sang Mẫu Mới -->
   <div id="vtbConverterModal" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeVTBConverterModal()">
-    <div class="modal-box" style="max-width: 1080px; width: 96vw; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff;">
+    <div class="modal-box" style="max-width: 1180px; width: 96vw; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff;">
       
       <!-- Modal Header -->
       <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
@@ -651,205 +651,98 @@
           </div>
           <div>
             <h3 class="modal-title" style="color: white; font-size: 1.05rem; font-weight: 800; margin: 0;">
-              CHUYỂN ĐỔI MẪU CŨ SANG MASTERLIST 2027-2028
+              CHUYỂN ĐỔI MẪU CŨ VÔ TUYẾN SANG MASTERLIST 2027-2028
             </h3>
             <p style="font-size: 0.775rem; color: #e0e7ff; margin: 0.2rem 0 0 0;">
-              Tự do chọn Mảng, thiết lập Cây phân cấp Profile và tùy biến ánh xạ số liệu vào Form mới
+              Tách số lượng theo mục đích và gán vật tư vào đúng công nghệ 5G/4G/3G/2G
             </p>
           </div>
         </div>
         <button type="button" class="modal-close-btn" onclick="closeVTBConverterModal()" style="color: white; opacity: 0.85;">✕</button>
       </div>
 
-      <!-- Stepper Header -->
-      <div class="vtb-stepper-bar">
-        <div class="vtb-step-item active" id="vtbStepTab1" onclick="switchVTBStep(1)">
-          <div class="vtb-step-num">1</div>
-          <div class="vtb-step-info">
-            <div class="vtb-step-title">Mảng & Profile</div>
-            <div class="vtb-step-sub">Chọn mảng & Cây phân cấp</div>
-          </div>
-        </div>
-        <div class="vtb-step-divider"></div>
-        <div class="vtb-step-item" id="vtbStepTab2" onclick="switchVTBStep(2)">
-          <div class="vtb-step-num">2</div>
-          <div class="vtb-step-info">
-            <div class="vtb-step-title">Nạp file & Ánh xạ</div>
-            <div class="vtb-step-sub">Ánh xạ thiết bị vào nhóm</div>
-          </div>
-        </div>
-        <div class="vtb-step-divider"></div>
-        <div class="vtb-step-item" id="vtbStepTab3" onclick="switchVTBStep(3)">
-          <div class="vtb-step-num">3</div>
-          <div class="vtb-step-info">
-            <div class="vtb-step-title">Kết quả & Xuất file</div>
-            <div class="vtb-step-sub">Đối soát KPI & Tải về</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Modal Body (3 Step Containers) -->
+      <!-- Modal Body -->
       <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
 
-        <!-- BƯỚC 1: CHỌN MẢNG & PROFILE PHÂN CẤP -->
-        <div id="vtbWizardStep1" class="vtb-step-content">
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.1rem; margin-bottom: 1rem;">
-            <div style="display: grid; grid-template-columns: 1fr 1.6fr auto; gap: 1rem; align-items: flex-end;">
-              
-              <!-- 1.1 Chọn Mảng -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                  1. Chọn Mảng nghiệp vụ:
-                </label>
-                <select id="vtbSelectDomain" class="vtb-form-select" onchange="handleVTBDomainChange(this.value)">
-                  <option value="VT" selected>VT - Vô tuyến</option>
-                  <option value="CNTT">CNTT - Công nghệ thông tin</option>
-                  <option value="CDBR">CDBR - Cố định băng rộng</option>
-                  <option value="TD">TD - Truyền dẫn</option>
-                  <option value="CD">CD - Cơ điện</option>
-                  <option value="HT">HT - Hạ tầng</option>
-                  <option value="ML">ML - Mạng lõi</option>
-                </select>
-              </div>
-
-              <!-- 1.2 Chọn Profile Phân Cấp -->
-              <div>
-                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.35rem;">
-                  2. Chọn Profile Phân cấp:
-                </label>
-                <select id="vtbSelectProfile" class="vtb-form-select" onchange="handleVTBProfileChange(this.value)">
-                  <!-- Options rendered by JS -->
-                </select>
-              </div>
-
-              <!-- 1.3 Nút Quản lý Profile -->
-              <div style="display: flex; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem 0.75rem; border-color: #6366f1; color: #4f46e5;" onclick="openVTBProfileEditorModal(false)">
-                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                  <span>Tạo Profile</span>
-                </button>
-                <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem 0.75rem;" onclick="openVTBProfileEditorModal(true)">
-                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                  <span>Sửa</span>
-                </button>
-                <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem 0.75rem; border-color: #fca5a5; color: #dc2626;" onclick="deleteCurrentVTBProfile()">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                </button>
-              </div>
-
+        <!-- Khu vực Kéo thả / Chọn file mẫu cũ -->
+        <div id="vtbDropZone" class="vtb-drop-zone" onclick="document.getElementById('inputVTBFileOld').click()">
+          <input type="file" id="inputVTBFileOld" accept=".xlsx,.xls" style="display: none;">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.5rem; padding: 1.2rem;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; color: #4f46e5;">
+              <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
             </div>
-          </div>
-
-          <!-- Chi tiết Cây Phân Cấp của Profile đang chọn -->
-          <div style="border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; padding: 1.1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <div>
-                <h4 id="vtbProfileDetailTitle" style="font-size: 0.925rem; font-weight: 800; color: #1e293b; margin: 0;">
-                  Cấu trúc Cây phân cấp trong Profile
-                </h4>
-                <p id="vtbProfileDetailDesc" style="font-size: 0.775rem; color: #64748b; margin: 0.2rem 0 0 0;">
-                  Danh sách các cấp phân nhóm thiết bị từ Cấp 2 trở xuống và nhánh đích ở Form mới
-                </p>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
+                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: #4f46e5; text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
               </div>
-              <span id="vtbProfileCategoryCountBadge" style="font-size: 0.75rem; font-weight: 700; background: #e0e7ff; color: #4338ca; padding: 0.2rem 0.6rem; border-radius: 9999px;">
-                0 nhóm phân cấp
-              </span>
+              <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
+                Hỗ trợ file: <code>Master list VTB 2027-2028_mau cu.xlsx</code> (Bảng 37 cột chia Khối lượng & Giá trị theo mục đích)
+              </div>
             </div>
-
-            <!-- Cây phân cấp -->
-            <div id="vtbProfileCategoriesTree" class="vtb-categories-tree">
-              <!-- Rendered dynamically -->
+            <div id="vtbSelectedFileInfo" style="display: none; margin-top: 0.5rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; color: #065f46; font-weight: 600;">
+              <i data-lucide="check-circle-2" class="w-4 h-4 inline-block mr-1 text-emerald-600"></i>
+              <span id="vtbSelectedFileName">Đã nạp file thành công</span>
             </div>
           </div>
         </div>
 
-        <!-- BƯỚC 2: NẠP FILE MẪU CŨ & ÁNH XẠ TỰ DO -->
-        <div id="vtbWizardStep2" class="vtb-step-content" style="display: none;">
-          
-          <!-- Dropzone nạp file -->
-          <div id="vtbDropZone" class="vtb-drop-zone" onclick="document.getElementById('inputVTBFileOld').click()">
-            <input type="file" id="inputVTBFileOld" accept=".xlsx,.xls" style="display: none;">
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.4rem; padding: 1rem;">
-              <div style="width: 44px; height: 44px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; color: #4f46e5;">
-                <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
-              </div>
-              <div>
-                <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b;">
-                  Kéo thả file Mẫu cũ vào đây hoặc <span style="color: #4f46e5; text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
-                </div>
-                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
-                  Đọc và bóc tách toàn bộ các hạng mục, khối lượng theo mục đích (37 cột)
-                </div>
-              </div>
-              <div id="vtbSelectedFileInfo" style="display: none; margin-top: 0.4rem; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.8rem; color: #065f46; font-weight: 600;">
-                <i data-lucide="check-circle-2" class="w-4 h-4 inline-block mr-1 text-emerald-600"></i>
-                <span id="vtbSelectedFileName">Đã nạp file thành công</span>
-              </div>
+        <section id="vtbAssignmentSection" class="vtb-assignment-section" hidden>
+          <div class="vtb-assignment-heading">
+            <div>
+              <h4>Chọn công nghệ cho vật tư</h4>
+              <p>Kéo chuột qua nhiều dòng để chọn, sau đó gán cùng lúc 5G, 4G, 3G hoặc 2G.</p>
+            </div>
+            <div id="vtbAssignmentProgress" class="vtb-assignment-progress">0/0 đã gán</div>
+          </div>
+
+          <div class="vtb-bulk-toolbar" role="toolbar" aria-label="Gán công nghệ hàng loạt">
+            <div class="vtb-selection-actions">
+              <button type="button" class="btn btn-outline btn-xs" id="btnVTBSelectAll">Chọn tất cả</button>
+              <button type="button" class="btn btn-outline btn-xs" id="btnVTBSelectUnassigned">Chọn chưa gán</button>
+              <button type="button" class="btn btn-outline btn-xs" id="btnVTBClearSelection">Bỏ chọn</button>
+              <span id="vtbSelectedCount" class="vtb-selected-count">0 dòng đã chọn</span>
+            </div>
+            <div class="vtb-technology-actions">
+              <span>Gán công nghệ:</span>
+              <button type="button" class="vtb-tech-button vtb-tech-5g" data-vtb-technology="5G">5G</button>
+              <button type="button" class="vtb-tech-button vtb-tech-4g" data-vtb-technology="4G">4G</button>
+              <button type="button" class="vtb-tech-button vtb-tech-3g" data-vtb-technology="3G">3G</button>
+              <button type="button" class="vtb-tech-button vtb-tech-2g" data-vtb-technology="2G">2G</button>
             </div>
           </div>
 
-          <!-- Bảng danh sách mục bóc tách & Ánh xạ tự do -->
-          <div id="vtbMappingTableContainer" style="display: none; margin-top: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="position: relative; width: 260px;">
-                  <input type="text" id="inputVTBSearchMapping" placeholder="Tìm theo tên thiết bị, hãng..." class="vtb-search-input" oninput="filterVTBMappingTable(this.value)">
-                  <i data-lucide="search" class="w-4 h-4 text-slate-400" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
-                </div>
-                <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;" onclick="autoSuggestAllVTBItems()">
-                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-600"></i>
-                  <span>Tự động gợi ý lại</span>
-                </button>
-              </div>
+          <div id="vtbSourceWarning" class="vtb-source-warning" hidden></div>
 
-              <!-- Quick stats bar -->
-              <div style="font-size: 0.775rem; color: #475569; display: flex; gap: 1rem; align-items: center;">
-                <span>Tổng mục: <strong id="vtbStatTotalItems" style="color: #1e293b;">0</strong></span>
-                <span>Tổng 2027: <strong id="vtbStatSum27" style="color: #047857;">0</strong> USD</span>
-                <span>Tổng 2028: <strong id="vtbStatSum28" style="color: #047857;">0</strong> USD</span>
-              </div>
-            </div>
-
-            <!-- Bảng Mapping -->
-            <div style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-              <table class="data-table" style="width: 100%; font-size: 0.775rem;">
-                <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 5;">
-                  <tr>
-                    <th style="padding: 0.45rem 0.5rem; text-align: center; width: 40px;">#</th>
-                    <th style="padding: 0.45rem 0.5rem; text-align: left; width: 75px;">Hãng</th>
-                    <th style="padding: 0.45rem 0.6rem; text-align: left;">Thiết bị bóc tách (Mẫu cũ)</th>
-                    <th style="padding: 0.45rem 0.5rem; text-align: left; width: 130px;">Mục đích cũ</th>
-                    <th style="padding: 0.45rem 0.4rem; text-align: center; width: 50px;">ĐVT</th>
-                    <th style="padding: 0.45rem 0.5rem; text-align: right; width: 65px;">KL 2027</th>
-                    <th style="padding: 0.45rem 0.5rem; text-align: right; width: 65px;">KL 2028</th>
-                    <th style="padding: 0.45rem 0.5rem; text-align: right; width: 75px;">Đơn giá</th>
-                    <th style="padding: 0.45rem 0.6rem; text-align: left; width: 230px;">Ánh xạ vào Nhóm Form mới</th>
-                  </tr>
-                </thead>
-                <tbody id="vtbInteractiveMappingTbody">
-                  <!-- Rendered dynamically -->
-                </tbody>
-              </table>
-            </div>
+          <div class="vtb-assignment-table-wrap">
+            <table class="data-table vtb-assignment-table">
+              <thead>
+                <tr>
+                  <th class="vtb-check-column"><input type="checkbox" id="vtbSelectAllCheckbox" aria-label="Chọn tất cả vật tư"></th>
+                  <th>Dòng cũ</th>
+                  <th>Vật tư / Thiết bị</th>
+                  <th>Vùng phủ 2027/2028</th>
+                  <th>Tăng trưởng 2027/2028</th>
+                  <th>Công nghệ</th>
+                </tr>
+              </thead>
+              <tbody id="vtbAssignmentTableBody"></tbody>
+            </table>
           </div>
+        </section>
 
-        </div>
-
-        <!-- BƯỚC 3: KẾT QUẢ ĐỐI SOÁT & XUẤT FILE -->
-        <div id="vtbWizardStep3" class="vtb-step-content" style="display: none;">
-          
-          <!-- KPI Cards -->
+        <!-- Bảng KPI Đối Soát Số Liệu (Chỉ hiện khi đã convert) -->
+        <div id="vtbKPISection" style="display: none; margin-top: 1rem;">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 1rem;">
             
             <!-- Card 1: Số dòng -->
             <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
-              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">SỐ HẠNG MỤC CHUYỂN ĐỔI</div>
+              <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">SỐ DÒNG THIẾT BỊ BÓC TÁCH</div>
               <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 0.25rem;">
                 <span id="kpiOldItemCount" style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">0</span>
-                <span style="font-size: 0.8rem; color: #64748b;">mục cũ</span>
+                <span style="font-size: 0.8rem; color: #64748b;">dòng cũ</span>
                 <span style="color: #cbd5e1;">➔</span>
                 <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: #4f46e5;">0</span>
-                <span style="font-size: 0.8rem; color: #4f46e5;">mục mới</span>
+                <span style="font-size: 0.8rem; color: #4f46e5;">dòng mới</span>
               </div>
             </div>
 
@@ -857,7 +750,7 @@
             <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
               <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">TỔNG THÀNH TIỀN 2027</div>
               <div style="margin-top: 0.25rem;">
-                <div style="font-size: 0.775rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal27" style="font-weight: 700; color: #334155;">-</span> USD</div>
+                <div style="font-size: 0.8rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal27" style="font-weight: 700; color: #334155;">-</span> USD</div>
                 <div style="font-size: 0.95rem; font-weight: 800; color: #047857;">Mẫu mới: <span id="kpiNewTotal27">-</span> USD</div>
               </div>
             </div>
@@ -866,49 +759,44 @@
             <div class="kpi-card" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem;">
               <div style="font-size: 0.75rem; color: #64748b; font-weight: 600;">TỔNG THÀNH TIỀN 2028</div>
               <div style="margin-top: 0.25rem;">
-                <div style="font-size: 0.775rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal28" style="font-weight: 700; color: #334155;">-</span> USD</div>
+                <div style="font-size: 0.8rem; color: #64748b;">Mẫu cũ: <span id="kpiOldTotal28" style="font-weight: 700; color: #334155;">-</span> USD</div>
                 <div style="font-size: 0.95rem; font-weight: 800; color: #047857;">Mẫu mới: <span id="kpiNewTotal28">-</span> USD</div>
               </div>
             </div>
 
           </div>
 
-          <!-- Thông báo toàn vẹn số liệu -->
+          <!-- Thông báo kiểm tra tính toàn vẹn số liệu -->
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.6rem 0.9rem; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.825rem; color: #166534;">
               <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-              <span>Chuyển đổi toàn vẹn 100%: Mọi hạng mục, đơn giá và khối lượng được bảo toàn chính xác theo ánh xạ tùy biến của bạn. Tổng tiền khớp tuyệt đối!</span>
+              <span>Chuyển đổi toàn vẹn 100%: Bảo lưu đầy đủ mọi hạng mục, khối lượng và đơn giá từ file mẫu cũ. Tổng tiền 2027 & 2028 khớp tuyệt đối!</span>
             </div>
             <span style="font-size: 0.75rem; font-weight: 700; color: #047857; background: #dcfce7; padding: 0.15rem 0.5rem; border-radius: 9999px;">
               Chênh lệch: 0 USD
             </span>
           </div>
-
-          <!-- Bảng xem trước kết quả đã phân bổ -->
           <div style="margin-top: 0.75rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
               <span style="font-weight: 700; font-size: 0.85rem; color: #1e293b;">
-                Chi tiết phân bổ vào Bảng Mẫu mới (Sheet PL1.1):
+                Chi tiết ánh xạ phân bổ vào Cây Masterlist Mẫu mới:
               </span>
-              <button type="button" id="btnVTBSaveMappingToProfile" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.3rem 0.6rem; border-color: #6366f1; color: #4f46e5;">
-                <i data-lucide="bookmark-check" class="w-3.5 h-3.5"></i>
-                <span>Ghi nhớ ánh xạ vào Profile</span>
-              </button>
+              <span id="vtbMappingBadge" style="font-size: 0.725rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px; background: #dbeafe; color: #1e40af;">
+                Đã ánh xạ thành công
+              </span>
             </div>
             
-            <div style="max-height: 280px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div style="max-height: 260px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
               <table class="data-table" style="width: 100%; font-size: 0.775rem;">
                 <thead style="position: sticky; top: 0; background: #f1f5f9; z-index: 5;">
                   <tr>
                     <th style="padding: 0.4rem 0.6rem; text-align: center; width: 45px;">Dòng</th>
-                    <th style="padding: 0.4rem 0.6rem; text-align: left;">Hạng mục / Thiết bị</th>
-                    <th style="padding: 0.4rem 0.6rem; text-align: left; width: 170px;">Nhóm phân cấp</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: left;">Thiết bị / Hạng mục ở Mẫu mới</th>
                     <th style="padding: 0.4rem 0.6rem; text-align: center; width: 65px;">Mã DV</th>
                     <th style="padding: 0.4rem 0.6rem; text-align: right; width: 75px;">KL 2027</th>
                     <th style="padding: 0.4rem 0.6rem; text-align: right; width: 75px;">KL 2028</th>
                     <th style="padding: 0.4rem 0.6rem; text-align: right; width: 90px;">Đơn giá</th>
-                    <th style="padding: 0.4rem 0.6rem; text-align: right; width: 95px;">TT 2027</th>
-                    <th style="padding: 0.4rem 0.6rem; text-align: right; width: 95px;">TT 2028</th>
+                    <th style="padding: 0.4rem 0.6rem; text-align: left;">Nguồn bóc tách từ file cũ</th>
                   </tr>
                 </thead>
                 <tbody id="vtbMappingTableBody">
@@ -917,100 +805,32 @@
               </table>
             </div>
           </div>
-
         </div>
 
       </div>
 
-      <!-- Modal Footer Điều Hướng Wizard -->
-      <div class="modal-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-        <div>
+      <!-- Modal Footer -->
+      <div class="modal-footer vtb-converter-footer" style="padding: 0.85rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <span class="vtb-footer-note" style="font-size: 0.775rem; color: #64748b;">
+          💡 Chuyển đổi 100% trong RAM trình duyệt, không làm thay đổi file gốc.
+        </span>
+        <div class="vtb-footer-actions" style="display: flex; gap: 0.6rem;">
           <button type="button" class="btn btn-outline" onclick="closeVTBConverterModal()">Đóng</button>
-        </div>
-        <div style="display: flex; gap: 0.6rem;">
-          <!-- Nút điều hướng Bước 1 -->
-          <button type="button" class="btn btn-primary" id="btnVTBStep1Next" onclick="switchVTBStep(2)">
-            <span>Tiếp tục: Nạp file & Ánh xạ</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          <button type="button" class="btn btn-primary" id="btnConvertVTB" disabled title="Gán đủ công nghệ trước khi chuyển đổi">
+            <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+            <span>Thực hiện chuyển đổi</span>
           </button>
-
-          <!-- Nút điều hướng Bước 2 -->
-          <button type="button" class="btn btn-outline" id="btnVTBStep2Back" onclick="switchVTBStep(1)" style="display: none;">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>Quay lại Bước 1</span>
-          </button>
-          <button type="button" class="btn btn-primary" id="btnVTBStep2Next" onclick="executeVTBConversionAndGoToStep3()" style="display: none;">
-            <span>Chuyển đổi & Xem kết quả</span>
-            <i data-lucide="arrow-right" class="w-4 h-4"></i>
-          </button>
-
-          <!-- Nút điều hướng Bước 3 -->
-          <button type="button" class="btn btn-outline" id="btnVTBStep3Back" onclick="switchVTBStep(2)" style="display: none;">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>Quay lại Ánh xạ</span>
-          </button>
-          <button type="button" class="btn btn-outline" id="btnDownloadConvertedVTB" style="display: none; border-color: #059669; color: #047857;" title="Tải file Excel mẫu mới đã điền số liệu" onclick="downloadConvertedVTBFile()">
+          <button type="button" class="btn btn-outline" id="btnDownloadConvertedVTB" disabled style="border-color: #059669; color: #047857;" title="Tải file Excel mẫu mới đã điền số liệu">
             <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i>
             <span>Tải Excel Mẫu Mới</span>
           </button>
-          <button type="button" class="btn btn-primary" id="btnApplyConvertedToVT" style="display: none;" title="Nạp trực tiếp vào Mảng Vô Tuyến để so khớp ngay" onclick="applyConvertedVTBToAppState()">
+          <button type="button" class="btn btn-primary" id="btnApplyConvertedToVT" disabled title="Nạp trực tiếp vào Mảng Vô Tuyến để so khớp ngay">
             <i data-lucide="check" class="w-4 h-4"></i>
             <span>Nạp thẳng vào Mảng VT</span>
           </button>
         </div>
       </div>
 
-    </div>
-  </div>
-
-  <!-- Modal Tạo / Sửa Profile Phân cấp -->
-  <div id="vtbProfileEditorModal" class="modal-backdrop" style="display: none; z-index: 1060;" onclick="if(event.target===this) closeVTBProfileEditorModal()">
-    <div class="modal-box" style="max-width: 680px; width: 92vw; max-height: 85vh; display: flex; flex-direction: column; background: #ffffff;">
-      <div class="modal-header" style="background: #1e293b; color: white; padding: 0.9rem 1.25rem;">
-        <h3 id="vtbProfileEditorTitle" style="font-size: 0.95rem; font-weight: 700; margin: 0; color: white;">
-          Tạo Profile Phân cấp mới
-        </h3>
-        <button type="button" class="modal-close-btn" onclick="closeVTBProfileEditorModal()" style="color: white;">✕</button>
-      </div>
-      <div class="modal-body" style="padding: 1.2rem; overflow-y: auto; flex: 1;">
-        <input type="hidden" id="inputVTBEditProfileId">
-        <div style="margin-bottom: 0.85rem;">
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Tên Profile:</label>
-          <input type="text" id="inputVTBEditProfileName" class="vtb-form-input" placeholder="VD: Phân cấp Công nghệ 5G / 4G...">
-        </div>
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Mô tả:</label>
-          <input type="text" id="inputVTBEditProfileDesc" class="vtb-form-input" placeholder="Mô tả ngắn gọn quy tắc phân cấp...">
-        </div>
-
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-            <label style="font-size: 0.8rem; font-weight: 700; color: #334155;">Danh sách Nhóm phân cấp:</label>
-            <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="addCategoryRowToEditor()">
-              <i data-lucide="plus" class="w-3 h-3"></i>
-              <span>Thêm Nhóm</span>
-            </button>
-          </div>
-          <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
-            <table style="width: 100%; font-size: 0.775rem;">
-              <thead style="background: #f8fafc;">
-                <tr>
-                  <th style="padding: 0.4rem; text-align: left;">Tên phân cấp (Cấp 2 / Cấp 3...)</th>
-                  <th style="padding: 0.4rem; text-align: left; width: 140px;">Nhánh Mẫu mới</th>
-                  <th style="padding: 0.4rem; text-align: center; width: 40px;">Xóa</th>
-                </tr>
-              </thead>
-              <tbody id="vtbProfileEditorCategoriesTbody">
-                <!-- Rows rendered by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="padding: 0.75rem 1.25rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 0.5rem;">
-        <button type="button" class="btn btn-outline" onclick="closeVTBProfileEditorModal()">Hủy</button>
-        <button type="button" class="btn btn-primary" onclick="saveVTBProfileFromEditor()">Lưu Profile</button>
-      </div>
     </div>
   </div>
 

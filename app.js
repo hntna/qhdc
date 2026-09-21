@@ -4200,20 +4200,7 @@ window.closeProfileModal = closeProfileModal;
 window.openProfileModal = openProfileModal;
 window.openNewProfileModal = openProfileModal;
 
-// ==================== TÍCH HỢP CÔNG CỤ CHUYỂN ĐỔI MẪU CŨ VTB DYNAMIC WIZARD ====================
-
-// Trạng thái của wizard chuyển đổi
-state.vtbWizard = {
-  currentStep: 1,
-  selectedDomain: 'VT',
-  selectedProfileId: 'vt_tech_hierarchy',
-  uploadedFile: null,
-  uploadedWorkbook: null,
-  parsedData: null,
-  splitItems: [],
-  conversionResult: null,
-  filterKeyword: ''
-};
+// ==================== TÍCH HỢP CÔNG CỤ CHUYỂN ĐỔI MẪU CŨ VTB ====================
 
 function initVTBConverter() {
   const btnOpen = document.getElementById('btnOpenVTBConverter');
@@ -4252,19 +4239,39 @@ function initVTBConverter() {
     });
   }
 
-  const btnSaveMapping = document.getElementById('btnVTBSaveMappingToProfile');
-  if (btnSaveMapping) {
-    btnSaveMapping.addEventListener('click', saveCurrentMappingToProfile);
+  const btnDownload = document.getElementById('btnDownloadConvertedVTB');
+  if (btnDownload) {
+    btnDownload.addEventListener('click', downloadConvertedVTBFile);
   }
+
+  const btnApply = document.getElementById('btnApplyConvertedToVT');
+  if (btnApply) {
+    btnApply.addEventListener('click', applyConvertedVTBToAppState);
+  }
+
+  const btnConvert = document.getElementById('btnConvertVTB');
+  if (btnConvert) btnConvert.addEventListener('click', performVTBConversion);
+
+  const selectAllButton = document.getElementById('btnVTBSelectAll');
+  if (selectAllButton) selectAllButton.addEventListener('click', () => selectVTBMappingRows('all'));
+  const selectUnassignedButton = document.getElementById('btnVTBSelectUnassigned');
+  if (selectUnassignedButton) selectUnassignedButton.addEventListener('click', () => selectVTBMappingRows('unassigned'));
+  const clearSelectionButton = document.getElementById('btnVTBClearSelection');
+  if (clearSelectionButton) clearSelectionButton.addEventListener('click', () => selectVTBMappingRows('none'));
+  const selectAllCheckbox = document.getElementById('vtbSelectAllCheckbox');
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', (event) => selectVTBMappingRows(event.target.checked ? 'all' : 'none'));
+  }
+  document.querySelectorAll('[data-vtb-technology]').forEach(button => {
+    button.addEventListener('click', () => applyVTBTechnologyToSelection(button.dataset.vtbTechnology));
+  });
+  initVTBDragSelection();
 }
 
 function openVTBConverterModal() {
   const modal = document.getElementById('vtbConverterModal');
   if (modal) {
     modal.style.display = 'flex';
-    // Khởi tạo hiển thị bước 1
-    initVTBStep1UI();
-    switchVTBStep(1);
     if (window.lucide) lucide.createIcons();
   }
 }
@@ -4276,458 +4283,256 @@ function closeVTBConverterModal() {
   }
 }
 
-function switchVTBStep(stepNum) {
-  state.vtbWizard.currentStep = stepNum;
-
-  // Cập nhật tab stepper header
-  for (let i = 1; i <= 3; i++) {
-    const tab = document.getElementById(`vtbStepTab${i}`);
-    if (tab) {
-      tab.classList.remove('active', 'completed');
-      if (i === stepNum) tab.classList.add('active');
-      else if (i < stepNum) tab.classList.add('completed');
-    }
-
-    const content = document.getElementById(`vtbWizardStep${i}`);
-    if (content) {
-      content.style.display = (i === stepNum) ? 'block' : 'none';
-    }
-  }
-
-  // Điều khiển các nút điều hướng chân modal
-  const btnS1Next = document.getElementById('btnVTBStep1Next');
-  const btnS2Back = document.getElementById('btnVTBStep2Back');
-  const btnS2Next = document.getElementById('btnVTBStep2Next');
-  const btnS3Back = document.getElementById('btnVTBStep3Back');
-  const btnDownload = document.getElementById('btnDownloadConvertedVTB');
-  const btnApply = document.getElementById('btnApplyConvertedToVT');
-
-  if (btnS1Next) btnS1Next.style.display = (stepNum === 1) ? 'inline-flex' : 'none';
-  if (btnS2Back) btnS2Back.style.display = (stepNum === 2) ? 'inline-flex' : 'none';
-  if (btnS2Next) btnS2Next.style.display = (stepNum === 2) ? 'inline-flex' : 'none';
-  if (btnS3Back) btnS3Back.style.display = (stepNum === 3) ? 'inline-flex' : 'none';
-  if (btnDownload) btnDownload.style.display = (stepNum === 3) ? 'inline-flex' : 'none';
-  if (btnApply) btnApply.style.display = (stepNum === 3) ? 'inline-flex' : 'none';
-
-  if (window.lucide) lucide.createIcons();
-}
-
-// ==================== BƯỚC 1: QUẢN LÝ PROFILE & CÂY PHÂN CẤP ====================
-
-function initVTBStep1UI() {
-  const domainSelect = document.getElementById('vtbSelectDomain');
-  if (domainSelect) {
-    domainSelect.value = state.vtbWizard.selectedDomain || 'VT';
-  }
-  renderVTBProfileDropdown();
-}
-
-function handleVTBDomainChange(domain) {
-  state.vtbWizard.selectedDomain = domain;
-  renderVTBProfileDropdown();
-}
-
-function renderVTBProfileDropdown() {
-  if (!window.VTBConverter) return;
-  const domain = state.vtbWizard.selectedDomain || 'VT';
-  const profiles = window.VTBConverter.ProfileManager.getProfiles(domain);
-  const select = document.getElementById('vtbSelectProfile');
-  if (!select) return;
-
-  select.innerHTML = '';
-  profiles.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    select.appendChild(opt);
-  });
-
-  if (profiles.length > 0) {
-    if (!profiles.some(p => p.id === state.vtbWizard.selectedProfileId)) {
-      state.vtbWizard.selectedProfileId = profiles[0].id;
-    }
-    select.value = state.vtbWizard.selectedProfileId;
-    renderCurrentProfileTree();
-  }
-}
-
-function handleVTBProfileChange(profileId) {
-  state.vtbWizard.selectedProfileId = profileId;
-  renderCurrentProfileTree();
-  if (state.vtbWizard.splitItems && state.vtbWizard.splitItems.length > 0) {
-    autoSuggestAllVTBItems();
-  }
-}
-
-function getCurrentVTBProfile() {
-  if (!window.VTBConverter) return null;
-  const domain = state.vtbWizard.selectedDomain || 'VT';
-  return window.VTBConverter.ProfileManager.getProfile(domain, state.vtbWizard.selectedProfileId);
-}
-
-function renderCurrentProfileTree() {
-  const profile = getCurrentVTBProfile();
-  if (!profile) return;
-
-  const titleEl = document.getElementById('vtbProfileDetailTitle');
-  const descEl = document.getElementById('vtbProfileDetailDesc');
-  const countBadge = document.getElementById('vtbProfileCategoryCountBadge');
-  const treeContainer = document.getElementById('vtbProfileCategoriesTree');
-
-  if (titleEl) titleEl.textContent = profile.name;
-  if (descEl) descEl.textContent = profile.description || 'Các cấp phân nhóm thiết bị từ Cấp 2 trở xuống và nhánh đích Form mới';
-  if (countBadge) countBadge.textContent = `${profile.categories?.length || 0} nhóm phân cấp`;
-
-  if (!treeContainer) return;
-  treeContainer.innerHTML = '';
-
-  const groups = {};
-  (profile.categories || []).forEach(c => {
-    const g = c.group || 'Khác';
-    if (!groups[g]) groups[g] = [];
-    groups[g].push(c);
-  });
-
-  for (const [groupName, cats] of Object.entries(groups)) {
-    const card = document.createElement('div');
-    card.className = 'vtb-tree-group-card';
-
-    let itemsHtml = '';
-    cats.forEach(c => {
-      let pillClass = 'vtb-pill-vp';
-      if (c.code === '5G') pillClass = 'vtb-pill-5g';
-      if (c.code === 'DLDĐ') pillClass = 'vtb-pill-dl';
-      if (c.code === 'ƯCTT') pillClass = 'vtb-pill-uctt';
-      if (c.code === 'VHKT') pillClass = 'vtb-pill-vhkt';
-
-      itemsHtml += `
-        <div class="vtb-tree-item">
-          <span style="font-weight: 600; color: #1e293b;">${escapeHtml(c.label)}</span>
-          <span class="vtb-mapping-pill ${pillClass}">${c.dv || c.code}</span>
-        </div>
-      `;
-    });
-
-    card.innerHTML = `
-      <div class="vtb-tree-group-title">
-        <span>📁 ${escapeHtml(groupName)}</span>
-        <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">${cats.length} cấp con</span>
-      </div>
-      <div>${itemsHtml}</div>
-    `;
-    treeContainer.appendChild(card);
-  }
-}
-
-// --- Quản lý Modal Editor Profile ---
-
-function openVTBProfileEditorModal(isEdit = false) {
-  const modal = document.getElementById('vtbProfileEditorModal');
-  const title = document.getElementById('vtbProfileEditorTitle');
-  const inputId = document.getElementById('inputVTBEditProfileId');
-  const inputName = document.getElementById('inputVTBEditProfileName');
-  const inputDesc = document.getElementById('inputVTBEditProfileDesc');
-  const tbody = document.getElementById('vtbProfileEditorCategoriesTbody');
-
-  if (!modal) return;
-  tbody.innerHTML = '';
-
-  const profile = isEdit ? getCurrentVTBProfile() : null;
-  if (isEdit && profile) {
-    title.textContent = 'Chỉnh sửa Profile Phân cấp';
-    inputId.value = profile.id;
-    inputName.value = profile.name;
-    inputDesc.value = profile.description || '';
-    (profile.categories || []).forEach(c => addCategoryRowToEditor(c));
-  } else {
-    title.textContent = 'Tạo Profile Phân cấp Mới';
-    inputId.value = 'profile_' + Date.now();
-    inputName.value = '';
-    inputDesc.value = '';
-    addCategoryRowToEditor({ label: 'Cấp 2: Mạng 5G', group: 'Mạng 5G', code: '5G' });
-    addCategoryRowToEditor({ label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 4G', group: 'Mạng 2G/3G/4G', code: 'DLDĐ' });
-    addCategoryRowToEditor({ label: 'Cấp 2: Đầu tư bắt buộc > Cấp 3: ƯCTT', group: 'Đầu tư bắt buộc', code: 'ƯCTT' });
-  }
-
-  modal.style.display = 'flex';
-  if (window.lucide) lucide.createIcons();
-}
-
-function closeVTBProfileEditorModal() {
-  const modal = document.getElementById('vtbProfileEditorModal');
-  if (modal) modal.style.display = 'none';
-}
-
-function addCategoryRowToEditor(cat = null) {
-  const tbody = document.getElementById('vtbProfileEditorCategoriesTbody');
-  if (!tbody) return;
-
-  const tr = document.createElement('tr');
-  const label = cat ? cat.label : '';
-  const group = cat ? (cat.group || '') : '';
-  const code = cat ? cat.code : 'DLDĐ';
-
-  tr.innerHTML = `
-    <td style="padding: 0.35rem;">
-      <input type="text" class="vtb-cat-label vtb-form-input" style="padding: 0.25rem 0.45rem; font-size: 0.75rem;" placeholder="VD: Cấp 2: Mạng 5G..." value="${escapeHtml(label)}">
-      <input type="hidden" class="vtb-cat-group" value="${escapeHtml(group)}">
-    </td>
-    <td style="padding: 0.35rem;">
-      <select class="vtb-cat-code vtb-form-select" style="padding: 0.25rem 0.45rem; font-size: 0.75rem;">
-        <option value="5G" ${code === '5G' ? 'selected' : ''}>5G - Mạng 5G</option>
-        <option value="VPDĐ" ${code === 'VPDĐ' ? 'selected' : ''}>VPDĐ - Vùng phủ</option>
-        <option value="DLDĐ" ${code === 'DLDĐ' ? 'selected' : ''}>DLDĐ - Dung lượng</option>
-        <option value="VHKT" ${code === 'VHKT' ? 'selected' : ''}>VHKT - Nâng cao CLM / Củng cố</option>
-        <option value="ƯCTT" ${code === 'ƯCTT' ? 'selected' : ''}>ƯCTT - Đầu tư bắt buộc</option>
-      </select>
-    </td>
-    <td style="padding: 0.35rem; text-align: center;">
-      <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; color: #dc2626; border-color: #fca5a5;" onclick="this.closest('tr').remove()">✕</button>
-    </td>
-  `;
-  tbody.appendChild(tr);
-}
-
-function saveVTBProfileFromEditor() {
-  const inputId = document.getElementById('inputVTBEditProfileId');
-  const inputName = document.getElementById('inputVTBEditProfileName');
-  const inputDesc = document.getElementById('inputVTBEditProfileDesc');
-  const tbody = document.getElementById('vtbProfileEditorCategoriesTbody');
-
-  const name = inputName.value.trim();
-  if (!name) {
-    showToast('Vui lòng nhập tên Profile!', 'warning');
-    return;
-  }
-
-  const rows = tbody.querySelectorAll('tr');
-  if (rows.length === 0) {
-    showToast('Vui lòng thêm ít nhất 1 nhóm phân cấp!', 'warning');
-    return;
-  }
-
-  const categories = [];
-  rows.forEach((r, idx) => {
-    const label = r.querySelector('.vtb-cat-label').value.trim();
-    const code = r.querySelector('.vtb-cat-code').value;
-    if (label) {
-      let group = 'Chung';
-      if (label.includes('Cấp 2:')) {
-        const parts = label.split('>');
-        group = parts[0].replace(/Cấp 2:\s*/i, '').trim();
-      } else if (label.toLowerCase().includes('5g')) {
-        group = 'Mạng 5G';
-      } else if (label.toLowerCase().includes('bắt buộc') || label.toLowerCase().includes('uctt')) {
-        group = 'Đầu tư bắt buộc';
-      } else if (label.toLowerCase().includes('chất lượng') || label.toLowerCase().includes('củng cố')) {
-        group = 'Nâng cao CLM';
-      } else {
-        group = 'Phát triển mạng';
-      }
-
-      categories.push({
-        id: `cat_${idx}_${Date.now()}`,
-        label: label,
-        group: group,
-        code: code,
-        dv: code
-      });
-    }
-  });
-
-  const domain = state.vtbWizard.selectedDomain || 'VT';
-  const profileId = inputId.value || ('profile_' + Date.now());
-  const existingProfile = window.VTBConverter.ProfileManager.getProfile(domain, profileId);
-
-  const newProfile = {
-    id: profileId,
-    domain: domain,
-    name: name,
-    description: inputDesc.value.trim(),
-    categories: categories,
-    savedMappings: existingProfile?.savedMappings || {}
-  };
-
-  window.VTBConverter.ProfileManager.saveProfile(domain, newProfile);
-  state.vtbWizard.selectedProfileId = newProfile.id;
-  closeVTBProfileEditorModal();
-  renderVTBProfileDropdown();
-  showToast(`Đã lưu Profile "${name}" thành công!`, 'success');
-}
-
-function deleteCurrentVTBProfile() {
-  const profile = getCurrentVTBProfile();
-  if (!profile) return;
-  if (confirm(`Bạn có chắc chắn muốn xóa Profile "${profile.name}"?`)) {
-    const domain = state.vtbWizard.selectedDomain || 'VT';
-    window.VTBConverter.ProfileManager.deleteProfile(domain, profile.id);
-    renderVTBProfileDropdown();
-    showToast(`Đã xóa Profile "${profile.name}"!`, 'info');
-  }
-}
-
-// ==================== BƯỚC 2: NẠP FILE MẪU CŨ & ÁNH XẠ TỰ DO ====================
+window.openVTBConverterModal = openVTBConverterModal;
+window.closeVTBConverterModal = closeVTBConverterModal;
 
 async function handleVTBFileFromInput(file) {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellStyles: true });
-
-    if (!window.VTBConverter) {
-      showToast('Chưa nạp module VTBConverter!', 'error');
-      return;
-    }
-
-    const isOld = window.VTBConverter.isOldVTBFormat(workbook);
-    if (!isOld) {
-      showToast('Cảnh báo: File này có thể không thuộc định dạng Mẫu cũ 37 cột!', 'warning');
-    }
-
-    state.vtbWizard.uploadedFile = file;
-    state.vtbWizard.uploadedWorkbook = workbook;
-
-    // Cập nhật tên file trên giao diện
-    const infoBar = document.getElementById('vtbSelectedFileInfo');
-    const nameSpan = document.getElementById('vtbSelectedFileName');
-    if (infoBar && nameSpan) {
-      nameSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-      infoBar.style.display = 'inline-block';
-    }
-
-    // Bóc tách dữ liệu
-    const currentProfile = getCurrentVTBProfile();
-    const parsed = window.VTBConverter.parseOldVTBWorkbook(workbook, currentProfile);
-    state.vtbWizard.parsedData = parsed;
-    state.vtbWizard.splitItems = parsed.splitItems;
-
-    // Hiển thị bảng ánh xạ
-    const mappingContainer = document.getElementById('vtbMappingTableContainer');
-    if (mappingContainer) mappingContainer.style.display = 'block';
-
-    renderVTBInteractiveMappingTable();
-    showToast(`Đã nạp file và bóc tách thành công ${parsed.splitItems.length} mục chi tiết!`, 'success');
+    await handleVTBFileObject(file, workbook);
   } catch (err) {
     console.error('Lỗi khi đọc file VTB:', err);
     showToast(`Không thể đọc file: ${err.message}`, 'error');
   }
 }
 
-function renderVTBInteractiveMappingTable() {
-  const profile = getCurrentVTBProfile();
-  const splitItems = state.vtbWizard.splitItems || [];
-  const tbody = document.getElementById('vtbInteractiveMappingTbody');
-  if (!tbody || !profile) return;
-
-  tbody.innerHTML = '';
-  const keyword = (state.vtbWizard.filterKeyword || '').toLowerCase().trim();
-
-  let visibleCount = 0;
-  let totalSum27 = 0;
-  let totalSum28 = 0;
-
-  splitItems.forEach((item, idx) => {
-    totalSum27 += item.tt27;
-    totalSum28 += item.tt28;
-
-    if (keyword) {
-      const matchName = (item.name || '').toLowerCase().includes(keyword);
-      const matchVendor = (item.vendor || '').toLowerCase().includes(keyword);
-      const matchPurpose = (item.purpose || '').toLowerCase().includes(keyword);
-      if (!matchName && !matchVendor && !matchPurpose) return;
-    }
-
-    visibleCount++;
-    const tr = document.createElement('tr');
-
-    let optionsHtml = '';
-    (profile.categories || []).forEach(cat => {
-      const isSelected = item.selectedCategoryId === cat.id;
-      optionsHtml += `<option value="${cat.id}" ${isSelected ? 'selected' : ''}>${escapeHtml(cat.label)} (${cat.code})</option>`;
-    });
-
-    tr.innerHTML = `
-      <td style="text-align: center; color: #64748b; font-weight: 700;">${idx + 1}</td>
-      <td style="font-weight: 600; color: #334155;">${escapeHtml(item.vendor || '-')}</td>
-      <td style="font-weight: 600; color: #1e293b;" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</td>
-      <td style="color: #475569; font-size: 0.725rem;">
-        <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${escapeHtml(item.purpose)}</span>
-      </td>
-      <td style="text-align: center; color: #64748b;">${escapeHtml(item.dvt || '-')}</td>
-      <td style="text-align: right; font-weight: 700; color: ${item.kl27 ? '#047857' : '#94a3b8'};">${item.kl27 ? formatNumberVTB(item.kl27) : '-'}</td>
-      <td style="text-align: right; font-weight: 700; color: ${item.kl28 ? '#047857' : '#94a3b8'};">${item.kl28 ? formatNumberVTB(item.kl28) : '-'}</td>
-      <td style="text-align: right; color: #475569;">${formatNumberVTB(item.dg)}</td>
-      <td>
-        <select class="vtb-mapping-select" onchange="handleItemCategoryChange('${item.id}', this.value)">
-          ${optionsHtml}
-        </select>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const statTotal = document.getElementById('vtbStatTotalItems');
-  const stat27 = document.getElementById('vtbStatSum27');
-  const stat28 = document.getElementById('vtbStatSum28');
-  if (statTotal) statTotal.textContent = `${splitItems.length} mục`;
-  if (stat27) stat27.textContent = formatNumberVTB(totalSum27);
-  if (stat28) stat28.textContent = formatNumberVTB(totalSum28);
-}
-
-function handleItemCategoryChange(itemId, newCatId) {
-  const item = state.vtbWizard.splitItems.find(it => it.id === itemId);
-  if (item) {
-    item.selectedCategoryId = newCatId;
-  }
-}
-
-function filterVTBMappingTable(keyword) {
-  state.vtbWizard.filterKeyword = keyword;
-  renderVTBInteractiveMappingTable();
-}
-
-function autoSuggestAllVTBItems() {
-  const profile = getCurrentVTBProfile();
-  if (!profile || !state.vtbWizard.splitItems) return;
-
-  state.vtbWizard.splitItems.forEach(item => {
-    item.selectedCategoryId = window.VTBConverter.autoSuggestCategory(item, profile);
-  });
-
-  renderVTBInteractiveMappingTable();
-  showToast('Đã tự động gợi ý lại nhóm cho toàn bộ thiết bị!', 'info');
-}
-
-// ==================== BƯỚC 3: KẾT QUẢ ĐỐI SOÁT & XUẤT FILE ====================
-
-function executeVTBConversionAndGoToStep3() {
-  if (!state.vtbWizard.uploadedWorkbook || !state.vtbWizard.splitItems || state.vtbWizard.splitItems.length === 0) {
-    showToast('Vui lòng nạp file Mẫu cũ trước khi chuyển đổi!', 'warning');
+async function handleVTBFileObject(file, workbook) {
+  if (!window.VTBConverter) {
+    showToast('Chưa nạp module VTBConverter!', 'error');
     return;
   }
 
-  const profile = getCurrentVTBProfile();
+  const isOld = window.VTBConverter.isOldVTBFormat(workbook);
+  if (!isOld) {
+    showToast('File này không thuộc định dạng Mẫu cũ 37 cột của Vô tuyến!', 'warning');
+  }
+
+  // Cập nhật tên file trên giao diện
+  const infoBar = document.getElementById('vtbSelectedFileInfo');
+  const nameSpan = document.getElementById('vtbSelectedFileName');
+  if (infoBar && nameSpan) {
+    nameSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    infoBar.style.display = 'inline-block';
+  }
+
   try {
-    const result = window.VTBConverter.convertWithUserMapping(
-      state.vtbWizard.uploadedWorkbook,
-      state.vtbWizard.splitItems,
-      profile
-    );
-
-    state.vtbWizard.conversionResult = result;
+    const parsedData = window.VTBConverter.parseOldVTBWorkbook(workbook);
+    const mappingRows = window.VTBConverter.buildVTBMappingRows(parsedData.items);
+    const initialSplit = window.VTBConverter.splitOldVTBItems(parsedData.items, {});
     state.vtbConversion = {
-      result: result,
-      originalFile: state.vtbWizard.uploadedFile,
-      originalFileName: state.vtbWizard.uploadedFile?.name || 'Masterlist_VTB.xlsx',
-      convertedBuffer: result.convertedBuffer,
-      convertedWorkbook: result.convertedWorkbook
+      originalFile: file,
+      originalFileName: file.name,
+      oldWorkbook: workbook,
+      parsedData,
+      mappingRows,
+      assignments: {},
+      selectedIds: new Set(),
+      unmappedAmounts: initialSplit.unmappedAmounts,
+      convertedBuffer: null,
+      convertedWorkbook: null,
+      result: null
     };
-
-    renderVTBConversionResult(result, state.vtbWizard.uploadedFile?.name);
-    switchVTBStep(3);
-    showToast(`Đã chuyển đổi hoàn tất ${result.mappedCount} mục vào Form mới với chênh lệch 0.00 USD!`, 'success');
+    resetVTBConversionOutput();
+    renderVTBAssignmentTable();
+    showToast(`Đã đọc ${parsedData.items.length} vật tư. Hãy gán công nghệ trước khi chuyển đổi.`, 'success');
   } catch (err) {
-    console.error('Lỗi khi chuyển đổi với mapping:', err);
+    console.error('Lỗi khi phân tích file VTB:', err);
+    showToast(`Lỗi khi phân tích file: ${err.message}`, 'error');
+  }
+}
+
+function resetVTBConversionOutput() {
+  const kpiSection = document.getElementById('vtbKPISection');
+  if (kpiSection) kpiSection.style.display = 'none';
+  const btnDownload = document.getElementById('btnDownloadConvertedVTB');
+  const btnApply = document.getElementById('btnApplyConvertedToVT');
+  if (btnDownload) btnDownload.disabled = true;
+  if (btnApply) btnApply.disabled = true;
+}
+
+function renderVTBAssignmentTable() {
+  const conversion = state.vtbConversion;
+  const section = document.getElementById('vtbAssignmentSection');
+  const tbody = document.getElementById('vtbAssignmentTableBody');
+  if (!conversion || !section || !tbody) return;
+
+  section.hidden = false;
+  tbody.innerHTML = conversion.mappingRows.map(item => {
+    const technology = conversion.assignments[item.id] || '';
+    const suggestionLabel = item.suggestion ? ` (gợi ý ${item.suggestion})` : '';
+    return `
+      <tr data-vtb-mapping-id="${item.id}" class="${technology ? '' : 'is-unassigned'}">
+        <td class="vtb-check-column"><input type="checkbox" class="vtb-row-checkbox" data-vtb-checkbox="${item.id}" aria-label="Chọn dòng ${item.row}"></td>
+        <td style="text-align:center;font-weight:700;color:#64748b;">${item.row}</td>
+        <td class="vtb-assignment-name" title="${escapeHtml(item.name)}">
+          ${escapeHtml(item.name)}
+          ${item.vendor ? `<span class="vtb-assignment-vendor">${escapeHtml(item.vendor)}</span>` : ''}
+        </td>
+        <td class="vtb-quantity-pair">${formatNumberVTB(item.coverage27)} / ${formatNumberVTB(item.coverage28)}</td>
+        <td class="vtb-quantity-pair">${formatNumberVTB(item.capacity27)} / ${formatNumberVTB(item.capacity28)}</td>
+        <td>
+          <select class="vtb-tech-select ${technology ? '' : 'is-unassigned'}" data-vtb-select="${item.id}" aria-label="Công nghệ cho dòng ${item.row}">
+            <option value="">Chọn${suggestionLabel}</option>
+            ${['5G', '4G', '3G', '2G'].map(value => `<option value="${value}" ${technology === value ? 'selected' : ''}>${value}</option>`).join('')}
+          </select>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('[data-vtb-select]').forEach(select => {
+    select.addEventListener('change', event => {
+      const id = event.target.dataset.vtbSelect;
+      if (event.target.value) conversion.assignments[id] = event.target.value;
+      else delete conversion.assignments[id];
+      updateVTBAssignmentTableState();
+    });
+  });
+  tbody.querySelectorAll('[data-vtb-checkbox]').forEach(checkbox => {
+    checkbox.addEventListener('change', event => {
+      setVTBMappingRowSelected(event.target.dataset.vtbCheckbox, event.target.checked);
+    });
+  });
+  updateVTBAssignmentTableState();
+}
+
+function setVTBMappingRowSelected(id, selected) {
+  const conversion = state.vtbConversion;
+  if (!conversion) return;
+  if (selected) conversion.selectedIds.add(String(id));
+  else conversion.selectedIds.delete(String(id));
+  updateVTBSelectionVisuals();
+}
+
+function updateVTBSelectionVisuals() {
+  const conversion = state.vtbConversion;
+  if (!conversion) return;
+  document.querySelectorAll('[data-vtb-mapping-id]').forEach(row => {
+    const selected = conversion.selectedIds.has(row.dataset.vtbMappingId);
+    row.classList.toggle('is-selected', selected);
+    const checkbox = row.querySelector('[data-vtb-checkbox]');
+    if (checkbox) checkbox.checked = selected;
+  });
+  const count = conversion.selectedIds.size;
+  const countLabel = document.getElementById('vtbSelectedCount');
+  if (countLabel) countLabel.textContent = `${count} dòng đã chọn`;
+  document.querySelectorAll('[data-vtb-technology]').forEach(button => {
+    button.disabled = count === 0;
+  });
+  const allCheckbox = document.getElementById('vtbSelectAllCheckbox');
+  if (allCheckbox) {
+    const total = conversion.mappingRows.length;
+    allCheckbox.checked = total > 0 && count === total;
+    allCheckbox.indeterminate = count > 0 && count < total;
+  }
+}
+
+function updateVTBAssignmentTableState() {
+  const conversion = state.vtbConversion;
+  if (!conversion) return;
+  document.querySelectorAll('[data-vtb-mapping-id]').forEach(row => {
+    const id = row.dataset.vtbMappingId;
+    const technology = conversion.assignments[id] || '';
+    row.classList.toggle('is-unassigned', !technology);
+    const select = row.querySelector('[data-vtb-select]');
+    if (select) {
+      select.value = technology;
+      select.classList.toggle('is-unassigned', !technology);
+    }
+  });
+
+  const assignedCount = conversion.mappingRows.filter(row => conversion.assignments[row.id]).length;
+  const total = conversion.mappingRows.length;
+  const progress = document.getElementById('vtbAssignmentProgress');
+  if (progress) {
+    progress.textContent = `${assignedCount}/${total} đã gán`;
+    progress.classList.toggle('is-complete', assignedCount === total);
+  }
+  const warning = document.getElementById('vtbSourceWarning');
+  if (warning) {
+    const amounts = conversion.unmappedAmounts || [];
+    warning.hidden = amounts.length === 0;
+    warning.textContent = amounts.length
+      ? `Phát hiện ${amounts.length} ô có số lượng ở cột Giải nghẽn hoặc Củng cố. Cần xử lý dữ liệu nguồn trước khi chuyển đổi để không mất số liệu.`
+      : '';
+  }
+  const ready = assignedCount === total && (conversion.unmappedAmounts || []).length === 0;
+  const convertButton = document.getElementById('btnConvertVTB');
+  if (convertButton) {
+    convertButton.disabled = !ready;
+    convertButton.title = ready ? 'Tách dòng và ghi vào Mẫu mới' : 'Gán đủ công nghệ và xử lý cảnh báo dữ liệu trước khi chuyển đổi';
+  }
+  updateVTBSelectionVisuals();
+}
+
+function selectVTBMappingRows(mode) {
+  const conversion = state.vtbConversion;
+  if (!conversion) return;
+  if (mode === 'all') conversion.selectedIds = new Set(conversion.mappingRows.map(row => row.id));
+  else if (mode === 'unassigned') conversion.selectedIds = new Set(conversion.mappingRows.filter(row => !conversion.assignments[row.id]).map(row => row.id));
+  else conversion.selectedIds = new Set();
+  updateVTBSelectionVisuals();
+}
+
+function applyVTBTechnologyToSelection(technology) {
+  const conversion = state.vtbConversion;
+  if (!conversion || conversion.selectedIds.size === 0) return;
+  conversion.assignments = window.VTBConverter.applyVTBBulkTechnology(
+    conversion.assignments,
+    Array.from(conversion.selectedIds),
+    technology
+  );
+  updateVTBAssignmentTableState();
+}
+
+function initVTBDragSelection() {
+  const tbody = document.getElementById('vtbAssignmentTableBody');
+  if (!tbody) return;
+  let dragging = false;
+  let selectMode = true;
+
+  tbody.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || event.target.closest('select, input, button')) return;
+    const row = event.target.closest('[data-vtb-mapping-id]');
+    if (!row || !state.vtbConversion) return;
+    dragging = true;
+    const id = row.dataset.vtbMappingId;
+    selectMode = !state.vtbConversion.selectedIds.has(id);
+    setVTBMappingRowSelected(id, selectMode);
+    event.preventDefault();
+  });
+  tbody.addEventListener('pointerover', event => {
+    if (!dragging) return;
+    const row = event.target.closest('[data-vtb-mapping-id]');
+    if (row) setVTBMappingRowSelected(row.dataset.vtbMappingId, selectMode);
+  });
+  document.addEventListener('pointerup', () => { dragging = false; });
+  document.addEventListener('pointercancel', () => { dragging = false; });
+}
+
+async function performVTBConversion() {
+  const conversion = state.vtbConversion;
+  if (!conversion) return;
+  const button = document.getElementById('btnConvertVTB');
+  if (button) button.disabled = true;
+  try {
+    const templateBuffer = await window.VTBConverter.loadVTBNewTemplateBuffer();
+    const result = window.VTBConverter.convertOldVTBToNewFormat(
+      conversion.oldWorkbook,
+      conversion.assignments,
+      templateBuffer
+    );
+    conversion.result = result;
+    conversion.convertedBuffer = result.convertedBuffer;
+    conversion.convertedWorkbook = result.convertedWorkbook;
+    renderVTBConversionResult(result, conversion.originalFileName);
+    showToast(`Đã chuyển đổi ${result.mappedCount} dòng sang Masterlist mẫu mới.`, 'success');
+  } catch (err) {
+    console.error('Lỗi khi chuyển đổi file VTB:', err);
     showToast(`Lỗi khi chuyển đổi: ${err.message}`, 'error');
+  } finally {
+    updateVTBAssignmentTableState();
   }
 }
 
@@ -4737,9 +4542,12 @@ function formatNumberVTB(num) {
 }
 
 function renderVTBConversionResult(res, fileName) {
+  const kpiSection = document.getElementById('vtbKPISection');
+  if (kpiSection) kpiSection.style.display = 'block';
+
   const kpiOldCount = document.getElementById('kpiOldItemCount');
   const kpiMappedCount = document.getElementById('kpiMappedCount');
-  if (kpiOldCount) kpiOldCount.textContent = state.vtbWizard.parsedData?.items?.length || 0;
+  if (kpiOldCount) kpiOldCount.textContent = res.oldItemsCount;
   if (kpiMappedCount) kpiMappedCount.textContent = res.mappedCount;
 
   const kpiOld27 = document.getElementById('kpiOldTotal27');
@@ -4747,36 +4555,33 @@ function renderVTBConversionResult(res, fileName) {
   const kpiOld28 = document.getElementById('kpiOldTotal28');
   const kpiNew28 = document.getElementById('kpiNewTotal28');
 
-  const oldTotal27 = state.vtbWizard.parsedData?.totalOld27 || 0;
-  const oldTotal28 = state.vtbWizard.parsedData?.totalOld28 || 0;
-
-  if (kpiOld27) kpiOld27.textContent = formatNumberVTB(oldTotal27);
+  if (kpiOld27) kpiOld27.textContent = formatNumberVTB(res.totalOld27);
   if (kpiNew27) kpiNew27.textContent = formatNumberVTB(res.newTotal27);
-  if (kpiOld28) kpiOld28.textContent = formatNumberVTB(oldTotal28);
+  if (kpiOld28) kpiOld28.textContent = formatNumberVTB(res.totalOld28);
   if (kpiNew28) kpiNew28.textContent = formatNumberVTB(res.newTotal28);
 
-  // Render bảng xem trước kết quả
+  // Render bảng mapping
   const tbody = document.getElementById('vtbMappingTableBody');
   if (tbody) {
     tbody.innerHTML = '';
     res.mappedResults.forEach(item => {
       const tr = document.createElement('tr');
       let pillClass = 'vtb-pill-vp';
-      if (item.targetDV === '5G') pillClass = 'vtb-pill-5g';
       if (item.targetDV === 'DLDĐ') pillClass = 'vtb-pill-dl';
       if (item.targetDV === 'ƯCTT') pillClass = 'vtb-pill-uctt';
       if (item.targetDV === 'VHKT') pillClass = 'vtb-pill-vhkt';
+      if (item.targetDV === '5G') pillClass = 'vtb-pill-5g';
 
       tr.innerHTML = `
         <td style="text-align: center; font-weight: 700; color: #64748b;">${item.targetRow}</td>
         <td style="font-weight: 600; color: #1e293b;" title="${escapeHtml(item.targetName)}">${escapeHtml(item.targetName)}</td>
-        <td style="color: #475569; font-size: 0.725rem;">${escapeHtml(item.targetCategoryLabel || '-')}</td>
         <td style="text-align: center;"><span class="vtb-mapping-pill ${pillClass}">${item.targetDV}</span></td>
         <td style="text-align: right; font-weight: 700; color: ${item.kl27 ? '#047857' : '#94a3b8'};">${item.kl27 ? formatNumberVTB(item.kl27) : '-'}</td>
         <td style="text-align: right; font-weight: 700; color: ${item.kl28 ? '#047857' : '#94a3b8'};">${item.kl28 ? formatNumberVTB(item.kl28) : '-'}</td>
         <td style="text-align: right; color: #475569;">${item.dg ? formatNumberVTB(item.dg) : '-'}</td>
-        <td style="text-align: right; font-weight: 700; color: #1e293b;">${formatNumberVTB(item.tt27)}</td>
-        <td style="text-align: right; font-weight: 700; color: #1e293b;">${formatNumberVTB(item.tt28)}</td>
+        <td style="color: #64748b;" title="${escapeHtml(item.oldName)}">
+          <span style="font-weight: 600; color: #334155;">[${escapeHtml(item.oldPurpose)}]</span> ${escapeHtml(item.oldName)}
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -4789,22 +4594,6 @@ function renderVTBConversionResult(res, fileName) {
   if (btnApply) btnApply.disabled = false;
 
   if (window.lucide) lucide.createIcons();
-}
-
-function saveCurrentMappingToProfile() {
-  const profile = getCurrentVTBProfile();
-  if (!profile || !state.vtbWizard.splitItems) return;
-
-  const mappingMap = {};
-  state.vtbWizard.splitItems.forEach(it => {
-    if (it.selectedCategoryId) {
-      mappingMap[it.name] = it.selectedCategoryId;
-    }
-  });
-
-  const domain = state.vtbWizard.selectedDomain || 'VT';
-  window.VTBConverter.ProfileManager.saveBatchMappings(domain, profile.id, mappingMap);
-  showToast(`Đã ghi nhớ ${Object.keys(mappingMap).length} quy tắc ánh xạ vào Profile "${profile.name}"!`, 'success');
 }
 
 function downloadConvertedVTBFile() {
@@ -4852,24 +4641,5 @@ function applyConvertedVTBToAppState() {
   rebuildExtractedData();
   closeVTBConverterModal();
 }
-
-// Gán các hàm vào window để gọi từ onclick / HTML events
-window.openVTBConverterModal = openVTBConverterModal;
-window.closeVTBConverterModal = closeVTBConverterModal;
-window.switchVTBStep = switchVTBStep;
-window.handleVTBDomainChange = handleVTBDomainChange;
-window.handleVTBProfileChange = handleVTBProfileChange;
-window.openVTBProfileEditorModal = openVTBProfileEditorModal;
-window.closeVTBProfileEditorModal = closeVTBProfileEditorModal;
-window.addCategoryRowToEditor = addCategoryRowToEditor;
-window.saveVTBProfileFromEditor = saveVTBProfileFromEditor;
-window.deleteCurrentVTBProfile = deleteCurrentVTBProfile;
-window.filterVTBMappingTable = filterVTBMappingTable;
-window.autoSuggestAllVTBItems = autoSuggestAllVTBItems;
-window.handleItemCategoryChange = handleItemCategoryChange;
-window.executeVTBConversionAndGoToStep3 = executeVTBConversionAndGoToStep3;
-window.saveCurrentMappingToProfile = saveCurrentMappingToProfile;
-window.downloadConvertedVTBFile = downloadConvertedVTBFile;
-window.applyConvertedVTBToAppState = applyConvertedVTBToAppState;
 
 

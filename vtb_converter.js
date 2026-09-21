@@ -19,6 +19,17 @@ function getVTBNewTemplateBuffer() {
   return bytes.buffer;
 }
 
+async function loadVTBNewTemplateBuffer() {
+  try {
+    const response = await fetch('Masterlist%202027-2028_Mau_moi.xlsx', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.arrayBuffer();
+  } catch (error) {
+    console.warn('Không nạp được phôi Mẫu mới hiện hành, dùng bản nhúng dự phòng:', error);
+    return getVTBNewTemplateBuffer();
+  }
+}
+
 /**
  * Kiểm tra nhanh xem workbook có phải file mẫu cũ của VTB (37 cột) hay không
  */
@@ -28,8 +39,10 @@ function isOldVTBFormat(workbook) {
   if (!ws || !ws['!ref']) return false;
 
   const range = XLSX.utils.decode_range(ws['!ref']);
+  // File cũ có khoảng 37 cột (tối thiểu từ cột A đến AJ/AK >= 35 cột)
   if (range.e.c < 30) return false;
 
+  // Quét các ô trong 10 dòng đầu tìm từ khóa đặc trưng của mẫu cũ
   let foundOldKeywords = 0;
   for (let r = 0; r <= Math.min(10, range.e.r); r++) {
     for (let c = 0; c <= Math.min(36, range.e.c); c++) {
@@ -50,209 +63,14 @@ function isOldVTBFormat(workbook) {
   return foundOldKeywords >= 3;
 }
 
-// ==================== QUẢN LÝ PROFILE PHÂN CẤP TỰ ĐỘNG ====================
-
-const VTB_PROFILES_STORAGE_KEY = 'vtb_dynamic_profiles_v2';
-
-const DEFAULT_VT_PROFILES = [
-  {
-    id: 'vt_tech_hierarchy',
-    domain: 'VT',
-    name: 'Phân cấp Công nghệ (5G / 4G / 3G / 2G / ƯCTT)',
-    description: 'Phân cấp thiết bị theo thế hệ mạng 5G, 4G, 3G, 2G và Đầu tư bắt buộc',
-    isDefault: true,
-    categories: [
-      { id: 'cat_5g', code: '5G', label: 'Cấp 2: Mạng 5G', group: 'Mạng 5G', dv: '5G' },
-      { id: 'cat_4g', code: 'DLDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 4G (Dung lượng)', group: 'Mạng 2G/3G/4G', dv: 'DLDĐ' },
-      { id: 'cat_3g', code: 'DLDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 3G (Dung lượng)', group: 'Mạng 2G/3G/4G', dv: 'DLDĐ' },
-      { id: 'cat_2g', code: 'VHKT', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: 2G / Củng cố', group: 'Mạng 2G/3G/4G', dv: 'VHKT' },
-      { id: 'cat_vp', code: 'VPDĐ', label: 'Cấp 2: Mạng 2G/3G/4G > Cấp 3: Vùng phủ chung', group: 'Mạng 2G/3G/4G', dv: 'VPDĐ' },
-      { id: 'cat_uctt', code: 'ƯCTT', label: 'Cấp 2: Đầu tư bắt buộc > Cấp 3: ƯCTT', group: 'Đầu tư bắt buộc', dv: 'ƯCTT' },
-      { id: 'cat_vhkt', code: 'VHKT', label: 'Cấp 2: Nâng cao CLM > Cấp 3: Hiện đại hóa / VHKT', group: 'Nâng cao CLM', dv: 'VHKT' }
-    ],
-    savedMappings: {}
-  },
-  {
-    id: 'vt_standard_ml',
-    domain: 'VT',
-    name: 'Phân cấp Chuẩn Masterlist (VPDĐ / DLDĐ / VHKT / ƯCTT / 5G)',
-    description: 'Phân cấp trực tiếp theo 5 nhánh dịch vụ chuẩn của Masterlist 2027-2028',
-    isDefault: false,
-    categories: [
-      { id: 'cat_std_5g', code: '5G', label: 'Mạng 5G (Mã DV: 5G)', group: 'Mạng 5G', dv: '5G' },
-      { id: 'cat_std_vp', code: 'VPDĐ', label: 'Vùng phủ di động (Mã DV: VPDĐ)', group: 'Phát triển mạng', dv: 'VPDĐ' },
-      { id: 'cat_std_dl', code: 'DLDĐ', label: 'Dung lượng di động (Mã DV: DLDĐ)', group: 'Phát triển mạng', dv: 'DLDĐ' },
-      { id: 'cat_std_vhkt', code: 'VHKT', label: 'Củng cố / Nâng cao CLM (Mã DV: VHKT)', group: 'Vận hành kỹ thuật', dv: 'VHKT' },
-      { id: 'cat_std_uctt', code: 'ƯCTT', label: 'Đầu tư bắt buộc / ƯCTT (Mã DV: ƯCTT)', group: 'ƯCTT', dv: 'ƯCTT' }
-    ],
-    savedMappings: {}
-  }
-];
-
-const VTBProfileManager = {
-  getProfiles(domain = 'VT') {
-    try {
-      const raw = localStorage.getItem(VTB_PROFILES_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        const list = parsed[domain] || [];
-        if (list.length > 0) return list;
-      }
-    } catch (e) {
-      console.warn('Lỗi đọc profiles VTB từ localStorage:', e);
-    }
-    // Trả về mặc định nếu chưa có
-    if (domain === 'VT') {
-      this.saveAllProfiles('VT', DEFAULT_VT_PROFILES);
-      return JSON.parse(JSON.stringify(DEFAULT_VT_PROFILES));
-    }
-    return [];
-  },
-
-  saveAllProfiles(domain, list) {
-    try {
-      const raw = localStorage.getItem(VTB_PROFILES_STORAGE_KEY);
-      const data = raw ? JSON.parse(raw) : {};
-      data[domain] = list;
-      localStorage.setItem(VTB_PROFILES_STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.error('Lỗi ghi profiles VTB:', e);
-    }
-  },
-
-  getProfile(domain, profileId) {
-    const profiles = this.getProfiles(domain);
-    return profiles.find(p => p.id === profileId) || profiles[0] || null;
-  },
-
-  saveProfile(domain, profile) {
-    const profiles = this.getProfiles(domain);
-    const idx = profiles.findIndex(p => p.id === profile.id);
-    if (idx >= 0) {
-      profiles[idx] = profile;
-    } else {
-      profiles.push(profile);
-    }
-    this.saveAllProfiles(domain, profiles);
-    return profile;
-  },
-
-  deleteProfile(domain, profileId) {
-    let profiles = this.getProfiles(domain);
-    profiles = profiles.filter(p => p.id !== profileId);
-    if (profiles.length === 0 && domain === 'VT') {
-      profiles = JSON.parse(JSON.stringify(DEFAULT_VT_PROFILES));
-    }
-    this.saveAllProfiles(domain, profiles);
-    return profiles;
-  },
-
-  saveMapping(domain, profileId, itemName, categoryId) {
-    const profile = this.getProfile(domain, profileId);
-    if (!profile) return;
-    if (!profile.savedMappings) profile.savedMappings = {};
-    const norm = normalizeItemName(itemName);
-    profile.savedMappings[norm] = categoryId;
-    this.saveProfile(domain, profile);
-  },
-
-  saveBatchMappings(domain, profileId, mappingMap) {
-    const profile = this.getProfile(domain, profileId);
-    if (!profile) return;
-    if (!profile.savedMappings) profile.savedMappings = {};
-    for (const [name, catId] of Object.entries(mappingMap)) {
-      const norm = normalizeItemName(name);
-      profile.savedMappings[norm] = catId;
-    }
-    this.saveProfile(domain, profile);
-  }
-};
-
-/**
- * Chuẩn hóa chuỗi để so khớp ánh xạ
- */
-function normalizeItemName(str) {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .replace(/^huawei_/i, '')
-    .replace(/^zte_/i, '')
-    .replace(/[\r\n]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/**
- * Tự động gợi ý nhóm phân cấp cho một mục bóc tách dựa vào Profile đã chọn
- */
-function autoSuggestCategory(item, profile) {
-  if (!profile || !profile.categories || profile.categories.length === 0) return '';
-  const cats = profile.categories;
-  const norm = normalizeItemName(item.name);
-  const purpose = (item.purpose || '').toUpperCase();
-
-  // 1. Kiểm tra ánh xạ đã lưu trước đó trong Profile
-  if (profile.savedMappings && profile.savedMappings[norm]) {
-    const savedId = profile.savedMappings[norm];
-    if (cats.some(c => c.id === savedId)) return savedId;
-  }
-
-  // 2. ƯCTT / Đầu tư bắt buộc
-  if (purpose.includes('ƯCTT') || purpose.includes('BẮT BUỘC') || item.subType === 'uctt') {
-    const ucttCat = cats.find(c => c.code === 'ƯCTT' || c.id.includes('uctt') || c.label.includes('ƯCTT'));
-    if (ucttCat) return ucttCat.id;
-  }
-
-  // 3. Mạng 5G
-  if (norm.includes('5g')) {
-    const g5Cat = cats.find(c => c.code === '5G' || c.id.includes('5g') || c.label.includes('5G'));
-    if (g5Cat) return g5Cat.id;
-  }
-
-  // 4. Mạng 2G / Củng cố / VHKT
-  if (purpose.includes('CỦNG CỐ') || purpose.includes('VHKT') || item.subType === 'vhkt' || norm.includes('2g')) {
-    const g2Cat = cats.find(c => c.label.includes('2G') || c.code === 'VHKT' || c.id.includes('vhkt'));
-    if (g2Cat) return g2Cat.id;
-  }
-
-  // 5. Mạng 3G
-  if (norm.includes('3g')) {
-    const g3Cat = cats.find(c => c.label.includes('3G') || c.code === 'DLDĐ');
-    if (g3Cat) return g3Cat.id;
-  }
-
-  // 6. Mạng 4G
-  if (norm.includes('4g')) {
-    const g4Cat = cats.find(c => c.label.includes('4G') || c.code === 'DLDĐ');
-    if (g4Cat) return g4Cat.id;
-  }
-
-  // 7. Vùng phủ
-  if (purpose.includes('VÙNG PHỦ') || item.subType === 'vp') {
-    const vpCat = cats.find(c => c.code === 'VPDĐ' || c.label.includes('Vùng phủ') || c.id.includes('vp'));
-    if (vpCat) return vpCat.id;
-  }
-
-  // 8. Dung lượng
-  if (purpose.includes('DUNG LƯỢNG') || item.subType === 'dl') {
-    const dlCat = cats.find(c => c.code === 'DLDĐ' || c.label.includes('Dung lượng') || c.id.includes('dl'));
-    if (dlCat) return dlCat.id;
-  }
-
-  // Mặc định chọn category đầu tiên
-  return cats[0].id;
-}
-
 /**
  * Phân tích và trích xuất dữ liệu từ file mẫu cũ VTB (37 cột)
- * Trả về danh sách gốc items và danh sách phân rã splitItems để người dùng ánh xạ
  */
-function parseOldVTBWorkbook(workbook, profile = null) {
+function parseOldVTBWorkbook(workbook) {
   const ws = workbook.Sheets[workbook.SheetNames[0]];
   const range = XLSX.utils.decode_range(ws['!ref']);
 
   const items = [];
-  const splitItems = [];
   let currentVendor = '';
   let totalOld27 = 0;
   let totalOld28 = 0;
@@ -268,23 +86,28 @@ function parseOldVTBWorkbook(workbook, profile = null) {
 
     if (!name && !tt) continue;
 
+    // Lấy giá trị tổng từ dòng TỔNG ĐẦU TƯ hoặc VÔ TUYẾN
     const nameUpper = name.toUpperCase();
     if (nameUpper.includes('TỔNG ĐẦU TƯ') || nameUpper.includes('VÔ TUYẾN')) {
-      const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })];
-      const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })];
+      const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })]; // Col AB (Tổng 2027)
+      const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })]; // Col AJ (Tổng 2028)
       if (cellAB && typeof cellAB.v === 'number') totalOld27 = cellAB.v;
       if (cellAJ && typeof cellAJ.v === 'number') totalOld28 = cellAJ.v;
     }
 
+    // Dòng nhóm / vendor (VD: Huawei, ZTE, Antena, Củng cố mạng lưới...)
     if (['2.1', '2.2', '2.3', '5'].includes(tt) || nameUpper === 'HUAWEI' || nameUpper === 'ZTE' || nameUpper === 'ANTENA' || nameUpper.includes('CỦNG CỐ MẠNG LƯỚI')) {
       currentVendor = name;
       continue;
     }
 
+    // Lấy Đơn giá (Col T - index 19)
     const cellT = ws[XLSX.utils.encode_cell({ r: r, c: 19 })];
     const dg = cellT && typeof cellT.v === 'number' ? cellT.v : (cellT && !isNaN(Number(cellT.v)) ? Number(cellT.v) : null);
     if (!dg) continue;
 
+    // Bóc tách Khối lượng 2027:
+    // Col D(3): UCTT, Col E(4): BB khác, Col F(5): Vùng phủ, Col G(6): DL Giải nghẽn, Col H(7): DL Tăng trưởng, Col I(8): Củng cố, Col J(9): Hiện đại hóa, Col K(10): Tổng KL 2027
     const getNum = (cIdx) => {
       const cell = ws[XLSX.utils.encode_cell({ r: r, c: cIdx })];
       if (!cell || cell.v === undefined || cell.v === null || cell.v === '') return 0;
@@ -301,6 +124,8 @@ function parseOldVTBWorkbook(workbook, profile = null) {
     const kl_hd_27   = getNum(9);
     const kl_tong_27 = getNum(10);
 
+    // Bóc tách Khối lượng 2028:
+    // Col L(11): UCTT, Col M(12): BB khác, Col N(13): Vùng phủ, Col O(14): DL Giải nghẽn, Col P(15): DL Tăng trưởng, Col Q(16): Củng cố, Col R(17): Hiện đại hóa, Col S(18): Tổng KL 2028
     const kl_uctt_28 = getNum(11);
     const kl_bbk_28  = getNum(12);
     const kl_vp_28   = getNum(13);
@@ -310,324 +135,428 @@ function parseOldVTBWorkbook(workbook, profile = null) {
     const kl_hd_28   = getNum(17);
     const kl_tong_28 = getNum(18);
 
-    const kl_dl_27 = kl_gn_27 + kl_tt_27;
-    const kl_dl_28 = kl_gn_28 + kl_tt_28;
-    const kl_cg_tot_27 = kl_cg_27 + kl_hd_27;
-    const kl_cg_tot_28 = kl_cg_28 + kl_hd_28;
-
+    // Thành tiền 2027 & 2028 dòng này
     const cellAB = ws[XLSX.utils.encode_cell({ r: r, c: 27 })];
     const cellAJ = ws[XLSX.utils.encode_cell({ r: r, c: 35 })];
     const tt27 = cellAB && typeof cellAB.v === 'number' ? cellAB.v : (dg ? kl_tong_27 * dg : 0);
     const tt28 = cellAJ && typeof cellAJ.v === 'number' ? cellAJ.v : (dg ? kl_tong_28 * dg : 0);
 
-    const rawItem = {
+    items.push({
       row: r + 1,
       tt: tt,
       vendor: currentVendor,
       name: name,
       dvt: dvt,
       dg: dg,
-      kl_uctt_27, kl_vp_27, kl_dl_27, kl_cg_tot_27, kl_tong_27,
-      kl_uctt_28, kl_vp_28, kl_dl_28, kl_cg_tot_28, kl_tong_28,
-      tt27, tt28
-    };
-    items.push(rawItem);
-
-    // Phân rã dòng thành các mục chi tiết theo mục đích để người dùng tự do ánh xạ
-    let hasSplit = false;
-
-    if (kl_uctt_27 > 0 || kl_uctt_28 > 0) {
-      hasSplit = true;
-      splitItems.push({
-        id: `split_${r + 1}_uctt`,
-        rawRow: r + 1,
-        vendor: currentVendor,
-        name: name,
-        dvt: dvt,
-        dg: dg,
-        purpose: 'Đầu tư bắt buộc (ƯCTT)',
-        subType: 'uctt',
-        kl27: kl_uctt_27,
-        kl28: kl_uctt_28,
-        tt27: kl_uctt_27 * dg,
-        tt28: kl_uctt_28 * dg
-      });
-    }
-
-    if (kl_vp_27 > 0 || kl_vp_28 > 0) {
-      hasSplit = true;
-      splitItems.push({
-        id: `split_${r + 1}_vp`,
-        rawRow: r + 1,
-        vendor: currentVendor,
-        name: name,
-        dvt: dvt,
-        dg: dg,
-        purpose: 'Đầu tư phát triển (Vùng phủ)',
-        subType: 'vp',
-        kl27: kl_vp_27,
-        kl28: kl_vp_28,
-        tt27: kl_vp_27 * dg,
-        tt28: kl_vp_28 * dg
-      });
-    }
-
-    if (kl_dl_27 > 0 || kl_dl_28 > 0) {
-      hasSplit = true;
-      splitItems.push({
-        id: `split_${r + 1}_dl`,
-        rawRow: r + 1,
-        vendor: currentVendor,
-        name: name,
-        dvt: dvt,
-        dg: dg,
-        purpose: 'Đầu tư phát triển (Dung lượng)',
-        subType: 'dl',
-        kl27: kl_dl_27,
-        kl28: kl_dl_28,
-        tt27: kl_dl_27 * dg,
-        tt28: kl_dl_28 * dg
-      });
-    }
-
-    if (kl_cg_tot_27 > 0 || kl_cg_tot_28 > 0) {
-      hasSplit = true;
-      splitItems.push({
-        id: `split_${r + 1}_vhkt`,
-        rawRow: r + 1,
-        vendor: currentVendor,
-        name: name,
-        dvt: dvt,
-        dg: dg,
-        purpose: 'Củng cố / Hiện đại hóa (VHKT)',
-        subType: 'vhkt',
-        kl27: kl_cg_tot_27,
-        kl28: kl_cg_tot_28,
-        tt27: kl_cg_tot_27 * dg,
-        tt28: kl_cg_tot_28 * dg
-      });
-    }
-
-    // Nếu không thuộc các mục trên mà có khối lượng tổng
-    if (!hasSplit && (kl_tong_27 > 0 || kl_tong_28 > 0)) {
-      splitItems.push({
-        id: `split_${r + 1}_other`,
-        rawRow: r + 1,
-        vendor: currentVendor,
-        name: name,
-        dvt: dvt,
-        dg: dg,
-        purpose: 'Khác / Tổng hợp',
-        subType: 'other',
-        kl27: kl_tong_27,
-        kl28: kl_tong_28,
-        tt27: kl_tong_27 * dg,
-        tt28: kl_tong_28 * dg
-      });
-    }
+      kl_uctt_27: kl_uctt_27,
+      kl_bbk_27: kl_bbk_27,
+      kl_vp_27: kl_vp_27,
+      kl_gn_27: kl_gn_27,
+      kl_tt_27: kl_tt_27,
+      kl_cg_27: kl_cg_27,
+      kl_hd_27: kl_hd_27,
+      kl_tong_27: kl_tong_27,
+      kl_uctt_28: kl_uctt_28,
+      kl_bbk_28: kl_bbk_28,
+      kl_vp_28: kl_vp_28,
+      kl_gn_28: kl_gn_28,
+      kl_tt_28: kl_tt_28,
+      kl_cg_28: kl_cg_28,
+      kl_hd_28: kl_hd_28,
+      kl_tong_28: kl_tong_28,
+      tt27: tt27,
+      tt28: tt28
+    });
   }
 
-  // Tính tổng
-  let sum27 = 0;
-  let sum28 = 0;
-  splitItems.forEach(it => {
-    sum27 += it.tt27;
-    sum28 += it.tt28;
-    if (profile) {
-      it.selectedCategoryId = autoSuggestCategory(it, profile);
-    }
+  let sumCalculated27 = 0;
+  let sumCalculated28 = 0;
+  items.forEach(it => {
+    sumCalculated27 += it.tt27;
+    sumCalculated28 += it.tt28;
   });
-
-  if (!totalOld27 || Math.abs(totalOld27 - sum27) > 1) totalOld27 = sum27;
-  if (!totalOld28 || Math.abs(totalOld28 - sum28) > 1) totalOld28 = sum28;
+  if (!totalOld27 || Math.abs(totalOld27 - sumCalculated27) > 1) totalOld27 = sumCalculated27;
+  if (!totalOld28 || Math.abs(totalOld28 - sumCalculated28) > 1) totalOld28 = sumCalculated28;
 
   return {
     items: items,
-    splitItems: splitItems,
     totalOld27: totalOld27,
     totalOld28: totalOld28
   };
 }
 
 /**
- * Thực hiện chuyển đổi từ file cũ sang file mới dựa trên ánh xạ tùy biến của người dùng
+ * Chuẩn hóa chuỗi để so sánh (bỏ dấu cách thừa, dấu gạch nối, chữ hoa thường)
  */
-function convertWithUserMapping(oldWorkbook, splitItems, profile) {
-  // 1. Nạp phôi mẫu mới từ template base64 nhúng sẵn
-  const templateBuffer = getVTBNewTemplateBuffer();
-  const newWorkbook = XLSX.read(templateBuffer, { type: 'array', cellFormula: true, cellStyles: true });
-  const sheetName = newWorkbook.SheetNames[0]; // 'PL1.1 ML2027-2028'
-  const wsNew = newWorkbook.Sheets[sheetName];
+function normalizeItemName(str) {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .replace(/^huawei_/i, '')
+    .replace(/^zte_/i, '')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  // Helper hàm set ô Excel giá trị số
-  function setCellNumber(r, c, val) {
-    const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
-    if (val === null || val === undefined || val === 0) {
-      delete wsNew[cellRef];
-    } else {
-      wsNew[cellRef] = { t: 'n', v: Number(val) };
-    }
-  }
+const VTB_TECHNOLOGIES = ['5G', '4G', '3G', '2G'];
 
-  // Helper hàm set ô Excel text
-  function setCellText(r, c, text) {
-    const cellRef = XLSX.utils.encode_cell({ r: r, c: c });
-    if (!text) {
-      delete wsNew[cellRef];
-    } else {
-      wsNew[cellRef] = { t: 's', v: String(text) };
-    }
-  }
+function suggestVTBTechnology(name) {
+  const normalized = normalizeItemName(name).toUpperCase();
+  return VTB_TECHNOLOGIES.find(technology => normalized.includes(technology)) || '';
+}
 
-  // 2. XÓA SẠCH toàn bộ số liệu mẫu có sẵn trong phôi (D, E, F, G, H trên các dòng lá)
-  // để bảo toàn 100% tính nguyên vẹn: chỉ có số liệu từ file cũ được đưa vào
-  for (let r = 7; r <= 95; r++) {
-    const cellA = wsNew[XLSX.utils.encode_cell({ r: r, c: 0 })];
-    const tt = cellA ? String(cellA.v || '').trim() : '';
-    const cellG = wsNew[XLSX.utils.encode_cell({ r: r, c: 6 })];
-    const isSubtotal = cellG && cellG.f && cellG.f.includes('SUBTOTAL');
-    if (!isSubtotal && (tt === '-' || r >= 12)) {
-      delete wsNew[XLSX.utils.encode_cell({ r: r, c: 3 })]; // D (KL27)
-      delete wsNew[XLSX.utils.encode_cell({ r: r, c: 4 })]; // E (KL28)
-      delete wsNew[XLSX.utils.encode_cell({ r: r, c: 5 })]; // F (Đơn giá)
-      delete wsNew[XLSX.utils.encode_cell({ r: r, c: 6 })]; // G (TT27)
-      delete wsNew[XLSX.utils.encode_cell({ r: r, c: 7 })]; // H (TT28)
-    }
-  }
+function buildVTBMappingRows(items) {
+  return items
+    .filter(item => (item.kl_vp_27 || 0) > 0 || (item.kl_vp_28 || 0) > 0 ||
+      (item.kl_tt_27 || 0) > 0 || (item.kl_tt_28 || 0) > 0)
+    .map(item => ({
+      id: String(item.row),
+      row: item.row,
+      vendor: item.vendor,
+      name: item.name,
+      coverage27: item.kl_vp_27 || 0,
+      coverage28: item.kl_vp_28 || 0,
+      capacity27: item.kl_tt_27 || 0,
+      capacity28: item.kl_tt_28 || 0,
+      suggestion: suggestVTBTechnology(item.name)
+    }));
+}
 
-  // Helper ghi một dòng thiết bị vào wsNew
-  function writeItemToRow(rowIdx, item, kl27, kl28, customName) {
-    if (customName) setCellText(rowIdx, 1, customName);
-    if (item.dvt) setCellText(rowIdx, 2, item.dvt);
-    setCellNumber(rowIdx, 3, kl27);
-    setCellNumber(rowIdx, 4, kl28);
-    setCellNumber(rowIdx, 5, item.dg);
+function applyVTBBulkTechnology(assignments, selectedIds, technology) {
+  if (!VTB_TECHNOLOGIES.includes(technology)) return { ...(assignments || {}) };
+  const updated = { ...(assignments || {}) };
+  (selectedIds || []).forEach(id => {
+    updated[String(id)] = technology;
+  });
+  return updated;
+}
 
-    const rNum = rowIdx + 1;
-    const refG = XLSX.utils.encode_cell({ r: rowIdx, c: 6 });
-    const refH = XLSX.utils.encode_cell({ r: rowIdx, c: 7 });
-    if (kl27 > 0) {
-      wsNew[refG] = { t: 'n', v: kl27 * item.dg, f: `F${rNum}*D${rNum}` };
-    } else {
-      delete wsNew[refG];
-    }
-    if (kl28 > 0) {
-      wsNew[refH] = { t: 'n', v: kl28 * item.dg, f: `F${rNum}*E${rNum}` };
-    } else {
-      delete wsNew[refH];
-    }
-  }
+function splitOldVTBItems(items, assignments) {
+  const rows = [];
+  const missingAssignments = [];
+  const unmappedAmounts = [];
+  const normalizedAssignments = assignments || {};
 
-  // Tạo map id -> category
-  const catMap = {};
-  if (profile && profile.categories) {
-    profile.categories.forEach(c => {
-      catMap[c.id] = c;
-    });
-  }
-
-  // Định nghĩa các dải hàng cho từng mã DV trong phôi Masterlist
-  // 5G: Row 13..21 (index 12..20)
-  // VPDĐ: Row 25..44 (index 24..43)
-  // DLDĐ: Row 47..73 (index 46..72)
-  // VHKT: Row 79..85 (index 78..84)
-  // ƯCTT: Row 90..93 (index 89..92)
-  const slotCursors = {
-    '5G': 12,
-    'VPDĐ': 24,
-    'DLDĐ': 46,
-    'VHKT': 78,
-    'ƯCTT': 89
-  };
-
-  const mappedResults = [];
-
-  splitItems.forEach(item => {
-    const cat = catMap[item.selectedCategoryId] || profile?.categories?.[0] || { code: 'DLDĐ', label: 'Dung lượng', dv: 'DLDĐ' };
-    const code = cat.code || 'DLDĐ';
-
-    let r = slotCursors[code];
-    if (r === undefined) r = slotCursors['DLDĐ'];
-
-    // Bỏ qua dòng subtotal nếu lấn vào (dòng 59 là subtotal nhóm anten)
-    if (code === 'DLDĐ' && r === 59) {
-      r++;
-      slotCursors['DLDĐ'] = r;
-    }
-
-    slotCursors[code] = r + 1;
-
-    // Ghi vào dòng
-    writeItemToRow(r, item, item.kl27, item.kl28, item.name);
-    setCellText(r, 10, cat.dv || code);
-
-    mappedResults.push({
+  function addRow(item, purpose, branch, maDV, kl27, kl28) {
+    if (!(kl27 > 0) && !(kl28 > 0)) return;
+    rows.push({
+      sourceRow: item.row,
       oldName: item.name,
       oldVendor: item.vendor,
-      oldPurpose: item.purpose,
-      targetRow: r + 1,
-      targetName: item.name,
-      targetDV: cat.dv || code,
-      targetCategoryLabel: cat.label,
-      kl27: item.kl27,
-      kl28: item.kl28,
+      name: item.name,
+      dvt: item.dvt,
       dg: item.dg,
-      tt27: item.tt27,
-      tt28: item.tt28
+      purpose,
+      branch,
+      maMang: 'VT',
+      maDV,
+      maLoai: 'VTTB',
+      kl27: kl27 || 0,
+      kl28: kl28 || 0,
+      tt27: (kl27 || 0) * item.dg,
+      tt28: (kl28 || 0) * item.dg
+    });
+  }
+
+  items.forEach(item => {
+    addRow(
+      item,
+      'UCTT + Đầu tư bắt buộc khác',
+      'quality',
+      'ƯCTT',
+      (item.kl_uctt_27 || 0) + (item.kl_bbk_27 || 0),
+      (item.kl_uctt_28 || 0) + (item.kl_bbk_28 || 0)
+    );
+
+    const hasManualPurpose = (item.kl_vp_27 || 0) > 0 || (item.kl_vp_28 || 0) > 0 ||
+      (item.kl_tt_27 || 0) > 0 || (item.kl_tt_28 || 0) > 0;
+    const technology = normalizedAssignments[String(item.row)] || '';
+    if (hasManualPurpose && !VTB_TECHNOLOGIES.includes(technology)) {
+      missingAssignments.push(String(item.row));
+    } else if (hasManualPurpose) {
+      const is5G = technology === '5G';
+      const suffix = technology.toLowerCase();
+      addRow(
+        item,
+        'Vùng phủ',
+        is5G ? 'network_5g' : `coverage_${suffix}`,
+        is5G ? '5G' : 'VPDĐ',
+        item.kl_vp_27 || 0,
+        item.kl_vp_28 || 0
+      );
+      addRow(
+        item,
+        'Tăng trưởng lưu lượng',
+        is5G ? 'network_5g' : `capacity_${suffix}`,
+        is5G ? '5G' : 'DLDĐ',
+        item.kl_tt_27 || 0,
+        item.kl_tt_28 || 0
+      );
+    }
+
+    addRow(
+      item,
+      'Hiện đại hóa, thông minh hóa',
+      'modernization',
+      'VHKT',
+      item.kl_hd_27 || 0,
+      item.kl_hd_28 || 0
+    );
+
+    [
+      ['Giải nghẽn, nâng cấp', 2027, item.kl_gn_27 || 0],
+      ['Giải nghẽn, nâng cấp', 2028, item.kl_gn_28 || 0],
+      ['Củng cố bền vững', 2027, item.kl_cg_27 || 0],
+      ['Củng cố bền vững', 2028, item.kl_cg_28 || 0]
+    ].forEach(([column, year, quantity]) => {
+      if (quantity > 0) unmappedAmounts.push({ row: item.row, column, year, quantity });
     });
   });
 
-  // 3. Xuất ArrayBuffer của Workbook mới đã cập nhật
-  const convertedBuffer = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
-
-  // Tính tổng thành tiền sau chuyển đổi
-  let newTotal27 = 0;
-  let newTotal28 = 0;
-  mappedResults.forEach(m => {
-    newTotal27 += (m.tt27 || 0);
-    newTotal28 += (m.tt28 || 0);
-  });
-
-  return {
-    convertedWorkbook: newWorkbook,
-    convertedBuffer: convertedBuffer,
-    newTotal27: newTotal27,
-    newTotal28: newTotal28,
-    mappedResults: mappedResults,
-    mappedCount: mappedResults.length
-  };
+  return { rows, missingAssignments, unmappedAmounts };
 }
 
 /**
- * Hàm tương thích ngược: tự động bóc tách và chuyển đổi với profile mặc định
+ * Thực hiện chuyển đổi từ file cũ sang file mới
  */
-function convertOldVTBToNewFormat(oldWorkbook) {
-  const profile = VTBProfileManager.getProfile('VT', 'vt_tech_hierarchy');
-  const parsed = parseOldVTBWorkbook(oldWorkbook, profile);
-  const conv = convertWithUserMapping(oldWorkbook, parsed.splitItems, profile);
+function convertOldVTBToNewFormat(oldWorkbook, assignments = {}, templateOverride = null) {
+  const oldData = parseOldVTBWorkbook(oldWorkbook);
+  const splitResult = splitOldVTBItems(oldData.items, assignments);
+  if (splitResult.missingAssignments.length > 0) {
+    const error = new Error(`Còn ${splitResult.missingAssignments.length} vật tư chưa được gán công nghệ.`);
+    error.code = 'VTB_MAPPING_REQUIRED';
+    error.rows = splitResult.missingAssignments;
+    throw error;
+  }
+  if (splitResult.unmappedAmounts.length > 0) {
+    const error = new Error('File có số lượng ở cột Giải nghẽn hoặc Củng cố chưa có quy tắc ánh xạ.');
+    error.code = 'VTB_UNMAPPED_SOURCE_COLUMNS';
+    error.amounts = splitResult.unmappedAmounts;
+    throw error;
+  }
+
+  const templateBuffer = templateOverride || getVTBNewTemplateBuffer();
+  const newWorkbook = XLSX.read(templateBuffer, { type: 'array', cellFormula: true, cellStyles: true, sheetStubs: true });
+  const sheetName = newWorkbook.SheetNames[0];
+  const wsNew = newWorkbook.Sheets[sheetName];
+  const branchDefinitions = [
+    { id: 'network_5g', start: 11, end: 21 },
+    { id: 'coverage_4g', start: 24, end: 31 },
+    { id: 'coverage_3g', start: 32, end: 38 },
+    { id: 'coverage_2g', start: 39, end: 44 },
+    { id: 'capacity_4g', start: 46, end: 51 },
+    { id: 'capacity_3g', start: 52, end: 58 },
+    { id: 'capacity_2g', start: 59, end: 65 },
+    { id: 'modernization', start: 66, end: 68 },
+    { id: 'quality', start: 69, end: 80 }
+  ];
+  const rowsByBranch = Object.fromEntries(branchDefinitions.map(branch => [branch.id, []]));
+  splitResult.rows.forEach(row => rowsByBranch[row.branch].push(row));
+
+  function clone(value) {
+    return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+  }
+
+  function insertSheetRows(startRow, count, styleSourceRow) {
+    if (count <= 0) return;
+    const range = XLSX.utils.decode_range(wsNew['!ref']);
+    for (let row = range.e.r; row >= startRow; row -= 1) {
+      for (let col = range.s.c; col <= range.e.c; col += 1) {
+        const sourceRef = XLSX.utils.encode_cell({ r: row, c: col });
+        const targetRef = XLSX.utils.encode_cell({ r: row + count, c: col });
+        if (wsNew[sourceRef]) wsNew[targetRef] = wsNew[sourceRef];
+        else delete wsNew[targetRef];
+        delete wsNew[sourceRef];
+      }
+    }
+    for (let offset = 0; offset < count; offset += 1) {
+      for (let col = range.s.c; col <= range.e.c; col += 1) {
+        const source = wsNew[XLSX.utils.encode_cell({ r: styleSourceRow, c: col })];
+        const targetRef = XLSX.utils.encode_cell({ r: startRow + offset, c: col });
+        if (source) {
+          const copied = clone(source);
+          delete copied.v;
+          delete copied.w;
+          delete copied.f;
+          copied.t = 'z';
+          wsNew[targetRef] = copied;
+        }
+      }
+    }
+    if (Array.isArray(wsNew['!merges'])) {
+      wsNew['!merges'].forEach(merge => {
+        if (merge.s.r >= startRow) {
+          merge.s.r += count;
+          merge.e.r += count;
+        } else if (merge.e.r >= startRow) {
+          merge.e.r += count;
+        }
+      });
+    }
+    if (Array.isArray(wsNew['!rows'])) {
+      const rowStyle = clone(wsNew['!rows'][styleSourceRow]) || {};
+      wsNew['!rows'].splice(startRow, 0, ...Array.from({ length: count }, () => clone(rowStyle)));
+    }
+    if (wsNew['!autofilter'] && wsNew['!autofilter'].ref) {
+      const filterRange = XLSX.utils.decode_range(wsNew['!autofilter'].ref);
+      if (filterRange.s.r >= startRow) filterRange.s.r += count;
+      if (filterRange.e.r >= startRow) filterRange.e.r += count;
+      wsNew['!autofilter'].ref = XLSX.utils.encode_range(filterRange);
+    }
+    range.e.r += count;
+    wsNew['!ref'] = XLSX.utils.encode_range(range);
+  }
+
+  branchDefinitions.slice().reverse().forEach(branch => {
+    const capacity = branch.end - branch.start;
+    branch.extra = Math.max(0, rowsByBranch[branch.id].length - capacity);
+    insertSheetRows(branch.end, branch.extra, branch.end - 1);
+  });
+
+  function shiftForBaseRow(baseRow) {
+    return branchDefinitions.reduce((shift, branch) => shift + (branch.end <= baseRow ? branch.extra : 0), 0);
+  }
+
+  branchDefinitions.forEach(branch => {
+    branch.finalStart = branch.start + shiftForBaseRow(branch.start);
+    branch.finalCapacity = (branch.end - branch.start) + branch.extra;
+  });
+
+  function preserveStyleAndSet(row, col, type, value, formula) {
+    const ref = XLSX.utils.encode_cell({ r: row, c: col });
+    const style = wsNew[ref] && wsNew[ref].s ? clone(wsNew[ref].s) : undefined;
+    const cell = { t: type, v: value };
+    if (style) cell.s = style;
+    if (formula) cell.f = formula;
+    wsNew[ref] = cell;
+  }
+
+  function clearDataRow(row) {
+    for (let col = 0; col <= 11; col += 1) {
+      const ref = XLSX.utils.encode_cell({ r: row, c: col });
+      if (!wsNew[ref]) continue;
+      const style = wsNew[ref].s ? clone(wsNew[ref].s) : undefined;
+      wsNew[ref] = { t: 'z' };
+      if (style) wsNew[ref].s = style;
+    }
+  }
+
+  branchDefinitions.forEach(branch => {
+    for (let offset = 0; offset < branch.finalCapacity; offset += 1) {
+      clearDataRow(branch.finalStart + offset);
+    }
+  });
+
+  const mappedResults = [];
+  branchDefinitions.forEach(branch => {
+    rowsByBranch[branch.id].forEach((item, index) => {
+      const row = branch.finalStart + index;
+      const excelRow = row + 1;
+      preserveStyleAndSet(row, 0, 's', '-');
+      preserveStyleAndSet(row, 1, 's', item.name);
+      preserveStyleAndSet(row, 2, 's', item.dvt || '');
+      if (item.kl27 > 0) preserveStyleAndSet(row, 3, 'n', item.kl27);
+      if (item.kl28 > 0) preserveStyleAndSet(row, 4, 'n', item.kl28);
+      preserveStyleAndSet(row, 5, 'n', item.dg);
+      if (item.kl27 > 0) preserveStyleAndSet(row, 6, 'n', item.tt27, `F${excelRow}*D${excelRow}`);
+      if (item.kl28 > 0) preserveStyleAndSet(row, 7, 'n', item.tt28, `F${excelRow}*E${excelRow}`);
+      preserveStyleAndSet(row, 9, 's', item.maMang);
+      preserveStyleAndSet(row, 10, 's', item.maDV);
+      preserveStyleAndSet(row, 11, 's', item.maLoai);
+      mappedResults.push({
+        oldName: item.oldName,
+        oldVendor: item.oldVendor,
+        oldPurpose: item.purpose,
+        targetRow: excelRow,
+        targetName: item.name,
+        targetDV: item.maDV,
+        technology: assignments[String(item.sourceRow)] || '',
+        kl27: item.kl27,
+        kl28: item.kl28,
+        dg: item.dg,
+        tt27: item.tt27,
+        tt28: item.tt28
+      });
+    });
+  });
+
+  const lastRow = XLSX.utils.decode_range(wsNew['!ref']).e.r;
+  const headerRows = {
+    network5g: 10,
+    network234g: 21 + shiftForBaseRow(21),
+    coverage: 22 + shiftForBaseRow(22),
+    coverage4g: 23 + shiftForBaseRow(23),
+    coverage3g: 31 + shiftForBaseRow(31),
+    coverage2g: 38 + shiftForBaseRow(38),
+    capacity: 44 + shiftForBaseRow(44),
+    capacity4g: 45 + shiftForBaseRow(45),
+    capacity3g: 51 + shiftForBaseRow(51),
+    capacity2g: 58 + shiftForBaseRow(58),
+    modernization: 65 + shiftForBaseRow(65),
+    quality: 68 + shiftForBaseRow(68),
+    contingency: 80 + shiftForBaseRow(80)
+  };
+
+  function setSubtotal(row, startRow, endRow) {
+    ['G', 'H'].forEach(column => {
+      const ref = `${column}${row + 1}`;
+      const oldCell = wsNew[ref] || {};
+      const style = oldCell.s ? clone(oldCell.s) : undefined;
+      const cell = { t: 'n', v: 0, f: `SUBTOTAL(9,${column}${startRow + 1}:${column}${endRow + 1})` };
+      if (style) cell.s = style;
+      wsNew[ref] = cell;
+    });
+  }
+
+  setSubtotal(6, 7, lastRow);
+  setSubtotal(7, 8, lastRow);
+  setSubtotal(8, 9, lastRow);
+  setSubtotal(9, 10, lastRow);
+  setSubtotal(headerRows.network5g, branchDefinitions[0].finalStart, branchDefinitions[0].finalStart + branchDefinitions[0].finalCapacity - 1);
+  setSubtotal(headerRows.network234g, headerRows.coverage, lastRow);
+  setSubtotal(headerRows.coverage, headerRows.coverage4g, headerRows.capacity - 1);
+  setSubtotal(headerRows.coverage4g, branchDefinitions[1].finalStart, branchDefinitions[1].finalStart + branchDefinitions[1].finalCapacity - 1);
+  setSubtotal(headerRows.coverage3g, branchDefinitions[2].finalStart, branchDefinitions[2].finalStart + branchDefinitions[2].finalCapacity - 1);
+  setSubtotal(headerRows.coverage2g, branchDefinitions[3].finalStart, branchDefinitions[3].finalStart + branchDefinitions[3].finalCapacity - 1);
+  setSubtotal(headerRows.capacity, headerRows.capacity4g, headerRows.modernization - 1);
+  setSubtotal(headerRows.capacity4g, branchDefinitions[4].finalStart, branchDefinitions[4].finalStart + branchDefinitions[4].finalCapacity - 1);
+  setSubtotal(headerRows.capacity3g, branchDefinitions[5].finalStart, branchDefinitions[5].finalStart + branchDefinitions[5].finalCapacity - 1);
+  setSubtotal(headerRows.capacity2g, branchDefinitions[6].finalStart, branchDefinitions[6].finalStart + branchDefinitions[6].finalCapacity - 1);
+  setSubtotal(headerRows.modernization, branchDefinitions[7].finalStart, branchDefinitions[7].finalStart + branchDefinitions[7].finalCapacity - 1);
+  setSubtotal(headerRows.quality, branchDefinitions[8].finalStart, branchDefinitions[8].finalStart + branchDefinitions[8].finalCapacity - 1);
+  setSubtotal(headerRows.contingency, headerRows.contingency + 1, lastRow);
+
+  if (!newWorkbook.Workbook) newWorkbook.Workbook = {};
+  if (!newWorkbook.Workbook.CalcPr) newWorkbook.Workbook.CalcPr = {};
+  newWorkbook.Workbook.CalcPr.fullCalcOnLoad = true;
+  newWorkbook.Workbook.CalcPr.forceFullCalc = true;
+
+  const newTotal27 = mappedResults.reduce((sum, item) => sum + (item.tt27 || 0), 0);
+  const newTotal28 = mappedResults.reduce((sum, item) => sum + (item.tt28 || 0), 0);
+  const convertedBuffer = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array', cellStyles: true });
 
   return {
-    convertedWorkbook: conv.convertedWorkbook,
-    convertedBuffer: conv.convertedBuffer,
-    totalOld27: parsed.totalOld27,
-    totalOld28: parsed.totalOld28,
-    newTotal27: conv.newTotal27,
-    newTotal28: conv.newTotal28,
-    mappedResults: conv.mappedResults,
-    oldItemsCount: parsed.items.length,
-    mappedCount: conv.mappedCount
+    convertedWorkbook: newWorkbook,
+    convertedBuffer,
+    totalOld27: oldData.totalOld27,
+    totalOld28: oldData.totalOld28,
+    newTotal27,
+    newTotal28,
+    mappedResults,
+    oldItemsCount: oldData.items.length,
+    mappedCount: mappedResults.length
   };
 }
 
 // Xuất các hàm ra phạm vi toàn cục window
 window.VTBConverter = {
   isOldVTBFormat: isOldVTBFormat,
-  ProfileManager: VTBProfileManager,
   parseOldVTBWorkbook: parseOldVTBWorkbook,
-  autoSuggestCategory: autoSuggestCategory,
-  convertWithUserMapping: convertWithUserMapping,
+  buildVTBMappingRows: buildVTBMappingRows,
+  applyVTBBulkTechnology: applyVTBBulkTechnology,
+  splitOldVTBItems: splitOldVTBItems,
   convertOldVTBToNewFormat: convertOldVTBToNewFormat,
   getVTBNewTemplateBuffer: getVTBNewTemplateBuffer,
-  normalizeItemName: normalizeItemName
+  loadVTBNewTemplateBuffer: loadVTBNewTemplateBuffer
 };
-
