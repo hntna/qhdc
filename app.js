@@ -1542,7 +1542,7 @@ function applyWalletSplit(mode) {
 
   const walletConfig = mode === 'mang'
     ? { label: 'Tách mảng riêng', maMang: 'VI', maDV: 'TTKD', maLoai: 'VTTB' }
-    : { label: 'Tách DV riêng', maMang: 'CNTT', maDV: 'TTKD', maLoai: 'VI' };
+    : { label: 'Tách DV riêng', maMang: 'CNTT', maDV: 'VI', maLoai: 'VTTB' };
 
   let walletActive = false;
   let matchedMarkerCount = 0;
