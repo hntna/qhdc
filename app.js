@@ -55,6 +55,12 @@ const state = {
   groupsConfig: [],     // Cấu hình nhóm hạng mục
   activeGroupLevels: new Set([1, 2]), // Mặc định chỉ chọn Cấp 1 và Cấp 2
   collapsedGroupKeys: new Set(),            // Lưu các nhóm đang bị thu gọn
+  previewColumns: {
+    dvt: false,
+    kl27: false,
+    kl28: false,
+    dg: false
+  },
   exportBlob: null,
   exportFileName: 'Masterlist 2027-2028_Mau.xlsx',
   strategyProfiles: [],                     // Danh sách profiles Chiến lược 5 năm
@@ -74,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
   makeTableResizable('validationTable');
   initStrategyComparison();
   initVTBConverter();
+  renderPreviewTable();
 });
 
 // Nạp tự động file phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx từ template_data.js
@@ -110,6 +117,14 @@ function showToast(message, type = 'info') {
     toast.style.transition = 'all 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+function normalizeVietnameseSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd');
 }
 
 // Chuyển tab
@@ -409,6 +424,16 @@ function initActionButtons() {
   const btnRestoreTT = document.getElementById('btnRestoreOriginalTT');
   if (btnRestoreTT) {
     btnRestoreTT.addEventListener('click', restoreOriginalTT);
+  }
+
+  const btnSplitWalletDV = document.getElementById('btnSplitWalletDV');
+  if (btnSplitWalletDV) {
+    btnSplitWalletDV.addEventListener('click', () => applyWalletSplit('dv'));
+  }
+
+  const btnSplitWalletMang = document.getElementById('btnSplitWalletMang');
+  if (btnSplitWalletMang) {
+    btnSplitWalletMang.addEventListener('click', () => applyWalletSplit('mang'));
   }
 
   // Nút Mở file KQ ở Header
@@ -884,7 +909,7 @@ function validateRow(item) {
     if (!item.maDV || !String(item.maDV).trim()) {
       addIssue(item, 'MISSING_CODE', 'K (Mã DV)', 'Trống', 'Mã DV hợp lệ',
         'Hạng mục có khối lượng nhưng thiếu Mã DV ở cột K.');
-    } else if (state.validMaDVSet.size > 0 && !state.validMaDVSet.has(item.maDV)) {
+    } else if (!item.skipMaDVValidation && state.validMaDVSet.size > 0 && !state.validMaDVSet.has(item.maDV)) {
       addIssue(item, 'MADV', 'K (Mã DV)', item.maDV, 'Có trong TH theo DV',
         `Mã DV "${item.maDV}" chưa có trong danh mục sheet "TH theo DV". Công thức SUMIFS sẽ bỏ sót dịch vụ này!`);
     }
@@ -1498,6 +1523,72 @@ function restoreOriginalTT() {
   showToast('Đã khôi phục lại toàn bộ Chỉ mục (TT) gốc từ file đầu vào!', 'info');
 }
 
+function rerunValidationForAllRows() {
+  state.validationIssues = [];
+  state.extractedData.forEach(item => validateRow(item));
+  updateValidationKPIs();
+  renderValidationTable();
+}
+
+function isWalletKeywordRow(item) {
+  return normalizeVietnameseSearchText(item?.nd).includes('vi dien tu');
+}
+
+function applyWalletSplit(mode) {
+  if (!state.extractedData || state.extractedData.length === 0) {
+    showToast('Chưa có dữ liệu để tách Ví điện tử.', 'warning');
+    return;
+  }
+
+  const walletConfig = mode === 'mang'
+    ? { label: 'Tách mảng riêng', maMang: 'VI', maDV: 'TTKD', maLoai: 'VTTB' }
+    : { label: 'Tách DV riêng', maMang: 'CNTT', maDV: 'TTKD', maLoai: 'VI' };
+
+  let walletActive = false;
+  let matchedMarkerCount = 0;
+  let updatedCount = 0;
+
+  state.extractedData.forEach(item => {
+    if (item.isMangHeader) {
+      walletActive = false;
+      return;
+    }
+
+    if (isWalletKeywordRow(item)) {
+      walletActive = true;
+      matchedMarkerCount++;
+    }
+
+    if (!walletActive) return;
+
+    item.maMang = walletConfig.maMang;
+    item.maDV = walletConfig.maDV;
+    item.maLoai = walletConfig.maLoai;
+    item.walletSplitMode = mode;
+    item.skipMaDVValidation = true;
+    updatedCount++;
+
+    const node = state.groupsConfig.find(g => g.itemIndex === item.index);
+    if (node) {
+      node.walletSplitMode = mode;
+    }
+  });
+
+  if (updatedCount === 0) {
+    showToast('Không tìm thấy dòng có chữ "Ví điện tử" để tách.', 'warning');
+    return;
+  }
+
+  rerunValidationForAllRows();
+  renderHierarchyTable();
+  renderPreviewTable();
+  renderStrategyComparisonTable();
+  prepareQuickDownload();
+
+  const markerText = matchedMarkerCount > 1 ? `${matchedMarkerCount} điểm bắt đầu` : '1 điểm bắt đầu';
+  showToast(`Đã ${walletConfig.label} cho ${formatNumber(updatedCount)} dòng Ví điện tử (${markerText}).`, 'success');
+}
+
 // Toggle mở rộng / thu gọn 1 nhóm
 window.toggleGroupCollapse = function(key) {
   if (state.collapsedGroupKeys.has(key)) {
@@ -2088,13 +2179,49 @@ function hasDescendantInList(item, list) {
   });
 }
 
+const PREVIEW_COLUMN_DEFS = [
+  { key: 'tt', label: 'TT', className: 'preview-col-tt', headerStyle: 'width: 75px; text-align: center;' },
+  { key: 'nd', label: 'Nội dung / Hạng mục đầu tư, mua sắm (Cấp 2)', className: 'preview-col-nd' },
+  { key: 'dvt', label: 'ĐVT', className: 'preview-col-dvt optional', headerStyle: 'width: 90px; text-align: center;', optional: true },
+  { key: 'kl27', label: 'KL 2027', className: 'num-cell preview-col-kl optional', headerStyle: 'width: 120px;', optional: true },
+  { key: 'kl28', label: 'KL 2028', className: 'num-cell preview-col-kl optional', headerStyle: 'width: 120px;', optional: true },
+  { key: 'dg', label: 'Đơn giá', className: 'num-cell preview-col-dg optional', headerStyle: 'width: 140px;', optional: true },
+  { key: 'tt27', label: 'Năm 2027', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
+  { key: 'tt28', label: 'Năm 2028', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
+  { key: 'total', label: 'Tổng', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' }
+];
+
+function getVisiblePreviewColumns() {
+  return PREVIEW_COLUMN_DEFS.filter(col => !col.optional || state.previewColumns[col.key]);
+}
+
+function renderPreviewTableHeader() {
+  const thead = document.getElementById('previewTableHead');
+  if (!thead) return;
+  const headers = getVisiblePreviewColumns().map(col => {
+    const style = col.headerStyle ? ` style="${col.headerStyle}"` : '';
+    return `<th class="${col.className || ''}"${style}>${col.label}</th>`;
+  }).join('');
+  thead.innerHTML = `<tr>${headers}</tr>`;
+}
+
+function getPreviewVisibleColumnCount() {
+  return getVisiblePreviewColumns().length;
+}
+
+function formatPreviewOptionalNumber(value) {
+  return value !== null && value !== undefined && !isNaN(value) ? formatNumber(value) : '-';
+}
+
 // Render bảng xem trước Masterlist (Tab 2)
 function renderPreviewTable() {
   const tbody = document.getElementById('previewTableBody');
+  renderPreviewTableHeader();
+  const visibleColumnCount = getPreviewVisibleColumnCount();
   if (state.extractedData.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <td colspan="${visibleColumnCount}" style="text-align: center; padding: 2rem; color: var(--text-muted);">
           Chưa có dữ liệu. Vui lòng nạp file để xem trước kết quả.
         </td>
       </tr>
@@ -2150,7 +2277,7 @@ function renderPreviewTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <td colspan="${visibleColumnCount}" style="text-align: center; padding: 2rem; color: var(--text-muted);">
           Không có dữ liệu nào phù hợp với bộ lọc.
         </td>
       </tr>
@@ -2184,6 +2311,10 @@ function renderPreviewTable() {
       <td class="cell-nd" style="font-weight: 800; color: #065f46;">
         <strong>Tổng</strong>
       </td>
+      ${state.previewColumns.dvt ? '<td class="preview-col-dvt" style="text-align: center; color: #94a3b8;">-</td>' : ''}
+      ${state.previewColumns.kl27 ? '<td class="num-cell preview-col-kl" style="color: #94a3b8;">-</td>' : ''}
+      ${state.previewColumns.kl28 ? '<td class="num-cell preview-col-kl" style="color: #94a3b8;">-</td>' : ''}
+      ${state.previewColumns.dg ? '<td class="num-cell preview-col-dg" style="color: #94a3b8;">-</td>' : ''}
       <td class="num-cell" style="font-weight: 800; color: #4f46e5;">${formatNumber(sum27)}</td>
       <td class="num-cell" style="font-weight: 800; color: #059669;">${formatNumber(sum28)}</td>
       <td class="num-cell" style="font-weight: 800; color: #047857;">${formatNumber(sum27 + sum28)}</td>
@@ -2239,6 +2370,10 @@ function renderPreviewTable() {
           <span style="display: inline-block; width: ${indentPx}px;"></span>
           ${isCap1 ? `<strong style="font-size: 0.9rem; letter-spacing: 0.01em;">${escapeHtml(item.nd || '')}</strong>` : (isGrp ? `<strong>${escapeHtml(item.nd || '')}</strong>` : escapeHtml(item.nd || ''))}
         </td>
+        ${state.previewColumns.dvt ? `<td class="preview-col-dvt" style="text-align: center; color: ${item.dvt ? '#334155' : '#94a3b8'};">${escapeHtml(item.dvt || '-')}</td>` : ''}
+        ${state.previewColumns.kl27 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl27)}</td>` : ''}
+        ${state.previewColumns.kl28 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl28)}</td>` : ''}
+        ${state.previewColumns.dg ? `<td class="num-cell preview-col-dg">${formatPreviewOptionalNumber(item.dg)}</td>` : ''}
         <td class="num-cell">${displayTT27}</td>
         <td class="num-cell">${displayTT28}</td>
         <td class="num-cell">${displayTotal}</td>
@@ -2613,6 +2748,20 @@ function initFilterHandlers() {
   if (searchPrevInput) {
     searchPrevInput.addEventListener('input', renderPreviewTable);
   }
+
+  document.querySelectorAll('.preview-column-toggle').forEach(input => {
+    const key = input.dataset.previewColumn;
+    if (!key || !(key in state.previewColumns)) return;
+    input.checked = Boolean(state.previewColumns[key]);
+    const chip = input.closest('.chip');
+    if (chip) chip.classList.toggle('active', input.checked);
+    input.addEventListener('change', (event) => {
+      state.previewColumns[key] = event.target.checked;
+      const parentChip = event.target.closest('.chip');
+      if (parentChip) parentChip.classList.toggle('active', event.target.checked);
+      renderPreviewTable();
+    });
+  });
 
   const searchGrpInput = document.getElementById('searchGroupInput');
   if (searchGrpInput) {

@@ -13,30 +13,6 @@
   <!-- Core Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Tailwind CSS & Cấu hình -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            }
-          },
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            mono: ['JetBrains Mono', 'Menlo', 'monospace'],
-          }
-        }
-      }
-    }
-  </script>
-
   <!-- Lucide Icons & Thư viện Excel chạy 100% Offline (Tải bất đồng bộ defer không chặn giao diện) -->
   <script src="lucide.min.js" defer></script>
   <script src="xlsx.full.min.js" defer></script>
@@ -351,20 +327,28 @@
             <span id="copyBtnText">Sao chép bảng (Excel)</span>
           </button>
         </div>
+
+        <div class="filter-group preview-column-config">
+          <span class="filter-label">Cột hiển thị:</span>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dvt"> ĐVT
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl27"> KL 2027
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl28"> KL 2028
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dg"> Đơn giá
+          </label>
+        </div>
       </div>
 
       <!-- Preview Table -->
       <div class="table-wrapper">
         <table class="data-table" id="previewTable">
-          <thead>
-            <tr>
-              <th style="width: 75px; text-align: center;">TT</th>
-              <th>Nội dung / Hạng mục đầu tư, mua sắm (Cấp 2)</th>
-              <th class="num-cell" style="width: 180px;">Năm 2027</th>
-              <th class="num-cell" style="width: 180px;">Năm 2028</th>
-              <th class="num-cell" style="width: 180px;">Tổng</th>
-            </tr>
-          </thead>
+          <thead id="previewTableHead"></thead>
           <tbody id="previewTableBody">
             <tr>
               <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
@@ -425,6 +409,14 @@
           <button id="btnRestoreOriginalTT" class="btn btn-outline" title="Khôi phục lại giá trị cột TT nguyên gốc từ các file đầu vào" style="display: none;">
             <i data-lucide="undo" class="w-4 h-4"></i>
             <span>Khôi phục TT gốc</span>
+          </button>
+          <button id="btnSplitWalletDV" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng CNTT, Mã DV TTKD, Mã loại VI">
+            <i data-lucide="split" class="w-4 h-4"></i>
+            <span>Tách Ví: DV riêng</span>
+          </button>
+          <button id="btnSplitWalletMang" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng VI, Mã DV TTKD, Mã loại VTTB">
+            <i data-lucide="git-branch" class="w-4 h-4"></i>
+            <span>Tách Ví: Mảng riêng</span>
           </button>
         </div>
         <div class="filter-group">
