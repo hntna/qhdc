@@ -4360,7 +4360,7 @@ function renderVTBAssignmentTable() {
   section.hidden = false;
   tbody.innerHTML = conversion.mappingRows.map(item => {
     const technology = conversion.assignments[item.id] || '';
-    const suggestionLabel = item.suggestion ? ` (gợi ý ${item.suggestion})` : '';
+    const suggestionLabel = item.suggestion ? `Gợi ý ${item.suggestion}` : 'Chọn';
     return `
       <tr data-vtb-mapping-id="${item.id}" class="${technology ? '' : 'is-unassigned'}">
         <td class="vtb-check-column"><input type="checkbox" class="vtb-row-checkbox" data-vtb-checkbox="${item.id}" aria-label="Chọn dòng ${item.row}"></td>
@@ -4373,7 +4373,7 @@ function renderVTBAssignmentTable() {
         <td class="vtb-quantity-pair">${formatNumberVTB(item.capacity27)} / ${formatNumberVTB(item.capacity28)}</td>
         <td>
           <select class="vtb-tech-select ${technology ? '' : 'is-unassigned'}" data-vtb-select="${item.id}" aria-label="Công nghệ cho dòng ${item.row}">
-            <option value="">Chọn${suggestionLabel}</option>
+            <option value="">${suggestionLabel}</option>
             ${['5G', '4G', '3G', '2G'].map(value => `<option value="${value}" ${technology === value ? 'selected' : ''}>${value}</option>`).join('')}
           </select>
         </td>

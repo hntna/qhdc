@@ -2589,9 +2589,16 @@ tr.row-cap-4 {
 
 .vtb-assignment-table {
   width: 100%;
+  min-width: 980px;
+  table-layout: fixed;
   font-size: 0.775rem;
   user-select: none;
 }
+
+.vtb-assignment-table .vtb-col-check { width: 42px; }
+.vtb-assignment-table .vtb-col-row { width: 86px; }
+.vtb-assignment-table .vtb-col-quantity { width: 180px; }
+.vtb-assignment-table .vtb-col-tech { width: 150px; }
 
 .vtb-assignment-table thead {
   position: sticky;
@@ -2603,6 +2610,8 @@ tr.row-cap-4 {
 .vtb-assignment-table th,
 .vtb-assignment-table td {
   padding: 0.48rem 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .vtb-assignment-table tbody tr {
@@ -2637,9 +2646,12 @@ tr.row-cap-4 {
 }
 
 .vtb-assignment-name {
-  max-width: 420px;
   color: #1e293b;
   font-weight: 650;
+  line-height: 1.32;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .vtb-assignment-vendor {
@@ -2658,7 +2670,8 @@ tr.row-cap-4 {
 }
 
 .vtb-tech-select {
-  min-width: 92px;
+  width: 100%;
+  min-width: 0;
   padding: 0.3rem 0.45rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -2701,4 +2714,3 @@ tr.row-cap-4 {
     flex-wrap: wrap;
   }
 }
-
