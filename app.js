@@ -3442,6 +3442,42 @@ const STRATEGY_ROWS = [
 
 const STRATEGY_ITEM_KEYS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT', 'ATTT', 'VI'];
 const STRATEGY_KHONG_VI_KEYS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT', 'ATTT'];
+const STRATEGY_TOTAL_KEYS = ['KHONG_VI', 'TONG'];
+
+function getNormalizedStrategyRowOrder(profile) {
+  const rawOrder = Array.isArray(profile?.rowOrder) ? profile.rowOrder : STRATEGY_ITEM_KEYS;
+  const orderedKeys = rawOrder.filter(key => STRATEGY_ITEM_KEYS.includes(key));
+  const missingKeys = STRATEGY_ITEM_KEYS.filter(key => !orderedKeys.includes(key));
+  return [...orderedKeys, ...missingKeys];
+}
+
+function getStrategyDisplayRows(profile) {
+  const totals = STRATEGY_TOTAL_KEYS.map(key => STRATEGY_ROWS.find(row => row.key === key)).filter(Boolean);
+  const details = getNormalizedStrategyRowOrder(profile)
+    .map(key => STRATEGY_ROWS.find(row => row.key === key))
+    .filter(Boolean);
+  return [...totals, ...details];
+}
+
+function formatStratShare(part, total) {
+  if (part === null || part === undefined || total === null || total === undefined) return '';
+  const numerator = typeof part === 'number' ? part : parseFloat(part);
+  const denominator = typeof total === 'number' ? total : parseFloat(total);
+  if (isNaN(numerator) || isNaN(denominator) || Math.abs(denominator) < 0.0001) return '';
+  const pct = (numerator / denominator) * 100;
+  if (Math.abs(pct) < 0.0001) return '<span style="color: #94a3b8;">-</span>';
+  return `${pct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
+
+function formatStratShareRaw(part, total) {
+  if (part === null || part === undefined || total === null || total === undefined) return '';
+  const numerator = typeof part === 'number' ? part : parseFloat(part);
+  const denominator = typeof total === 'number' ? total : parseFloat(total);
+  if (isNaN(numerator) || isNaN(denominator) || Math.abs(denominator) < 0.0001) return '';
+  const pct = (numerator / denominator) * 100;
+  if (Math.abs(pct) < 0.0001) return '-';
+  return `${pct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
 
 // Khởi tạo các sự kiện cho tab Chiến lược 5 năm
 function initStrategyComparison() {
@@ -3449,6 +3485,17 @@ function initStrategyComparison() {
   const btnCopy = document.getElementById('btnCopyStrategyTable');
   if (btnCopy) {
     btnCopy.addEventListener('click', copyStrategyTableToClipboard);
+  }
+
+  const strategyBody = document.getElementById('strategyTableBody');
+  if (strategyBody) {
+    strategyBody.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-strategy-move]');
+      if (!btn) return;
+      const key = btn.getAttribute('data-key');
+      const direction = btn.getAttribute('data-strategy-move');
+      moveStrategyRow(key, direction);
+    });
   }
 
   // Chọn Profile
@@ -3569,6 +3616,26 @@ async function saveStrategyProfiles() {
     console.warn('Lỗi khi lưu vào localStorage:', e);
     return false;
   }
+}
+
+async function moveStrategyRow(key, direction) {
+  const profile = getActiveStrategyProfile();
+  if (!profile || !STRATEGY_ITEM_KEYS.includes(key)) return;
+
+  const order = getNormalizedStrategyRowOrder(profile);
+  const currentIndex = order.indexOf(key);
+  if (currentIndex < 0) return;
+
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= order.length) return;
+
+  [order[currentIndex], order[targetIndex]] = [order[targetIndex], order[currentIndex]];
+  profile.rowOrder = order;
+  profile.updatedAt = new Date().toISOString();
+
+  const saved = await saveStrategyProfiles();
+  renderStrategyComparisonTable();
+  showToast(saved ? 'Đã cập nhật thứ tự hiển thị dòng.' : 'Đã đổi thứ tự dòng, nhưng chưa lưu được vào bộ nhớ trình duyệt.', saved ? 'success' : 'warning');
 }
 
 // Lấy profile đang active
@@ -3805,17 +3872,22 @@ function renderStrategyComparisonTable() {
 
   const profile = getActiveStrategyProfile();
   if (!profile) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 2.5rem; color: #94a3b8;">Chưa có dữ liệu Profile</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 2.5rem; color: #94a3b8;">Chưa có dữ liệu Profile</td></tr>`;
     return;
   }
 
   const computed = computeStrategyTableData(profile);
   let html = '';
+  const rows = getStrategyDisplayRows(profile);
+  const order = getNormalizedStrategyRowOrder(profile);
+  const totalRow = computed['TONG'] || {};
 
-  for (const r of STRATEGY_ROWS) {
+  for (const r of rows) {
     const c = computed[r.key];
     const itemData = profile.data[r.key] || {};
     const trClass = r.className ? `class="${r.className}"` : '';
+    const qhdcShare = formatStratShare(c.qhdcTong, totalRow.qhdcTong);
+    const stratShare = formatStratShare(c.stratTong, totalRow.stratTong);
 
     if (r.isTotal) {
       // Dòng Tổng 1 & 2: các ô đều tính tự động
@@ -3823,9 +3895,11 @@ function renderStrategyComparisonTable() {
         <tr ${trClass}>
           <td class="strat-cell-mang-total">${escapeHtml(r.name)}</td>
           <td id="strat_cell_${r.key}_qhdcTong" class="strat-cell-qhdc" style="font-weight: 800;">${formatStratCell(c.qhdcTong)}</td>
+          <td id="strat_cell_${r.key}_qhdcShare" class="strat-cell-share strat-cell-qhdc" style="font-weight: 800;">${qhdcShare}</td>
           <td id="strat_cell_${r.key}_qhdc27" class="strat-cell-qhdc" style="font-weight: 800;">${formatStratCell(c.qhdc27)}</td>
           <td id="strat_cell_${r.key}_qhdc28" class="strat-cell-qhdc strat-border-group-right" style="font-weight: 800;">${formatStratCell(c.qhdc28)}</td>
           <td id="strat_cell_${r.key}_stratTong" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.stratTong)}</td>
+          <td id="strat_cell_${r.key}_stratShare" class="strat-cell-share" style="font-weight: 800; color: #5b21b6;">${stratShare}</td>
           <td id="strat_cell_${r.key}_strat27" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.strat27)}</td>
           <td id="strat_cell_${r.key}_strat28" class="strat-border-group-right" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.strat28)}</td>
           <td id="strat_cell_${r.key}_diffTong" style="font-weight: 800;">${formatStratCell(c.diffTong, true)}</td>
@@ -3839,14 +3913,31 @@ function renderStrategyComparisonTable() {
       // Chiến lược: Cho phép nhập/sửa theo Profile kịch bản
       const valS27 = (itemData.strat27 !== undefined && itemData.strat27 !== null) ? itemData.strat27 : '';
       const valS28 = (itemData.strat28 !== undefined && itemData.strat28 !== null) ? itemData.strat28 : '';
+      const rowIndex = order.indexOf(r.key);
+      const canMoveUp = rowIndex > 0;
+      const canMoveDown = rowIndex >= 0 && rowIndex < order.length - 1;
 
       html += `
         <tr ${trClass}>
-          <td class="strat-cell-mang">${escapeHtml(r.name)}</td>
+          <td class="strat-cell-mang">
+            <div class="strat-row-label-wrap">
+              <span>${escapeHtml(r.name)}</span>
+              <span class="strat-row-actions" aria-label="Điều chỉnh thứ tự dòng">
+                <button type="button" class="strat-row-move-btn" data-key="${r.key}" data-strategy-move="up" ${canMoveUp ? '' : 'disabled'} title="Đưa dòng lên">
+                  <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" class="strat-row-move-btn" data-key="${r.key}" data-strategy-move="down" ${canMoveDown ? '' : 'disabled'} title="Đưa dòng xuống">
+                  <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </button>
+              </span>
+            </div>
+          </td>
           <td id="strat_cell_${r.key}_qhdcTong" class="strat-cell-qhdc" style="font-weight: 700;">${formatStratCell(c.qhdcTong)}</td>
+          <td id="strat_cell_${r.key}_qhdcShare" class="strat-cell-share strat-cell-qhdc">${qhdcShare}</td>
           <td id="strat_cell_${r.key}_qhdc27" class="strat-cell-qhdc">${formatStratCell(c.qhdc27)}</td>
           <td id="strat_cell_${r.key}_qhdc28" class="strat-cell-qhdc strat-border-group-right">${formatStratCell(c.qhdc28)}</td>
           <td id="strat_cell_${r.key}_stratTong" class="strat-cell-strat" style="font-weight: 700;">${formatStratCell(c.stratTong)}</td>
+          <td id="strat_cell_${r.key}_stratShare" class="strat-cell-share strat-cell-strat">${stratShare}</td>
           <td id="strat_cell_${r.key}_strat27" class="strat-cell-strat">${formatStratCell(c.strat27)}</td>
           <td id="strat_cell_${r.key}_strat28" class="strat-cell-strat strat-border-group-right">${formatStratCell(c.strat28)}</td>
           <td id="strat_cell_${r.key}_diffTong">${formatStratCell(c.diffTong, true)}</td>
@@ -3858,6 +3949,7 @@ function renderStrategyComparisonTable() {
   }
 
   tbody.innerHTML = html;
+  if (window.lucide) lucide.createIcons();
 }
 
 // Cập nhật nội dung các ô tính toán trong DOM
@@ -3865,6 +3957,7 @@ function updateCalculatedCells() {
   const profile = getActiveStrategyProfile();
   if (!profile) return;
   const computed = computeStrategyTableData(profile);
+  const totalRow = computed['TONG'] || {};
 
   for (const r of STRATEGY_ROWS) {
     const c = computed[r.key];
@@ -3874,9 +3967,11 @@ function updateCalculatedCells() {
     };
 
     setCell(`strat_cell_${r.key}_qhdcTong`, formatStratCell(c.qhdcTong));
+    setCell(`strat_cell_${r.key}_qhdcShare`, formatStratShare(c.qhdcTong, totalRow.qhdcTong));
     setCell(`strat_cell_${r.key}_qhdc27`, formatStratCell(c.qhdc27));
     setCell(`strat_cell_${r.key}_qhdc28`, formatStratCell(c.qhdc28));
     setCell(`strat_cell_${r.key}_stratTong`, formatStratCell(c.stratTong));
+    setCell(`strat_cell_${r.key}_stratShare`, formatStratShare(c.stratTong, totalRow.stratTong));
     setCell(`strat_cell_${r.key}_diffTong`, formatStratCell(c.diffTong, true));
     setCell(`strat_cell_${r.key}_diff27`, formatStratCell(c.diff27, true));
     setCell(`strat_cell_${r.key}_diff28`, formatStratCell(c.diff28, true));
@@ -3894,6 +3989,8 @@ async function copyStrategyTableToClipboard() {
   if (!profile) return;
 
   const computed = computeStrategyTableData(profile);
+  const rows = getStrategyDisplayRows(profile);
+  const totalRow = computed['TONG'] || {};
 
   let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
@@ -3915,15 +4012,17 @@ async function copyStrategyTableToClipboard() {
 <thead>
   <tr>
     <th rowspan="2" class="th-mang">Mảng nghiệp vụ</th>
-    <th colspan="3" class="th-qhdc" style="border-right: 2px solid #94a3b8;">QHĐC 2027-2028 (M$)</th>
-    <th colspan="3" class="th-strat" style="border-right: 2px solid #94a3b8;">CHIẾN LƯỢC 5 NĂM (M$)</th>
+    <th colspan="4" class="th-qhdc" style="border-right: 2px solid #94a3b8;">QHĐC 2027-2028 (M$)</th>
+    <th colspan="4" class="th-strat" style="border-right: 2px solid #94a3b8;">CHIẾN LƯỢC 5 NĂM (M$)</th>
     <th colspan="3" class="th-diff">CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (M$)</th>
   </tr>
   <tr>
     <th class="th-qhdc">Tổng</th>
+    <th class="th-qhdc">Tỉ trọng</th>
     <th class="th-qhdc">2027</th>
     <th class="th-qhdc" style="border-right: 2px solid #94a3b8;">2028</th>
     <th class="th-strat">Tổng</th>
+    <th class="th-strat">Tỉ trọng</th>
     <th class="th-strat">2027</th>
     <th class="th-strat" style="border-right: 2px solid #94a3b8;">2028</th>
     <th class="th-diff">Tổng</th>
@@ -3933,9 +4032,9 @@ async function copyStrategyTableToClipboard() {
 </thead>
 <tbody>`;
 
-  let tsv = "Mảng\tQHĐC Tổng\tQHĐC 2027\tQHĐC 2028\tChiến lược Tổng\tChiến lược 2027\tChiến lược 2028\tChênh lệch Tổng\tChênh lệch 2027\tChênh lệch 2028\r\n";
+  let tsv = "Mảng\tQHĐC Tổng\tQHĐC Tỉ trọng\tQHĐC 2027\tQHĐC 2028\tChiến lược Tổng\tChiến lược Tỉ trọng\tChiến lược 2027\tChiến lược 2028\tChênh lệch Tổng\tChênh lệch 2027\tChênh lệch 2028\r\n";
 
-  for (const r of STRATEGY_ROWS) {
+  for (const r of rows) {
     const c = computed[r.key];
     const bold = r.isTotal ? 'font-weight: bold;' : '';
     const rowBg = r.isTotal ? 'background-color: #f8fafc;' : 'background-color: #ffffff;';
@@ -3954,9 +4053,11 @@ async function copyStrategyTableToClipboard() {
       <tr>
         <td style="${mangStyle}">${escapeHtml(r.name)}</td>
         <td style="${tdBase} color: #0369a1;">${formatStratRaw(c.qhdcTong)}</td>
+        <td style="${tdBase} color: #0369a1;">${formatStratShareRaw(c.qhdcTong, totalRow.qhdcTong)}</td>
         <td style="${tdBase} color: #0369a1;">${formatStratRaw(c.qhdc27)}</td>
         <td style="${tdDivider} color: #0369a1;">${formatStratRaw(c.qhdc28)}</td>
         <td style="${tdBase} color: #5b21b6;">${formatStratRaw(c.stratTong)}</td>
+        <td style="${tdBase} color: #5b21b6;">${formatStratShareRaw(c.stratTong, totalRow.stratTong)}</td>
         <td style="${tdBase} color: #5b21b6;">${formatStratRaw(c.strat27)}</td>
         <td style="${tdDivider} color: #5b21b6;">${formatStratRaw(c.strat28)}</td>
         <td style="${tdBase} ${diffTongColor}">${formatStratRaw(c.diffTong, true)}</td>
@@ -3965,7 +4066,7 @@ async function copyStrategyTableToClipboard() {
       </tr>
     `;
 
-    tsv += `${r.name}\t${formatStratRaw(c.qhdcTong)}\t${formatStratRaw(c.qhdc27)}\t${formatStratRaw(c.qhdc28)}\t${formatStratRaw(c.stratTong)}\t${formatStratRaw(c.strat27)}\t${formatStratRaw(c.strat28)}\t${formatStratRaw(c.diffTong, true)}\t${formatStratRaw(c.diff27, true)}\t${formatStratRaw(c.diff28, true)}\r\n`;
+    tsv += `${r.name}\t${formatStratRaw(c.qhdcTong)}\t${formatStratShareRaw(c.qhdcTong, totalRow.qhdcTong)}\t${formatStratRaw(c.qhdc27)}\t${formatStratRaw(c.qhdc28)}\t${formatStratRaw(c.stratTong)}\t${formatStratShareRaw(c.stratTong, totalRow.stratTong)}\t${formatStratRaw(c.strat27)}\t${formatStratRaw(c.strat28)}\t${formatStratRaw(c.diffTong, true)}\t${formatStratRaw(c.diff27, true)}\t${formatStratRaw(c.diff28, true)}\r\n`;
   }
 
   html += `</tbody></table></body></html>`;
@@ -4254,12 +4355,14 @@ async function confirmSaveProfileModal() {
 
   try {
     if (mode === 'create') {
+      const activeForOrder = getActiveStrategyProfile();
       const newProfile = {
         id: 'profile_' + Date.now(),
         name: name,
         description: desc,
         updatedAt: new Date().toISOString(),
-        data: newData
+        data: newData,
+        rowOrder: getNormalizedStrategyRowOrder(activeForOrder)
       };
       state.strategyProfiles.push(newProfile);
       state.activeStrategyProfileId = newProfile.id;
@@ -4270,6 +4373,7 @@ async function confirmSaveProfileModal() {
         existing.description = desc;
         existing.updatedAt = new Date().toISOString();
         existing.data = newData;
+        existing.rowOrder = getNormalizedStrategyRowOrder(existing);
       }
     }
 
@@ -4304,7 +4408,8 @@ async function cloneCurrentProfile() {
     name: active.name + ' (Bản sao)',
     description: active.description,
     updatedAt: new Date().toISOString(),
-    data: JSON.parse(JSON.stringify(active.data))
+    data: JSON.parse(JSON.stringify(active.data)),
+    rowOrder: getNormalizedStrategyRowOrder(active)
   };
 
   state.strategyProfiles.push(cloned);
