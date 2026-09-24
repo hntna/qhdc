@@ -205,7 +205,17 @@ function initTabs() {
       btn.classList.add('active');
       const tabId = btn.getAttribute('data-tab');
       const target = document.getElementById(tabId);
-      if (target) target.classList.add('active');
+      if (target) {
+        target.classList.add('active');
+        if (tabId === 'tabStrategy') {
+          if (typeof window.renderAllReportTabs === 'function') {
+            window.renderAllReportTabs();
+          }
+          if (typeof renderStrategyComparisonTable === 'function') {
+            renderStrategyComparisonTable();
+          }
+        }
+      }
     });
   });
 }

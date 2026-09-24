@@ -90,8 +90,8 @@ body.report-page {
   flex-wrap: wrap;
 }
 
-/* Tabs */
-.report-tabs-nav {
+/* Tabs & Subtabs */
+.report-tabs-nav, .report-subtabs-nav {
   display: flex;
   gap: 8px;
   background: #e2e8f0;
@@ -101,7 +101,7 @@ body.report-page {
   overflow-x: auto;
 }
 
-.report-tab-btn {
+.report-tab-btn, .report-subtab-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -117,23 +117,23 @@ body.report-page {
   white-space: nowrap;
 }
 
-.report-tab-btn:hover {
+.report-tab-btn:hover, .report-subtab-btn:hover {
   color: #0f172a;
   background: rgba(255, 255, 255, 0.6);
 }
 
-.report-tab-btn.active {
+.report-tab-btn.active, .report-subtab-btn.active {
   background: #ffffff;
   color: #4338ca;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.report-tab-content {
+.report-tab-content, .report-subtab-content {
   display: none;
   animation: fadeIn 0.2s ease-in-out;
 }
 
-.report-tab-content.active {
+.report-tab-content.active, .report-subtab-content.active {
   display: block;
 }
 

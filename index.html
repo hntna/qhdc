@@ -12,6 +12,7 @@
 
   <!-- Core Stylesheet -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="report.css">
 
   <!-- Lucide Icons & Thư viện Excel chạy 100% Offline (Tải bất đồng bộ defer không chặn giao diện) -->
   <script src="lucide.min.js" defer></script>
@@ -19,6 +20,7 @@
   <script src="jszip.min.js" defer></script>
   <script src="template_data.js" defer></script>
   <script src="vtb_converter.js" defer></script>
+  <script src="report.js" defer></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
 
@@ -32,11 +34,8 @@
         <div>
           <div class="brand-title">TỔNG HỢP & SO KHỚP MASTERLIST QHĐC 2027-2028</div>
         </div>
+      </div>
       <div class="header-actions">
-        <a href="report.html" class="btn btn-outline" style="border-color: #059669; color: #047857; background: #ecfdf5; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;" title="Mở trang Báo cáo Tổng hợp Mảng & Dịch vụ (4 cột)">
-          <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i>
-          <span>Báo cáo Mảng & Dịch vụ</span>
-        </a>
         <button id="btnOpenVTBConverter" class="btn btn-outline" style="border-color: #6366f1; color: #4338ca; background: #eef2ff;" title="Công cụ chuyển đổi file đầu vào Mẫu cũ (37 cột) sang Mẫu mới">
           <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
           <span>Chuyển đổi Mẫu cũ</span>
@@ -201,9 +200,9 @@
         <span class="tab-badge badge-warning" id="badgeGroupCount">0 nhóm</span>
       </button>
       <button class="tab-btn" data-tab="tabStrategy">
-        <i data-lucide="scale" class="w-4 h-4"></i>
-        <span>So sánh với Chiến lược 5 năm</span>
-        <span class="tab-badge" style="background: #e11d48; color: #ffffff;">5 Năm</span>
+        <i data-lucide="pie-chart" class="w-4 h-4"></i>
+        <span>Tổng hợp & So sánh Chiến lược</span>
+        <span class="tab-badge" style="background: #4338ca; color: #ffffff;">Mảng & DV</span>
       </button>
     </div>
 
@@ -486,105 +485,306 @@
       </div>
     </div>
 
-    <!-- TAB 4: SO SÁNH VỚI CHIẾN LƯỢC 5 NĂM -->
+    <!-- TAB 4: TỔNG HỢP & SO SÁNH CHIẾN LƯỢC 5 NĂM -->
     <div id="tabStrategy" class="tab-content">
       <!-- Clean Modern Header Banner -->
       <div class="strat-header-banner">
         <div class="strat-title-wrap">
-          <div class="strat-title-icon">
-            <i data-lucide="scale" class="w-5 h-5"></i>
+          <div class="strat-title-icon" style="background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);">
+            <i data-lucide="pie-chart" class="w-5 h-5 text-white"></i>
           </div>
           <div>
             <h2 class="strat-title-text">
-              So Sánh Với Chiến Lược 5 Năm
+              Tổng Hợp & So Sánh Chiến Lược 5 Năm
             </h2>
             <p class="strat-title-sub">
-              Đối chiếu chi tiết Nhu cầu Quy hoạch đầu tư (QHĐC 2027-2028) với Kế hoạch Chiến lược 5 năm theo từng mảng nghiệp vụ (đơn vị: <strong>M$ - Triệu USD</strong>).
+              Dữ liệu từ sheet <strong>TH theo Mảng</strong> & <strong>TH theo Dịch vụ</strong> của file mẫu (hiển thị 4 cột: <strong>Mảng, Tổng, 2027, 2028</strong>) và đối chiếu Kế hoạch Chiến lược 5 năm.
             </p>
           </div>
         </div>
+
         <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-          <button id="btnCopyStrategyTable" class="btn btn-outline" title="Sao chép toàn bộ bảng so sánh để dán trực tiếp vào Excel">
-            <span id="copyStratBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-600"></i></span>
-            <span id="copyStratBtnText">Sao chép bảng (Excel)</span>
+          <!-- Đổi đơn vị hiển thị -->
+          <div style="display: inline-flex; align-items: center; gap: 6px; background: #ffffff; padding: 4px 9px; border-radius: 8px; border: 1px solid #cbd5e1;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Đơn vị:</span>
+            <select id="selectReportUnit" class="select-input" style="height: 28px; font-size: 0.8rem; padding: 0 6px;">
+              <option value="M" selected>Triệu USD (M$)</option>
+              <option value="K">Nghìn USD (K$)</option>
+              <option value="USD">USD ($)</option>
+            </select>
+          </div>
+
+          <!-- Nạp lại -->
+          <button type="button" class="btn btn-outline btn-sm" id="btnReloadReport" title="Nạp lại số liệu từ file server">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Nạp lại</span>
+          </button>
+
+          <!-- Sao chép -->
+          <button type="button" class="btn btn-outline btn-sm" onclick="copyCurrentTabTables()" title="Sao chép bảng của subtab đang chọn để dán vào Excel">
+            <i data-lucide="copy" class="w-3.5 h-3.5 text-indigo-600"></i>
+            <span>Sao chép Excel</span>
+          </button>
+
+          <!-- Xuất Excel -->
+          <button type="button" class="btn btn-outline btn-sm" onclick="exportReportExcel()" title="Tải về file Excel chứa các bảng">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Xuất Excel</span>
           </button>
         </div>
       </div>
 
-      <!-- Profile Management Toolbar -->
-      <div class="toolbar" id="stratToolbar">
-        <div class="filter-group">
-          <span class="filter-label" style="display: inline-flex; align-items: center; gap: 5px; color: #be123c;">
-            <i data-lucide="folder-kanban" class="w-4 h-4 text-rose-600"></i> Profile Chiến lược:
-          </span>
-          <select id="selectStrategyProfile" class="select-input" style="min-width: 260px; font-weight: 700; color: #0f172a;">
-            <!-- Dynamic Options rendered from JS -->
-          </select>
-          <button id="btnOpenNewProfileModal" class="btn btn-outline btn-sm" title="Tạo mới kịch bản Profile Chiến lược">
-            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Profile
-          </button>
-          <button id="btnEditProfileModal" class="btn btn-outline btn-sm" title="Chỉnh sửa số liệu Profile đang chọn">
-            <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i> Sửa số liệu
-          </button>
-          <button id="btnCloneProfile" class="btn btn-outline btn-sm" title="Nhân bản Profile đang chọn">
-            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Nhân bản
-          </button>
-          <button id="btnDeleteProfile" class="btn btn-outline btn-sm" style="color: #e11d48;" title="Xóa Profile đang chọn">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-          </button>
+      <!-- Sub-Tabs Navigation (3 Tab theo yêu cầu + Đối chiếu chiến lược 5 năm) -->
+      <div class="report-subtabs-nav">
+        <button type="button" class="report-subtab-btn active" data-subtab="subtabTongHop">
+          <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          <span>Tổng hợp</span>
+        </button>
+        <button type="button" class="report-subtab-btn" data-subtab="subtabMang">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+          <span>Tổng hợp theo Mảng</span>
+        </button>
+        <button type="button" class="report-subtab-btn" data-subtab="subtabDichVu">
+          <i data-lucide="network" class="w-4 h-4"></i>
+          <span>Tổng hợp theo Dịch vụ</span>
+        </button>
+        <button type="button" class="report-subtab-btn" data-subtab="subtabStratDetail">
+          <i data-lucide="scale" class="w-4 h-4"></i>
+          <span>So sánh với chiến lược 5 năm</span>
+        </button>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="report-filter-bar" style="margin-bottom: 1.25rem;">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+        <input type="text" id="searchReportInput" class="search-report-input" placeholder="Tìm kiếm nhanh tên mảng, dịch vụ, hạng mục đầu tư...">
+        <div style="font-size: 0.775rem; color: #64748b; font-weight: 600;">
+          💡 Mỗi bảng hiển thị chuẩn 4 cột: <strong>Mảng</strong>, <strong>Tổng</strong>, <strong>2027</strong>, <strong>2028</strong>
+        </div>
+      </div>
+
+      <!-- ==================== SUBTAB 1: TỔNG HỢP ==================== -->
+      <div id="subtabTongHop" class="report-subtab-content active">
+        <!-- KPI Metric Cards -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-card-total">
+            <div class="kpi-title">
+              <span>TỔNG NHU CẦU ĐẦU TƯ (2027-2028)</span>
+              <i data-lucide="wallet" class="w-4 h-4 text-indigo-600"></i>
+            </div>
+            <div class="kpi-value text-indigo-600">
+              <span id="kpiTotalInv">0.00</span> <span style="font-size: 1rem; font-weight: 700;" class="unit-label-text">M$</span>
+            </div>
+            <div class="kpi-sub">Quy hoạch đầu tư 2 năm toàn mạng</div>
+          </div>
+
+          <div class="kpi-card kpi-card-2027">
+            <div class="kpi-title">
+              <span>NHU CẦU NĂM 2027</span>
+              <i data-lucide="calendar" class="w-4 h-4 text-indigo-500"></i>
+            </div>
+            <div class="kpi-value text-indigo-700">
+              <span id="kpi2027">0.00</span> <span style="font-size: 1rem; font-weight: 700;" class="unit-label-text">M$</span>
+            </div>
+            <div class="kpi-sub">Năm thứ nhất trong kỳ quy hoạch</div>
+          </div>
+
+          <div class="kpi-card kpi-card-2028">
+            <div class="kpi-title">
+              <span>NHU CẦU NĂM 2028</span>
+              <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i>
+            </div>
+            <div class="kpi-value text-emerald-700">
+              <span id="kpi2028">0.00</span> <span style="font-size: 1rem; font-weight: 700;" class="unit-label-text">M$</span>
+            </div>
+            <div class="kpi-sub">Năm thứ hai trong kỳ quy hoạch</div>
+          </div>
+
+          <div class="kpi-card kpi-card-strat">
+            <div class="kpi-title">
+              <span>KẾ HOẠCH CHIẾN LƯỢC 5 NĂM</span>
+              <i data-lucide="target" class="w-4 h-4 text-amber-600"></i>
+            </div>
+            <div class="kpi-value text-amber-700">
+              <span id="kpiStrat5Y">0.00</span> <span style="font-size: 1rem; font-weight: 700;" class="unit-label-text">M$</span>
+            </div>
+            <div class="kpi-sub">Tổng ngân sách 5 năm (2026 - 2030)</div>
+          </div>
         </div>
 
+        <!-- Bảng Tổng hợp Toàn diện theo từng Mảng -->
+        <div class="table-card">
+          <div class="table-card-header">
+            <h2 class="table-card-title">
+              <i data-lucide="table" class="w-4 h-4 text-indigo-600"></i>
+              <span>BẢNG TỔNG HỢP NHU CẦU ĐẦU TƯ THEO MẢNG (TOÀN MẠNG)</span>
+            </h2>
+            <button type="button" class="btn btn-outline btn-xs" onclick="copyTableHtml('tableSummaryMang', 'Tổng hợp theo Mảng Toàn mạng')">
+              <i data-lucide="copy" class="w-3.5 h-3.5 inline mr-1"></i> Sao chép
+            </button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="report-table" id="tableSummaryMang">
+              <thead>
+                <tr>
+                  <th class="col-mang">Mảng</th>
+                  <th class="col-num col-tot">Tổng (<span class="unit-label-text">M$</span>)</th>
+                  <th class="col-num col-27">2027 (<span class="unit-label-text">M$</span>)</th>
+                  <th class="col-num col-28">2028 (<span class="unit-label-text">M$</span>)</th>
+                  <th class="col-num" style="width: 100px;">Tỷ trọng (%)</th>
+                </tr>
+              </thead>
+              <tbody id="tableSummaryMangBody">
+                <!-- Render động bằng JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <!-- Comparison Table Container -->
-      <div class="table-wrapper strat-table-wrapper">
-        <table class="data-table strategy-table" id="strategyComparisonTable">
-          <thead>
-            <tr class="strat-row-header-top">
-              <th rowspan="2" class="strat-th-mang">Mảng nghiệp vụ</th>
-              <th colspan="4" class="strat-th-group strat-group-qhdc strat-border-group-right">
-                <div class="strat-group-title">
-                  <i data-lucide="database" class="w-4 h-4"></i> QHĐC 2027-2028 (M$)
-                </div>
-              </th>
-              <th colspan="4" class="strat-th-group strat-group-strat strat-border-group-right">
-                <div class="strat-group-title">
-                  <i data-lucide="target" class="w-4 h-4"></i> CHIẾN LƯỢC 5 NĂM (M$)
-                </div>
-              </th>
-              <th colspan="3" class="strat-th-group strat-group-diff">
-                <div class="strat-group-title">
-                  <i data-lucide="git-compare" class="w-4 h-4"></i> CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (M$)
-                </div>
-              </th>
-            </tr>
-            <tr class="strat-row-header-sub">
-              <!-- Under QHDC -->
-              <th class="strat-th-sub strat-sub-qhdc">Tổng</th>
-              <th class="strat-th-sub strat-sub-qhdc">Tỉ trọng</th>
-              <th class="strat-th-sub strat-sub-qhdc">2027</th>
-              <th class="strat-th-sub strat-sub-qhdc strat-border-group-right">2028</th>
-              <!-- Under Chiến lược -->
-              <th class="strat-th-sub strat-sub-strat">Tổng</th>
-              <th class="strat-th-sub strat-sub-strat">Tỉ trọng</th>
-              <th class="strat-th-sub strat-sub-strat">2027</th>
-              <th class="strat-th-sub strat-sub-strat strat-border-group-right">2028</th>
-              <!-- Under Chênh lệch -->
-              <th class="strat-th-sub strat-sub-diff">Tổng</th>
-              <th class="strat-th-sub strat-sub-diff">2027</th>
-              <th class="strat-th-sub strat-sub-diff">2028</th>
-            </tr>
-          </thead>
-          <tbody id="strategyTableBody">
-            <!-- Dynamic Rows rendered from JS -->
-          </tbody>
-        </table>
+      <!-- ==================== SUBTAB 2: TỔNG HỢP THEO MẢNG ==================== -->
+      <div id="subtabMang" class="report-subtab-content">
+        <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-weight: 700; color: #1e293b; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+            <span>CÁC BẢNG TRONG SHEET "TH THEO MẢNG" (4 CỘT CHUẨN)</span>
+          </div>
+          <div style="font-size: 0.8rem; color: #64748b;">
+            Hiển thị 4 cột: <strong>Mảng</strong>, <strong>Tổng</strong>, <strong>2027</strong>, <strong>2028</strong> (độ rộng vừa phải)
+          </div>
+        </div>
+
+        <div id="containerTablesMang">
+          <!-- Render động toàn bộ 11 bảng trong sheet TH theo Mảng -->
+        </div>
       </div>
 
-      <!-- Quick note / instructions -->
-      <div style="margin-top: 0.9rem; font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 0.5rem;">
-        <i data-lucide="info" class="w-4 h-4 text-indigo-500 shrink-0"></i>
-        <span><strong>Ghi chú:</strong> Bảng so sánh là dạng xem trực quan (Read-only). Cột <em>QHĐC</em> tự động đồng bộ realtime từ Masterlist. Cột <em>Chiến lược</em> hiển thị theo Profile đã chọn. Bấm <strong>Thêm Profile</strong> hoặc <strong>Sửa số liệu</strong> để tùy chỉnh số liệu Chiến lược.</span>
+      <!-- ==================== SUBTAB 3: TỔNG HỢP THEO DỊCH VỤ ==================== -->
+      <div id="subtabDichVu" class="report-subtab-content">
+        <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+          <div style="font-weight: 700; color: #1e293b; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i>
+            <span>CÁC BẢNG TRONG SHEET "TH THEO DỊCH VỤ" (4 CỘT CHUẨN)</span>
+          </div>
+          <div style="font-size: 0.8rem; color: #64748b;">
+            Hiển thị 4 cột: <strong>Mảng</strong>, <strong>Tổng</strong>, <strong>2027</strong>, <strong>2028</strong> (độ rộng vừa phải)
+          </div>
+        </div>
+
+        <div id="containerTablesDichVu">
+          <!-- Render động toàn bộ 11 bảng trong sheet TH theo Dịch vụ -->
+        </div>
+      </div>
+
+      <!-- ==================== SUBTAB 4: SO SÁNH VỚI CHIẾN LƯỢC 5 NĂM ==================== -->
+      <div id="subtabStratDetail" class="report-subtab-content">
+        <!-- Bảng đối chiếu chi tiết từ file mẫu -->
+        <div class="table-card" style="margin-bottom: 1.5rem;">
+          <div class="table-card-header">
+            <h2 class="table-card-title">
+              <i data-lucide="scale" class="w-4 h-4 text-rose-600"></i>
+              <span>ĐỐI CHIẾU QUY HOẠCH ĐẦU TƯ 2027-2028 VỚI CHIẾN LƯỢC 5 NĂM (2026-2030)</span>
+            </h2>
+            <button type="button" class="btn btn-outline btn-xs" onclick="copyTableHtml('tableStrategy', 'Đối chiếu Chiến lược 5 năm')">
+              <i data-lucide="copy" class="w-3.5 h-3.5 inline mr-1"></i> Sao chép
+            </button>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="report-table table-strat" id="tableStrategy">
+              <thead>
+                <tr>
+                  <th rowspan="2" style="width: 280px; text-align: left;">Mảng / Lĩnh vực</th>
+                  <th colspan="3" style="background: #eef2ff; color: #3730a3; border-right: 2px solid #cbd5e1;">QHĐC (<span class="unit-label-text">M$</span>)</th>
+                  <th colspan="4" style="background: #fef3c7; color: #92400e; border-right: 2px solid #cbd5e1;">CHIẾN LƯỢC 5 NĂM (<span class="unit-label-text">M$</span>)</th>
+                  <th colspan="2" style="background: #f1f5f9; color: #1e293b;">ĐỐI CHIẾU & ĐÁNH GIÁ</th>
+                </tr>
+                <tr>
+                  <th class="col-num col-27">2027</th>
+                  <th class="col-num col-28">2028</th>
+                  <th class="col-num col-tot" style="border-right: 2px solid #cbd5e1;">Tổng 27-28</th>
+                  <th class="col-num">CL 2027</th>
+                  <th class="col-num">CL 2028</th>
+                  <th class="col-num" style="font-weight: 800; color: #b45309;">Tổng CL 27-28</th>
+                  <th class="col-num" style="font-weight: 800; color: #92400e; border-right: 2px solid #cbd5e1;">Tổng CL 5 Năm</th>
+                  <th class="col-num">Chênh lệch (+/-)</th>
+                  <th style="width: 140px; text-align: center;">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="tableStrategyBody">
+                <!-- Render động bằng JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Profile Management Toolbar -->
+        <div class="toolbar" id="stratToolbar" style="margin-top: 1.5rem;">
+          <div class="filter-group">
+            <span class="filter-label" style="display: inline-flex; align-items: center; gap: 5px; color: #be123c;">
+              <i data-lucide="folder-kanban" class="w-4 h-4 text-rose-600"></i> Profile Chiến lược tùy chỉnh:
+            </span>
+            <select id="selectStrategyProfile" class="select-input" style="min-width: 260px; font-weight: 700; color: #0f172a;">
+              <!-- Dynamic Options rendered from JS -->
+            </select>
+            <button id="btnOpenNewProfileModal" class="btn btn-outline btn-sm" title="Tạo mới kịch bản Profile Chiến lược">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm Profile
+            </button>
+            <button id="btnEditProfileModal" class="btn btn-outline btn-sm" title="Chỉnh sửa số liệu Profile đang chọn">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-indigo-600"></i> Sửa số liệu
+            </button>
+            <button id="btnCloneProfile" class="btn btn-outline btn-sm" title="Nhân bản Profile đang chọn">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Nhân bản
+            </button>
+            <button id="btnDeleteProfile" class="btn btn-outline btn-sm" style="color: #e11d48;" title="Xóa Profile đang chọn">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Comparison Table Container -->
+        <div class="table-wrapper strat-table-wrapper">
+          <table class="data-table strategy-table" id="strategyComparisonTable">
+            <thead>
+              <tr class="strat-row-header-top">
+                <th rowspan="2" class="strat-th-mang">Mảng nghiệp vụ</th>
+                <th colspan="4" class="strat-th-group strat-group-qhdc strat-border-group-right">
+                  <div class="strat-group-title">
+                    <i data-lucide="database" class="w-4 h-4"></i> QHĐC 2027-2028 (M$)
+                  </div>
+                </th>
+                <th colspan="4" class="strat-th-group strat-group-strat strat-border-group-right">
+                  <div class="strat-group-title">
+                    <i data-lucide="target" class="w-4 h-4"></i> CHIẾN LƯỢC TÙY CHỌN (M$)
+                  </div>
+                </th>
+                <th colspan="3" class="strat-th-group strat-group-diff">
+                  <div class="strat-group-title">
+                    <i data-lucide="git-compare" class="w-4 h-4"></i> CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (M$)
+                  </div>
+                </th>
+              </tr>
+              <tr class="strat-row-header-sub">
+                <!-- Under QHDC -->
+                <th class="strat-th-sub strat-sub-qhdc">Tổng</th>
+                <th class="strat-th-sub strat-sub-qhdc">Tỉ trọng</th>
+                <th class="strat-th-sub strat-sub-qhdc">2027</th>
+                <th class="strat-th-sub strat-sub-qhdc strat-border-group-right">2028</th>
+                <!-- Under Chiến lược -->
+                <th class="strat-th-sub strat-sub-strat">Tổng</th>
+                <th class="strat-th-sub strat-sub-strat">Tỉ trọng</th>
+                <th class="strat-th-sub strat-sub-strat">2027</th>
+                <th class="strat-th-sub strat-sub-strat strat-border-group-right">2028</th>
+                <!-- Under Chênh lệch -->
+                <th class="strat-th-sub strat-sub-diff">Tổng</th>
+                <th class="strat-th-sub strat-sub-diff">2027</th>
+                <th class="strat-th-sub strat-sub-diff">2028</th>
+              </tr>
+            </thead>
+            <tbody id="strategyTableBody">
+              <!-- Dynamic Rows rendered from JS -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

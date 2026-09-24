@@ -6,6 +6,7 @@
 const reportState = {
   rawResponse: null,
   activeTab: 'tabTongHop',
+  activeSubtab: 'subtabTongHop',
   unitMultiplier: 1.0, // 1.0 = Triệu USD (M$), 1000 = Nghìn USD (K$), 1000000 = USD
   unitLabel: 'M$',
   searchKeyword: '',
@@ -19,13 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
   loadReportDataFromServer();
 });
 
-// Chuyển đổi Tab
+// Chuyển đổi Tab & Subtab
 function initReportTabs() {
-  const tabBtns = document.querySelectorAll('.report-tab-btn');
+  const tabBtns = document.querySelectorAll('.report-tab-btn, .report-subtab-btn');
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      const targetTabId = btn.getAttribute('data-tab');
-      switchReportTab(targetTabId);
+      const targetTabId = btn.getAttribute('data-tab') || btn.getAttribute('data-subtab');
+      if (btn.classList.contains('report-subtab-btn')) {
+        switchReportSubtab(targetTabId);
+      } else {
+        switchReportTab(targetTabId);
+      }
     });
   });
 }
@@ -37,6 +42,17 @@ function switchReportTab(tabId) {
   });
   document.querySelectorAll('.report-tab-content').forEach(c => {
     c.classList.toggle('active', c.id === tabId);
+  });
+  if (window.lucide) lucide.createIcons();
+}
+
+function switchReportSubtab(subtabId) {
+  reportState.activeSubtab = subtabId;
+  document.querySelectorAll('.report-subtab-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-subtab') === subtabId);
+  });
+  document.querySelectorAll('.report-subtab-content').forEach(c => {
+    c.classList.toggle('active', c.id === subtabId);
   });
   if (window.lucide) lucide.createIcons();
 }
@@ -207,7 +223,7 @@ function parseSheetWithSheetJS(sheet, type) {
     const isSec = ['I.', 'II.', 'III.', 'IV.', 'V.', 'VI.', 'VII.', 'VIII.', 'IX.', 'X.', 'Đầu tư', 'Hiện đại'].some(p => b.startsWith(p));
     if (isSec) {
       currentTable = { title: b, rows: [] };
-      tables.append(currentTable);
+      tables.push(currentTable);
       continue;
     }
 
@@ -683,13 +699,14 @@ function copyTableHtml(tableId, title) {
   }
 }
 
-// Sao chép toàn bộ Tab đang hiển thị
+// Sao chép toàn bộ Tab/Subtab đang hiển thị
 function copyCurrentTabTables() {
   let containerId = '';
-  if (reportState.activeTab === 'tabMang') containerId = 'containerTablesMang';
-  else if (reportState.activeTab === 'tabDichVu') containerId = 'containerTablesDichVu';
-  else if (reportState.activeTab === 'tabStrategy') containerId = 'tableStrategy';
-  else containerId = 'tableSummaryMang';
+  const current = reportState.activeSubtab || reportState.activeTab;
+  if (current === 'subtabMang' || current === 'tabMang') containerId = 'containerTablesMang';
+  else if (current === 'subtabDichVu' || current === 'tabDichVu') containerId = 'containerTablesDichVu';
+  else if (current === 'subtabStratDetail' || current === 'tabStrategy') containerId = 'subtabStratDetail';
+  else containerId = 'subtabTongHop';
 
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -714,7 +731,7 @@ function copyCurrentTabTables() {
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(allText).then(() => {
-      showToast('Đã sao chép toàn bộ bảng của Tab hiện tại vào Clipboard!', 'success');
+      showToast('Đã sao chép toàn bộ bảng của Tab hiện tại vào Clipboard! Bạn có thể dán trực tiếp vào Excel.', 'success');
     });
   }
 }
@@ -813,3 +830,6 @@ window.copyTableHtml = copyTableHtml;
 window.copyCurrentTabTables = copyCurrentTabTables;
 window.exportReportExcel = exportReportExcel;
 window.switchReportTab = switchReportTab;
+window.switchReportSubtab = switchReportSubtab;
+window.loadReportDataFromServer = loadReportDataFromServer;
+window.renderAllReportTabs = renderAllTabs;
