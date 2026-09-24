@@ -29,6 +29,7 @@ const ALL_SECTION_HEADERS = [
 const state = {
   templateBuffer: null,
   templateWorkbook: null,
+  templateFileName: 'Masterlist 2027-2028_Mau.xlsx',
   files: {
     VT: null,
     ML: null,
@@ -76,27 +77,89 @@ document.addEventListener('DOMContentLoaded', () => {
   initFilterHandlers();
   initGroupLevelFilterButtons();
   initActionButtons();
-  initEmbeddedTemplate();
+  initTemplateFile();
   makeTableResizable('validationTable');
   initStrategyComparison();
   initVTBConverter();
   renderPreviewTable();
 });
 
-// Nạp tự động file phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx từ template_data.js
-function initEmbeddedTemplate() {
+// Nạp file phôi mẫu: Luôn tự động lấy file Masterlist 2027-2028_Mau.xlsx, fallback sang bản nhúng nếu offline
+async function initTemplateFile() {
+  try {
+    const res = await fetch('Masterlist%202027-2028_Mau.xlsx', { cache: 'no-store' });
+    if (res.ok) {
+      const buffer = await res.arrayBuffer();
+      state.templateBuffer = buffer;
+      state.templateWorkbook = XLSX.read(buffer, { type: 'array', cellFormula: true, cellStyles: true });
+      extractValidMaDVFromTemplate(state.templateWorkbook);
+      console.log('Đã tự động nạp thành công file mẫu Masterlist 2027-2028_Mau.xlsx');
+      return;
+    }
+  } catch (err) {
+    console.warn('Không tải được file mẫu qua fetch (chế độ offline file://), sử dụng bản nhúng sẵn:', err);
+  }
+
   try {
     if (typeof getEmbeddedTemplateBuffer === 'function') {
       const buffer = getEmbeddedTemplateBuffer();
       state.templateBuffer = buffer;
       state.templateWorkbook = XLSX.read(buffer, { type: 'array', cellFormula: true, cellStyles: true });
       extractValidMaDVFromTemplate(state.templateWorkbook);
-      console.log('Đã tự động nạp thành công phôi mẫu cố định Masterlist 2027-2028_Mau.xlsx');
+      console.log('Đã nạp file mẫu từ dữ liệu nhúng sẵn');
     }
   } catch (err) {
-    console.error('Lỗi khi nạp phôi mẫu cố định:', err);
+    console.error('Lỗi khi nạp file mẫu nhúng:', err);
   }
 }
+
+// Chức năng nạp file có dữ liệu sẵn có (có thể chứa 1 hoặc nhiều mảng nghiệp vụ)
+async function loadMultiSectorFile(file) {
+  try {
+    showToast(`Đang phân tích file dữ liệu: ${file.name}...`, 'info');
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellStyles: true });
+    const fileObj = {
+      file: file,
+      name: file.name,
+      size: file.size,
+      buffer: arrayBuffer,
+      workbook: workbook
+    };
+
+    if (state.validMaDVSet.size === 0 && state.templateWorkbook) {
+      extractValidMaDVFromTemplate(state.templateWorkbook);
+    }
+
+    const loadedMangs = [];
+    let totalItemsLoaded = 0;
+
+    for (const mang of MANG_CONFIG) {
+      const items = extractItemsForMang(mang, fileObj);
+      if (items && items.length > 0) {
+        state.files[mang.code] = fileObj;
+        state.extractedByMang[mang.code] = items;
+        updateUploadBoxUI(mang.code, file.name, file.size);
+        loadedMangs.push(`${mang.name} (${items.length} dòng)`);
+        totalItemsLoaded += items.length;
+      }
+    }
+
+    if (loadedMangs.length === 0) {
+      showToast(`Không tìm thấy dữ liệu mảng nào trong file ${file.name}! Vui lòng kiểm tra lại cấu trúc sheet.`, 'warning');
+      return;
+    }
+
+    // Xóa cache kết quả xuất để tạo mới theo dữ liệu vừa nạp
+    state.exportBlob = null;
+    rebuildExtractedData();
+    showToast(`Đã nạp thành công ${loadedMangs.length} mảng: ${loadedMangs.join(', ')} (Tổng: ${totalItemsLoaded} dòng)!`, 'success');
+  } catch (err) {
+    console.error('Lỗi khi nạp file dữ liệu sẵn có:', err);
+    showToast(`Lỗi khi đọc file: ${err.message}`, 'error');
+  }
+}
+window.loadMultiSectorFile = loadMultiSectorFile;
 
 // Toast thông báo
 function showToast(message, type = 'info') {
@@ -143,9 +206,62 @@ function initTabs() {
   });
 }
 
-// ==================== XỬ LÝ UPLOAD FILE TỪNG MẢNG ====================
+// ==================== XỬ LÝ UPLOAD FILE 7 MẢNG & FILE DỮ LIỆU CÓ SẴN ====================
 
 function initUploadHandlers() {
+  // 1. Xử lý nút và input "Nạp file có sẵn dữ liệu (1 hoặc nhiều mảng)"
+  const inputMulti = document.getElementById('inputMultiFile');
+  if (inputMulti) {
+    inputMulti.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        await loadMultiSectorFile(e.target.files[0]);
+        inputMulti.value = '';
+      }
+    });
+  }
+
+  // Hỗ trợ kéo thả file dữ liệu vào toàn bộ khu vực Section 1 (uploadCard)
+  const uploadCard = document.getElementById('uploadCard');
+  if (uploadCard) {
+    uploadCard.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadCard.classList.add('drag-over-card');
+    });
+
+    uploadCard.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadCard.classList.remove('drag-over-card');
+    });
+
+    uploadCard.addEventListener('drop', async (e) => {
+      // Nếu thả vào một ô mảng cụ thể thì để ô đó tự xử lý
+      if (e.target.closest('.upload-box')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      uploadCard.classList.remove('drag-over-card');
+
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        if (e.dataTransfer.files.length === 1) {
+          await loadMultiSectorFile(e.dataTransfer.files[0]);
+        } else {
+          // Nhiều file thả cùng lúc: tự động phân bổ theo mảng hoặc nạp tổng hợp
+          for (let i = 0; i < e.dataTransfer.files.length; i++) {
+            const f = e.dataTransfer.files[i];
+            const detected = detectMangFromFileName(f.name);
+            if (detected) {
+              await assignFileToKey(detected, f);
+            } else {
+              await loadMultiSectorFile(f);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Xử lý 7 ô mảng đầu vào
   const keys = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT'];
 
   keys.forEach(key => {
@@ -190,9 +306,6 @@ function initUploadHandlers() {
 // Tự động nhận diện mảng từ tên file nếu người dùng chọn nhiều file
 function detectMangFromFileName(fileName) {
   const name = fileName.toUpperCase();
-  if (name.includes('MAU') || name.includes('MẪU') || (name.includes('MASTERLIST 2027-2028') && !name.includes('GUI CAC MANG') && !name.includes('TD') && !name.includes('CNTT'))) {
-    return 'MAU';
-  }
   if (name.includes('_TD_') || name.includes('TRUYEN DAN') || name.includes('TRUYỀN DẪN') || name.includes('_TD') || name.includes('TD_IP')) return 'TD';
   if (name.includes('_CNTT_') || name.includes('CONG NGHE THONG TIN') || name.includes('CNTT')) return 'CNTT';
   if (name.includes('_VT_') || name.includes('VO TUYEN') || name.includes('VÔ TUYẾN')) return 'VT';
@@ -3127,9 +3240,25 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
     }
   }
 
-  let sheet1Xml = await zip.file('xl/worksheets/sheet1.xml').async('string');
+  let wbXml = await zip.file('xl/workbook.xml')?.async('string');
+  const relsXml = await zip.file('xl/_rels/workbook.xml.rels')?.async('string');
+  let masterlistSheetPath = 'xl/worksheets/sheet1.xml';
+  if (wbXml && relsXml) {
+    const sheetMatch = wbXml.match(/<sheet\s+[^>]*?name="([^"]*(?:PL1\.1|ML2027|Masterlist)[^"]*)"[^>]*?r:id="([^"]+)"/i) ||
+                       wbXml.match(/<sheet\s+[^>]*?r:id="([^"]+)"[^>]*?name="([^"]*(?:PL1\.1|ML2027|Masterlist)[^"]*)"/i);
+    if (sheetMatch) {
+      const rId = sheetMatch[2] || sheetMatch[1];
+      const relMatch = relsXml.match(new RegExp(`<Relationship\\s+[^>]*?Id="${rId}"[^>]*?Target="([^"]+)"`, 'i'));
+      if (relMatch) {
+        const target = relMatch[1].replace(/^\//, '');
+        masterlistSheetPath = target.startsWith('xl/') ? target : `xl/${target}`;
+      }
+    }
+  }
+
+  let sheet1Xml = await zip.file(masterlistSheetPath).async('string');
   const matchData = sheet1Xml.match(/<sheetData>(.*?)<\/sheetData>/s);
-  if (!matchData) throw new Error('Không tìm thấy sheetData trong sheet1.xml của file phôi');
+  if (!matchData) throw new Error(`Không tìm thấy sheetData trong ${masterlistSheetPath} của file phôi`);
 
   const origSheetData = matchData[1];
   const rowRegex = /<row\s+[^>]*?r="([0-9]+)"[^>]*?>.*?<\/row>/gs;
@@ -3329,7 +3458,7 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
     sheet1Xml = sheet1Xml.replace(/<sheetPr(.*?)>/, '<sheetPr$1><outlinePr summaryBelow="0" summaryRight="0"/>');
   }
 
-  zip.file('xl/worksheets/sheet1.xml', sheet1Xml);
+  zip.file(masterlistSheetPath, sheet1Xml);
   zip.file('xl/styles.xml', merger.buildMergedStylesXml());
 
   // Xóa calcChain để Excel tự tính toán lại công thức từ đầu khi mở file, tránh lỗi cache
@@ -3344,7 +3473,7 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   zip.file('xl/_rels/workbook.xml.rels', wbRels);
 
   // Bắt buộc Excel tính toán lại 100% tất cả công thức ở TẤT CẢ các sheet khi mở file
-  let wbXml = await zip.file('xl/workbook.xml').async('string');
+  wbXml = await zip.file('xl/workbook.xml').async('string');
   if (wbXml.includes('<calcPr')) {
     wbXml = wbXml.replace(/<calcPr([^>]*?)\/?>/, (match, p1) => {
       let attrs = p1;

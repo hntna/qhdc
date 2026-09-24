@@ -151,7 +151,10 @@ async function test(name, run) {
     XLSX.utils.book_append_sheet(oldWorkbook, XLSX.utils.aoa_to_sheet(rows), 'Sheet1');
     const assignments = Object.fromEntries(Array.from({ length: 7 }, (_, index) => [String(9 + index), '4G']));
 
-    const templateBuffer = fs.readFileSync(require.resolve('../Masterlist 2027-2028_Mau_moi.xlsx'));
+    const templatePath = fs.existsSync(require.resolve('../Example/Masterlist 2027-2028_Mau_moi.xlsx'))
+      ? require.resolve('../Example/Masterlist 2027-2028_Mau_moi.xlsx')
+      : require.resolve('../Masterlist 2027-2028_Mau_moi.xlsx');
+    const templateBuffer = fs.readFileSync(templatePath);
     const result = await window.VTBConverter.convertOldVTBToNewFormat(oldWorkbook, assignments, templateBuffer);
     const outputSheet = result.convertedWorkbook.Sheets[result.convertedWorkbook.SheetNames[0]];
     const outputRange = XLSX.utils.decode_range(outputSheet['!ref']);

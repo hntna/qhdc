@@ -24,7 +24,9 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
 
     def handle_open_file(self):
         try:
-            target_path = os.path.join(DIRECTORY, 'Masterlist 2027-2028_Mau.xlsx')
+            import glob
+            kq_files = sorted(glob.glob(os.path.join(DIRECTORY, 'Masterlist 2027-2028_KQ_*.xlsx')), key=os.path.getmtime, reverse=True)
+            target_path = kq_files[0] if kq_files else os.path.join(DIRECTORY, 'Masterlist 2027-2028_Mau.xlsx')
             if os.path.exists(target_path):
                 def _do_open():
                     opened = False
@@ -158,7 +160,9 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
         if self.path == '/api/save-masterlist':
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length)
-            target_path = os.path.join(DIRECTORY, 'Masterlist 2027-2028_Mau.xlsx')
+            from datetime import datetime
+            now_str = datetime.now().strftime('%d%m%Y_%H%M')
+            target_path = os.path.join(DIRECTORY, f'Masterlist 2027-2028_KQ_{now_str}.xlsx')
 
             if len(body) < 1000:
                 self.send_response(400)
@@ -168,7 +172,7 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             try:
-                # Ghi trực tiếp vào file Masterlist trên đĩa
+                # Ghi file kết quả kèm dấu thời gian, bảo vệ file mẫu gốc
                 with open(target_path, 'wb') as f:
                     f.write(body)
 
@@ -177,7 +181,7 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 response = {
                     'success': True,
-                    'message': 'Đã cập nhật trực tiếp vào file Masterlist 2027-2028_Mau.xlsx thành công!',
+                    'message': f'Đã lưu file kết quả: {os.path.basename(target_path)} thành công!',
                     'path': target_path,
                     'size': len(body)
                 }

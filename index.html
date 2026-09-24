@@ -56,6 +56,25 @@
 
     <!-- Section 1: File Uploads -->
     <section class="card" id="uploadCard">
+      <div class="upload-card-header">
+        <div class="upload-card-title-wrap">
+          <div class="upload-card-title">
+            <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+            <span>DỮ LIỆU ĐẦU VÀO 7 MẢNG NGHIỆP VỤ</span>
+          </div>
+          <div class="upload-card-sub">
+            Nạp riêng từng file cho từng mảng, hoặc bấm nút bên phải để nạp nhanh 1 file có sẵn dữ liệu (chứa 1 hoặc nhiều mảng).
+          </div>
+        </div>
+        <div class="upload-card-actions">
+          <button id="btnLoadMultiFile" class="btn btn-load-multi" onclick="document.getElementById('inputMultiFile').click()" title="Nạp file Excel có sẵn dữ liệu (hệ thống tự động nhận diện và bóc tách tất cả các mảng có trong file)">
+            <i data-lucide="folder-input" class="w-4 h-4 text-white"></i>
+            <span>Nạp file có sẵn dữ liệu (1 hoặc nhiều mảng)</span>
+          </button>
+          <input type="file" id="inputMultiFile" accept=".xlsx,.xls" style="display: none;">
+        </div>
+      </div>
+
       <!-- Upload Grid: 7 Mảng -->
       <div class="upload-grid">
 

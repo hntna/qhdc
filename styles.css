@@ -537,6 +537,12 @@ body {
   transform: scale(1.02);
 }
 
+#uploadCard.drag-over-card {
+  border-color: #6366f1 !important;
+  background: #f8faff !important;
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.2) !important;
+}
+
 .upload-box-top {
   display: flex;
   align-items: center;
@@ -563,6 +569,70 @@ body {
   font-size: 0.975rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+/* Header khu vực Nạp file & Nút Nạp file có sẵn dữ liệu */
+.upload-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+  padding-bottom: 0.95rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.upload-card-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.upload-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.925rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.upload-card-sub {
+  font-size: 0.775rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.upload-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.btn-load-multi {
+  padding: 0.58rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+  border: 1px solid #4338ca;
+  box-shadow: 0 3px 12px rgba(79, 70, 229, 0.28);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-load-multi:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  box-shadow: 0 5px 18px rgba(79, 70, 229, 0.4);
+  transform: translateY(-2px);
+}
+.btn-load-multi:active {
+  transform: translateY(0);
 }
 
 /* 7 MẢNG PASTEL TINTS & BOLD TEXT THEO ĐÚNG ẢNH MẪU */
