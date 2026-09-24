@@ -350,6 +350,30 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False).encode('utf-8'))
 
+    def handle_get_report_data(self, query):
+        try:
+            import parse_report_data
+            params = urllib.parse.parse_qs(query)
+            custom_file = params.get('file', [None])[0]
+            best_file = parse_report_data.find_best_report_file(custom_file)
+            if not best_file or not os.path.exists(best_file):
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({'success': False, 'error': 'Không tìm thấy file Masterlist hợp lệ'}, ensure_ascii=False).encode('utf-8'))
+                return
+
+            result = parse_report_data.parse_report_workbook(best_file)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'success': False, 'error': str(e)}, ensure_ascii=False).encode('utf-8'))
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         clean_path = parsed.path
@@ -378,6 +402,9 @@ class MasterlistHandler(http.server.SimpleHTTPRequestHandler):
             return
         elif clean_path == '/api/draft-excel':
             self.handle_download_draft_excel(query)
+            return
+        elif clean_path == '/api/report-data':
+            self.handle_get_report_data(query)
             return
         super().do_GET()
 
