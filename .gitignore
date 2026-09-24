@@ -1,5 +1,6 @@
 # Excel files with actual data (keep only the master template)
 Masterlist 2027-2028 (Gui cac mang)*.xlsx
+saved_drafts/
 *.tmp
 ~$*.xlsx
 ~$*.xls

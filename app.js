@@ -65,7 +65,10 @@ const state = {
   exportBlob: null,
   exportFileName: 'Masterlist 2027-2028_Mau.xlsx',
   strategyProfiles: [],                     // Danh sách profiles Chiến lược 5 năm
-  activeStrategyProfileId: 'profile_default' // ID profile đang được kích hoạt
+  activeStrategyProfileId: 'profile_default', // ID profile đang được kích hoạt
+  currentDraftId: null,                     // ID bản lưu đang mở
+  currentDraftName: null,                   // Tên bản lưu đang mở
+  serverDrafts: []                          // Danh sách bản lưu trên server
 };
 
 // ==================== KHỞI TẠO & SỰ KIỆN GIAO DIỆN ====================
@@ -81,6 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
   makeTableResizable('validationTable');
   initStrategyComparison();
   initVTBConverter();
+  initServerDrafts();
+  initEditModalListeners();
+  initPreviewInlineEditing();
   renderPreviewTable();
 });
 
@@ -464,6 +470,11 @@ function rebuildExtractedData() {
     btnDownload.disabled = !hasData;
     btnDownload.title = hasData ? 'Tải file kết quả hoàn chỉnh về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx)' : 'Vui lòng nạp ít nhất một file mảng để tải kết quả';
   }
+  const btnSaveServer = document.getElementById('btnSaveToServer');
+  if (btnSaveServer) {
+    btnSaveServer.disabled = !hasData;
+    btnSaveServer.title = hasData ? 'Lưu bản hiện tại lên Server để sau này nạp lại và tiếp tục chỉnh sửa' : 'Vui lòng nạp dữ liệu trước khi lưu lên Server';
+  }
   const banner = document.getElementById('exportReadyBanner');
   if (banner) banner.style.display = hasData ? 'flex' : 'none';
   if (hasData) prepareQuickDownload();
@@ -502,6 +513,26 @@ function initActionButtons() {
   const btnDownload = document.getElementById('btnOpenResultFile');
   if (btnDownload) {
     btnDownload.addEventListener('click', openResultFile);
+  }
+
+  const btnSaveServer = document.getElementById('btnSaveToServer');
+  if (btnSaveServer) {
+    btnSaveServer.addEventListener('click', openSaveDraftModal);
+  }
+
+  const btnConfirmSave = document.getElementById('btnConfirmSaveDraft');
+  if (btnConfirmSave) {
+    btnConfirmSave.addEventListener('click', confirmSaveDraft);
+  }
+
+  const btnConfirmSaveItm = document.getElementById('btnConfirmSaveItem');
+  if (btnConfirmSaveItm) {
+    btnConfirmSaveItm.addEventListener('click', confirmSaveItem);
+  }
+
+  const searchDraftsInput = document.getElementById('searchDraftsInput');
+  if (searchDraftsInput) {
+    searchDraftsInput.addEventListener('input', renderServerDraftsTable);
   }
 
   const btnReset = document.getElementById('btnReset');
@@ -2138,7 +2169,7 @@ function renderValidationTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
+        <td colspan="10" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
           🎉 Không có cảnh báo hoặc lỗi nào phù hợp với bộ lọc!
         </td>
       </tr>
@@ -2160,6 +2191,11 @@ function renderValidationTable() {
         <td style="text-align: center; white-space: nowrap;">${getValidationIssueBadge(issue)}</td>
         <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(issue.message)}">
           ${escapeHtml(issue.message)}
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-outline btn-xs" style="padding: 2px 7px; font-size: 0.725rem; font-weight: 700; color: #4338ca; border-color: #c7d2fe;" onclick="openEditItemFromValidation(${issue.origRow}, '${issue.mangCode}')" title="Sửa dòng lỗi này">
+            <i data-lucide="edit-3" class="w-3 h-3 inline-block mr-0.5"></i> Sửa
+          </button>
         </td>
       </tr>
     `;
@@ -2301,7 +2337,8 @@ const PREVIEW_COLUMN_DEFS = [
   { key: 'dg', label: 'Đơn giá', className: 'num-cell preview-col-dg optional', headerStyle: 'width: 140px;', optional: true },
   { key: 'tt27', label: 'Năm 2027', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
   { key: 'tt28', label: 'Năm 2028', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
-  { key: 'total', label: 'Tổng', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' }
+  { key: 'total', label: 'Tổng', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
+  { key: 'action', label: 'Sửa', className: 'preview-col-action', headerStyle: 'width: 60px; text-align: center;' }
 ];
 
 function getVisiblePreviewColumns() {
@@ -2431,6 +2468,7 @@ function renderPreviewTable() {
       <td class="num-cell" style="font-weight: 800; color: #4f46e5;">${formatNumber(sum27)}</td>
       <td class="num-cell" style="font-weight: 800; color: #059669;">${formatNumber(sum28)}</td>
       <td class="num-cell" style="font-weight: 800; color: #047857;">${formatNumber(sum27 + sum28)}</td>
+      <td style="text-align: center; color: #94a3b8;">-</td>
     </tr>
   `;
 
@@ -2479,17 +2517,20 @@ function renderPreviewTable() {
     return `
       <tr class="${rowClass}">
         <td style="font-weight: ${isCap1 ? '800' : '600'}; font-family: monospace; text-align: center;">${escapeHtml(item.tt || '')}</td>
-        <td class="cell-nd" title="${escapeHtml(item.nd || '')}">
+        <td class="cell-nd ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="nd" title="${!isCap1 ? 'Bấm đúp để sửa nhanh tên hạng mục' : escapeHtml(item.nd || '')}">
           <span style="display: inline-block; width: ${indentPx}px;"></span>
           ${isCap1 ? `<strong style="font-size: 0.9rem; letter-spacing: 0.01em;">${escapeHtml(item.nd || '')}</strong>` : (isGrp ? `<strong>${escapeHtml(item.nd || '')}</strong>` : escapeHtml(item.nd || ''))}
         </td>
-        ${state.previewColumns.dvt ? `<td class="preview-col-dvt" style="text-align: center; color: ${item.dvt ? '#334155' : '#94a3b8'};">${escapeHtml(item.dvt || '-')}</td>` : ''}
-        ${state.previewColumns.kl27 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl27)}</td>` : ''}
-        ${state.previewColumns.kl28 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl28)}</td>` : ''}
-        ${state.previewColumns.dg ? `<td class="num-cell preview-col-dg">${formatPreviewOptionalNumber(item.dg)}</td>` : ''}
+        ${state.previewColumns.dvt ? `<td class="preview-col-dvt ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="dvt" title="${!isCap1 ? 'Bấm đúp để sửa nhanh ĐVT' : ''}" style="text-align: center; color: ${item.dvt ? '#334155' : '#94a3b8'};">${escapeHtml(item.dvt || '-')}</td>` : ''}
+        ${state.previewColumns.kl27 ? `<td class="num-cell preview-col-kl ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="kl27" title="${!isCap1 ? 'Bấm đúp để sửa nhanh KL 2027' : ''}">${formatPreviewOptionalNumber(item.kl27)}</td>` : ''}
+        ${state.previewColumns.kl28 ? `<td class="num-cell preview-col-kl ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="kl28" title="${!isCap1 ? 'Bấm đúp để sửa nhanh KL 2028' : ''}">${formatPreviewOptionalNumber(item.kl28)}</td>` : ''}
+        ${state.previewColumns.dg ? `<td class="num-cell preview-col-dg ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="dg" title="${!isCap1 ? 'Bấm đúp để sửa nhanh Đơn giá' : ''}">${formatPreviewOptionalNumber(item.dg)}</td>` : ''}
         <td class="num-cell">${displayTT27}</td>
         <td class="num-cell">${displayTT28}</td>
         <td class="num-cell">${displayTotal}</td>
+        <td style="text-align: center;">
+          ${!isCap1 ? `<button type="button" class="btn-row-edit" onclick="openEditItemModal(${item.index})" title="Chỉnh sửa chi tiết dòng này"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>` : ''}
+        </td>
       </tr>
     `;
   }).join('');
@@ -5024,5 +5065,704 @@ function applyConvertedVTBToAppState() {
   rebuildExtractedData();
   closeVTBConverterModal();
 }
+
+// ==================== CHỈNH SỬA DỮ LIỆU & BẢN LƯU SERVER ====================
+
+// Cập nhật dữ liệu của 1 hạng mục và đồng bộ toàn bộ hệ thống
+function updateItemData(itemIndex, updatedFields) {
+  const item = state.extractedData[itemIndex];
+  if (!item) return;
+
+  Object.assign(item, updatedFields);
+
+  // Nếu không phải header mảng, tính lại thành tiền
+  if (!item.isMangHeader) {
+    const k27 = (item.kl27 !== null && item.kl27 !== undefined && item.kl27 !== '') ? Number(item.kl27) : null;
+    const k28 = (item.kl28 !== null && item.kl28 !== undefined && item.kl28 !== '') ? Number(item.kl28) : null;
+    const dg = (item.dg !== null && item.dg !== undefined && item.dg !== '') ? Number(item.dg) : null;
+
+    item.kl27 = k27;
+    item.kl28 = k28;
+    item.dg = dg;
+
+    if (k27 !== null && dg !== null && !isNaN(k27) && !isNaN(dg)) {
+      item.tt27 = k27 * dg;
+    } else {
+      item.tt27 = null;
+    }
+
+    if (k28 !== null && dg !== null && !isNaN(k28) && !isNaN(dg)) {
+      item.tt28 = k28 * dg;
+    } else {
+      item.tt28 = null;
+    }
+
+    item.tongTT = (item.tt27 || 0) + (item.tt28 || 0);
+  }
+
+  // Đồng bộ với mảng tương ứng trong state.extractedByMang
+  if (item.mangCode && state.extractedByMang[item.mangCode]) {
+    const list = state.extractedByMang[item.mangCode];
+    const foundIdx = list.findIndex(x => x === item || (x.origRow === item.origRow && x.nd === item.nd));
+    if (foundIdx >= 0) {
+      Object.assign(list[foundIdx], item);
+    }
+  }
+
+  // Hủy exportBlob cũ để build lại khi xuất file
+  state.exportBlob = null;
+
+  recalculateSubtotalFormulas();
+  rebuildExtractedData();
+}
+
+// Mở modal chỉnh sửa chi tiết hạng mục
+function openEditItemModal(itemIndex) {
+  const item = state.extractedData[itemIndex];
+  if (!item) return;
+
+  const modal = document.getElementById('modalEditItem');
+  if (!modal) return;
+
+  document.getElementById('editItemIndex').value = itemIndex;
+
+  const badgeMang = document.getElementById('editItemMangBadge');
+  if (badgeMang) {
+    badgeMang.className = `badge-mang badge-mang-${item.mangCode}`;
+    badgeMang.textContent = item.mangCode;
+  }
+  const origRowEl = document.getElementById('editItemOrigRow');
+  if (origRowEl) origRowEl.textContent = item.origRow || '-';
+  const ttEl = document.getElementById('editItemTT');
+  if (ttEl) ttEl.textContent = item.tt || '-';
+
+  document.getElementById('editItemND').value = item.nd || '';
+  document.getElementById('editItemDVT').value = item.dvt || '';
+  document.getElementById('editItemKL27').value = (item.kl27 !== null && item.kl27 !== undefined) ? item.kl27 : '';
+  document.getElementById('editItemKL28').value = (item.kl28 !== null && item.kl28 !== undefined) ? item.kl28 : '';
+  document.getElementById('editItemDG').value = (item.dg !== null && item.dg !== undefined) ? item.dg : '';
+
+  document.getElementById('editItemMaLoai').value = item.maLoai || '';
+  document.getElementById('editItemMaMang').value = item.maMang || '';
+  document.getElementById('editItemMaDV').value = item.maDV || '';
+
+  const dl = document.getElementById('editItemMaDVSuggestions');
+  if (dl && state.validMaDVSet.size > 0) {
+    dl.innerHTML = Array.from(state.validMaDVSet).map(code => `<option value="${escapeHtml(code)}">`).join('');
+  }
+
+  const chkGroup = document.getElementById('editItemIsGroup');
+  if (chkGroup) chkGroup.checked = !!item.isGroup;
+  const selLevel = document.getElementById('editItemLevelNum');
+  if (selLevel) selLevel.value = String(item.levelNum || (item.isGroup ? 2 : 99));
+
+  updateEditItemMoneyPreview();
+  modal.style.display = 'flex';
+  if (window.lucide) lucide.createIcons();
+}
+
+// Mở modal sửa từ bảng Validation
+function openEditItemFromValidation(origRow, mangCode) {
+  const idx = state.extractedData.findIndex(x => x.mangCode === mangCode && x.origRow === origRow);
+  if (idx >= 0) {
+    openEditItemModal(idx);
+  } else {
+    showToast('Không tìm thấy dòng tương ứng trong bảng dữ liệu!', 'warning');
+  }
+}
+
+// Tính realtime thành tiền trong modal sửa
+function updateEditItemMoneyPreview() {
+  const kl27Val = parseFloat(document.getElementById('editItemKL27')?.value);
+  const kl28Val = parseFloat(document.getElementById('editItemKL28')?.value);
+  const dgVal = parseFloat(document.getElementById('editItemDG')?.value);
+
+  const tt27 = (!isNaN(kl27Val) && !isNaN(dgVal)) ? kl27Val * dgVal : 0;
+  const tt28 = (!isNaN(kl28Val) && !isNaN(dgVal)) ? kl28Val * dgVal : 0;
+  const total = tt27 + tt28;
+
+  const p27 = document.getElementById('editItemPreviewTT27');
+  if (p27) p27.textContent = tt27 > 0 ? formatNumber(tt27) + ' USD' : '-';
+  const p28 = document.getElementById('editItemPreviewTT28');
+  if (p28) p28.textContent = tt28 > 0 ? formatNumber(tt28) + ' USD' : '-';
+  const pTot = document.getElementById('editItemPreviewTTTotal');
+  if (pTot) pTot.textContent = total > 0 ? formatNumber(total) + ' USD' : '-';
+}
+
+function closeEditItemModal() {
+  const modal = document.getElementById('modalEditItem');
+  if (modal) modal.style.display = 'none';
+}
+
+function confirmSaveItem() {
+  const idx = parseInt(document.getElementById('editItemIndex')?.value, 10);
+  if (isNaN(idx) || !state.extractedData[idx]) return;
+
+  const nd = document.getElementById('editItemND')?.value?.trim();
+  if (!nd) {
+    showToast('Tên hạng mục không được để trống!', 'warning');
+    return;
+  }
+
+  const dvt = document.getElementById('editItemDVT')?.value?.trim() || '';
+  const kl27Str = document.getElementById('editItemKL27')?.value;
+  const kl28Str = document.getElementById('editItemKL28')?.value;
+  const dgStr = document.getElementById('editItemDG')?.value;
+
+  const kl27 = (kl27Str !== '' && !isNaN(parseFloat(kl27Str))) ? parseFloat(kl27Str) : null;
+  const kl28 = (kl28Str !== '' && !isNaN(parseFloat(kl28Str))) ? parseFloat(kl28Str) : null;
+  const dg = (dgStr !== '' && !isNaN(parseFloat(dgStr))) ? parseFloat(dgStr) : null;
+
+  const maLoai = document.getElementById('editItemMaLoai')?.value?.trim() || '';
+  const maMang = document.getElementById('editItemMaMang')?.value?.trim() || '';
+  const maDV = document.getElementById('editItemMaDV')?.value?.trim() || '';
+
+  const isGroup = document.getElementById('editItemIsGroup')?.checked || false;
+  const levelNum = parseInt(document.getElementById('editItemLevelNum')?.value, 10) || (isGroup ? 2 : 99);
+
+  updateItemData(idx, {
+    nd: nd,
+    dvt: dvt,
+    kl27: kl27,
+    kl28: kl28,
+    dg: dg,
+    maLoai: maLoai,
+    maMang: maMang,
+    maDV: maDV,
+    isGroup: isGroup,
+    levelNum: levelNum,
+    level: levelNum <= 6 ? `CẤP ${levelNum}` : 'CHI TIẾT'
+  });
+
+  closeEditItemModal();
+  showToast('Đã lưu thay đổi hạng mục thành công!', 'success');
+}
+
+function initEditModalListeners() {
+  ['editItemKL27', 'editItemKL28', 'editItemDG'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateEditItemMoneyPreview);
+  });
+}
+
+// Bấm đúp chuột để chỉnh sửa nhanh ngay trên bảng Xem trước (Preview)
+function initPreviewInlineEditing() {
+  const tbody = document.getElementById('previewTableBody');
+  if (!tbody) return;
+
+  tbody.addEventListener('dblclick', (e) => {
+    const cell = e.target.closest('.cell-editable');
+    if (!cell) return;
+    if (cell.querySelector('input')) return;
+
+    const itemIdx = parseInt(cell.getAttribute('data-item-idx'), 10);
+    const field = cell.getAttribute('data-field');
+    if (isNaN(itemIdx) || !field || !state.extractedData[itemIdx]) return;
+
+    const item = state.extractedData[itemIdx];
+    if (item.isMangHeader) return;
+
+    const originalVal = (item[field] !== null && item[field] !== undefined) ? item[field] : '';
+    const oldHtml = cell.innerHTML;
+
+    const input = document.createElement('input');
+    input.type = (field === 'kl27' || field === 'kl28' || field === 'dg') ? 'number' : 'text';
+    if (input.type === 'number') input.step = 'any';
+    input.className = 'cell-edit-input';
+    input.value = originalVal;
+
+    cell.innerHTML = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
+
+    let committed = false;
+    const commitChange = () => {
+      if (committed) return;
+      committed = true;
+      const newValStr = input.value.trim();
+      let newVal = newValStr;
+      if (field === 'kl27' || field === 'kl28' || field === 'dg') {
+        newVal = (newValStr !== '' && !isNaN(parseFloat(newValStr))) ? parseFloat(newValStr) : null;
+      }
+      if (newVal !== originalVal) {
+        updateItemData(itemIdx, { [field]: newVal });
+        showToast(`Đã cập nhật ${field.toUpperCase()} dòng ${item.origRow || itemIdx + 1}!`, 'success');
+      } else {
+        cell.innerHTML = oldHtml;
+      }
+    };
+
+    input.addEventListener('blur', commitChange);
+    input.addEventListener('keydown', (ke) => {
+      if (ke.key === 'Enter') {
+        ke.preventDefault();
+        input.blur();
+      } else if (ke.key === 'Escape') {
+        ke.preventDefault();
+        committed = true;
+        cell.innerHTML = oldHtml;
+      }
+    });
+  });
+}
+
+// ==================== BẢN LƯU SERVER (SERVER DRAFTS) ====================
+
+async function initServerDrafts() {
+  await updateServerDraftBadge();
+}
+
+async function updateServerDraftBadge() {
+  const badge = document.getElementById('badgeServerDraftCount');
+  if (!badge) return;
+  try {
+    const drafts = await fetchAllDraftsList();
+    badge.textContent = drafts.length;
+    badge.style.display = drafts.length > 0 ? 'inline-block' : 'none';
+  } catch (e) {
+    badge.textContent = '0';
+  }
+}
+
+async function fetchAllDraftsList() {
+  let serverList = [];
+  try {
+    const res = await fetch('/api/drafts', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.drafts)) {
+        serverList = data.drafts;
+      }
+    }
+  } catch (e) {
+    // Offline
+  }
+
+  const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
+  const map = new Map();
+  serverList.forEach(d => map.set(d.id, d));
+  localDrafts.forEach(d => {
+    if (!map.has(d.id)) map.set(d.id, d);
+  });
+
+  const allDrafts = Array.from(map.values());
+  allDrafts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  state.serverDrafts = allDrafts;
+  return allDrafts;
+}
+
+function openSaveDraftModal() {
+  if (!state.extractedData || state.extractedData.length === 0) {
+    showToast('Chưa có dữ liệu để lưu! Vui lòng nạp ít nhất một mảng dữ liệu.', 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('modalSaveDraft');
+  if (!modal) return;
+
+  const activeMangs = MANG_CONFIG.filter(m => (state.extractedByMang[m.code] || []).length > 0);
+  let sumTot = 0;
+  state.extractedData.forEach(it => {
+    if (!it.isGroup && !it.isMangHeader) {
+      if (it.tt27) sumTot += Number(it.tt27);
+      if (it.tt28) sumTot += Number(it.tt28);
+    }
+  });
+
+  document.getElementById('saveDraftMangsCount').textContent = `${activeMangs.length} mảng (${activeMangs.map(m => m.code).join(', ')})`;
+  document.getElementById('saveDraftRowCount').textContent = formatNumber(state.extractedData.length);
+  document.getElementById('saveDraftTotalVal').textContent = formatNumber(sumTot);
+
+  const now = new Date();
+  const timeStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+  const nameInput = document.getElementById('inputSaveDraftName');
+  if (nameInput) {
+    nameInput.value = state.currentDraftName || `Bản lưu ngày ${timeStr}`;
+  }
+
+  const noteInput = document.getElementById('inputSaveDraftNote');
+  if (noteInput) noteInput.value = '';
+
+  const modeGroup = document.getElementById('saveDraftModeGroup');
+  if (modeGroup) {
+    if (state.currentDraftId) {
+      modeGroup.style.display = 'block';
+      const textOv = document.getElementById('textOverwriteDraftName');
+      if (textOv) textOv.textContent = state.currentDraftName || state.currentDraftId;
+      const rNew = document.querySelector('input[name="radioDraftSaveMode"][value="new"]');
+      if (rNew) rNew.checked = true;
+    } else {
+      modeGroup.style.display = 'none';
+    }
+  }
+
+  modal.style.display = 'flex';
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeSaveDraftModal() {
+  const modal = document.getElementById('modalSaveDraft');
+  if (modal) modal.style.display = 'none';
+}
+
+async function confirmSaveDraft() {
+  const nameInput = document.getElementById('inputSaveDraftName');
+  const noteInput = document.getElementById('inputSaveDraftNote');
+  const name = (nameInput?.value || '').trim();
+  if (!name) {
+    showToast('Vui lòng nhập tên cho bản lưu!', 'warning');
+    nameInput?.focus();
+    return;
+  }
+  const note = (noteInput?.value || '').trim();
+  const modeRadio = document.querySelector('input[name="radioDraftSaveMode"]:checked');
+  const isOverwrite = (modeRadio && modeRadio.value === 'overwrite' && state.currentDraftId);
+
+  const btnConfirm = document.getElementById('btnConfirmSaveDraft');
+  const oldBtnHtml = btnConfirm.innerHTML;
+  btnConfirm.disabled = true;
+  btnConfirm.innerHTML = `<span class="spinner"></span> Đang lưu...`;
+
+  try {
+    let excelBase64 = null;
+    try {
+      if (state.templateBuffer) {
+        recalculateSubtotalFormulas();
+        const buffer = await buildCleanMasterlist(state.templateBuffer, state.extractedByMang, state.files);
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        const chunkSz = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSz) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSz));
+        }
+        excelBase64 = btoa(binary);
+      }
+    } catch (e) {
+      console.warn('Lỗi tạo file Excel đính kèm bản lưu:', e);
+    }
+
+    const activeMangs = MANG_CONFIG.filter(m => (state.extractedByMang[m.code] || []).length > 0).map(m => m.code);
+    let sum27 = 0, sum28 = 0;
+    state.extractedData.forEach(it => {
+      if (!it.isGroup && !it.isMangHeader) {
+        if (it.tt27) sum27 += Number(it.tt27);
+        if (it.tt28) sum28 += Number(it.tt28);
+      }
+    });
+
+    const filesMeta = {};
+    for (const m of MANG_CONFIG) {
+      if (state.files[m.code]) {
+        filesMeta[m.code] = {
+          name: state.files[m.code].name,
+          size: state.files[m.code].size
+        };
+      }
+    }
+
+    const payload = {
+      id: isOverwrite ? state.currentDraftId : null,
+      name: name,
+      note: note,
+      rowCount: state.extractedData.length,
+      mangs: activeMangs,
+      total2027: sum27,
+      total2028: sum28,
+      sessionData: {
+        extractedByMang: state.extractedByMang,
+        mangHeaderInfo: state.mangHeaderInfo,
+        groupsConfig: state.groupsConfig,
+        filesMeta: filesMeta
+      },
+      excelBase64: excelBase64
+    };
+
+    let savedDraft = null;
+    let savedOnServer = false;
+
+    try {
+      const res = await fetch('/api/save-draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const resData = await res.json();
+        if (resData.success && resData.draft) {
+          savedDraft = resData.draft;
+          savedOnServer = true;
+        }
+      }
+    } catch (netErr) {
+      console.warn('Không kết nối được server, lưu vào localStorage dự phòng:', netErr);
+    }
+
+    if (!savedOnServer) {
+      const now = new Date();
+      const localId = isOverwrite ? state.currentDraftId : `local_draft_${Date.now()}`;
+      savedDraft = {
+        id: localId,
+        name: name,
+        note: note,
+        timestamp: Date.now() / 1000,
+        formattedTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`,
+        rowCount: state.extractedData.length,
+        mangs: activeMangs,
+        total2027: sum27,
+        total2028: sum28,
+        sessionData: payload.sessionData,
+        isLocal: true
+      };
+      const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
+      const existIdx = localDrafts.findIndex(d => d.id === localId);
+      if (existIdx >= 0) localDrafts[existIdx] = savedDraft;
+      else localDrafts.unshift(savedDraft);
+      localStorage.setItem('qhdc_local_drafts', JSON.stringify(localDrafts));
+    }
+
+    state.currentDraftId = savedDraft.id;
+    state.currentDraftName = savedDraft.name;
+
+    closeSaveDraftModal();
+    showToast(`Đã lưu bản lưu "${name}" thành công!`, 'success');
+    updateServerDraftBadge();
+  } catch (err) {
+    console.error('Lỗi khi lưu bản lưu:', err);
+    showToast(`Lỗi khi lưu bản lưu: ${err.message}`, 'error');
+  } finally {
+    btnConfirm.disabled = false;
+    btnConfirm.innerHTML = oldBtnHtml;
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+function openServerDraftsModal() {
+  const modal = document.getElementById('modalServerDrafts');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  fetchAndRenderServerDrafts();
+  if (window.lucide) lucide.createIcons();
+}
+
+function closeServerDraftsModal() {
+  const modal = document.getElementById('modalServerDrafts');
+  if (modal) modal.style.display = 'none';
+}
+
+async function fetchAndRenderServerDrafts() {
+  const tbody = document.getElementById('serverDraftsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
+        <span class="spinner"></span> Đang tải danh sách bản lưu...
+      </td>
+    </tr>
+  `;
+  await fetchAllDraftsList();
+  renderServerDraftsTable();
+}
+
+function renderServerDraftsTable() {
+  const tbody = document.getElementById('serverDraftsTableBody');
+  if (!tbody) return;
+  const keyword = (document.getElementById('searchDraftsInput')?.value || '').trim().toLowerCase();
+  let list = state.serverDrafts || [];
+  if (keyword) {
+    list = list.filter(d =>
+      (d.name || '').toLowerCase().includes(keyword) ||
+      (d.note || '').toLowerCase().includes(keyword) ||
+      (d.formattedTime || '').toLowerCase().includes(keyword) ||
+      (d.mangs || []).join(' ').toLowerCase().includes(keyword)
+    );
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">
+          ${keyword ? 'Không tìm thấy bản lưu nào phù hợp với từ khóa.' : 'Chưa có bản lưu nào trên server. Sau khi tải dữ liệu và chỉnh sửa, bạn hãy bấm "Lưu lên Server" để lưu trữ lại bản làm việc.'}
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = list.map((d, i) => {
+    const isCurrent = state.currentDraftId && state.currentDraftId === d.id;
+    const currentPill = isCurrent ? `<span style="font-size: 0.7rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 9999px; margin-left: 6px; font-weight: 700;">Đang mở</span>` : '';
+    const noteHtml = d.note ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 3px; font-style: italic;">${escapeHtml(d.note)}</div>` : '';
+    const mangBadges = (d.mangs || []).map(m => `<span class="badge-mang badge-mang-${m}" style="font-size: 0.65rem; padding: 1px 5px;">${m}</span>`).join(' ');
+    const totVal = (d.total2027 || 0) + (d.total2028 || 0);
+
+    return `
+      <tr>
+        <td style="text-align: center; font-weight: 700; color: #64748b;">${i + 1}</td>
+        <td>
+          <div style="font-weight: 700; color: #1e293b; display: flex; align-items: center;">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600 inline-block mr-1.5 shrink-0"></i>
+            <span>${escapeHtml(d.name)}</span>
+            ${currentPill}
+          </div>
+          ${noteHtml}
+        </td>
+        <td style="text-align: center; font-size: 0.775rem; color: #475569; font-weight: 600;">
+          ${escapeHtml(d.formattedTime || '-')}
+        </td>
+        <td style="text-align: center;">
+          <div style="font-weight: 700; font-size: 0.8rem; color: #0f172a;">${formatNumber(d.rowCount || 0)} dòng</div>
+          <div style="margin-top: 3px; display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;">${mangBadges}</div>
+        </td>
+        <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #047857; font-size: 0.825rem;">
+          ${totVal > 0 ? formatNumber(totVal) + ' USD' : '-'}
+        </td>
+        <td>
+          <div class="draft-card-actions">
+            <button type="button" class="btn btn-primary btn-xs" onclick="loadDraftIntoState('${d.id}')" title="Nạp bản này vào bảng làm việc để sửa tiếp">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Nạp bản này</span>
+            </button>
+            ${(d.hasExcel || !d.isLocal) ? `
+              <button type="button" class="btn btn-outline btn-xs" onclick="downloadServerDraftExcel('${d.id}', '${escapeHtml(d.name)}')" title="Tải file Excel (.xlsx) của bản này về máy tính">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>Excel</span>
+              </button>
+            ` : ''}
+            <button type="button" class="btn btn-outline btn-xs" style="color: #e11d48; border-color: #fecdd3;" onclick="deleteServerDraft('${d.id}', '${escapeHtml(d.name)}')" title="Xóa bản lưu này khỏi server">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function downloadServerDraftExcel(draftId, draftName) {
+  const url = `/api/draft-excel?id=${encodeURIComponent(draftId)}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${draftName || 'Masterlist_Draft'}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('Đang tải file Excel của bản lưu...', 'info');
+}
+
+async function deleteServerDraft(draftId, draftName) {
+  if (!confirm(`Bạn có chắc chắn muốn xóa bản lưu "${draftName}" khỏi server?`)) return;
+
+  try {
+    try {
+      await fetch(`/api/delete-draft?id=${encodeURIComponent(draftId)}`, { method: 'POST' });
+    } catch (e) {}
+
+    const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
+    const filtered = localDrafts.filter(d => d.id !== draftId);
+    localStorage.setItem('qhdc_local_drafts', JSON.stringify(filtered));
+
+    if (state.currentDraftId === draftId) {
+      state.currentDraftId = null;
+      state.currentDraftName = null;
+    }
+
+    showToast(`Đã xóa bản lưu "${draftName}"`, 'success');
+    fetchAndRenderServerDrafts();
+    updateServerDraftBadge();
+  } catch (err) {
+    showToast(`Lỗi khi xóa bản lưu: ${err.message}`, 'error');
+  }
+}
+
+async function loadDraftIntoState(draftId) {
+  try {
+    showToast('Đang tải dữ liệu bản lưu từ server...', 'info');
+    let draft = null;
+
+    try {
+      const res = await fetch(`/api/load-draft?id=${encodeURIComponent(draftId)}`);
+      if (res.ok) {
+        draft = await res.json();
+      }
+    } catch (e) {}
+
+    if (!draft) {
+      const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
+      draft = localDrafts.find(d => d.id === draftId);
+    }
+
+    if (!draft) {
+      throw new Error('Không tìm thấy dữ liệu bản lưu!');
+    }
+
+    const sessionData = draft.sessionData || {};
+
+    if (sessionData.extractedByMang) {
+      state.extractedByMang = sessionData.extractedByMang;
+    }
+    if (sessionData.mangHeaderInfo) {
+      state.mangHeaderInfo = sessionData.mangHeaderInfo;
+    }
+    if (sessionData.groupsConfig) {
+      state.groupsConfig = sessionData.groupsConfig;
+    }
+
+    state.currentDraftId = draft.id;
+    state.currentDraftName = draft.name;
+
+    const filesMeta = sessionData.filesMeta || {};
+    for (const mang of MANG_CONFIG) {
+      const items = state.extractedByMang[mang.code] || [];
+      if (items.length > 0) {
+        const meta = filesMeta[mang.code] || {};
+        const fileName = meta.name || `${draft.name} (${mang.code})`;
+        const fileSize = meta.size || (items.length * 150);
+        updateUploadBoxUI(mang.code, fileName, fileSize);
+      } else {
+        resetUploadBoxUI(mang.code);
+      }
+    }
+
+    rebuildExtractedData();
+    recalculateSubtotalFormulas();
+    validateAllExtractedData();
+    renderPreviewTable();
+    renderValidationTable();
+    renderHierarchyTable();
+    syncStrategyComparisonRealtime();
+
+    state.exportBlob = null;
+    const btnDownload = document.getElementById('btnOpenResultFile');
+    if (btnDownload) btnDownload.disabled = false;
+    const btnSaveServer = document.getElementById('btnSaveToServer');
+    if (btnSaveServer) btnSaveServer.disabled = false;
+
+    closeServerDraftsModal();
+    showToast(`Đã nạp bản lưu "${draft.name}" thành công! (${state.extractedData.length} dòng)`, 'success');
+  } catch (err) {
+    console.error('Lỗi khi nạp bản lưu:', err);
+    showToast(`Không thể nạp bản lưu: ${err.message}`, 'error');
+  }
+}
+
+window.openSaveDraftModal = openSaveDraftModal;
+window.closeSaveDraftModal = closeSaveDraftModal;
+window.confirmSaveDraft = confirmSaveDraft;
+window.openServerDraftsModal = openServerDraftsModal;
+window.closeServerDraftsModal = closeServerDraftsModal;
+window.fetchAndRenderServerDrafts = fetchAndRenderServerDrafts;
+window.renderServerDraftsTable = renderServerDraftsTable;
+window.loadDraftIntoState = loadDraftIntoState;
+window.downloadServerDraftExcel = downloadServerDraftExcel;
+window.deleteServerDraft = deleteServerDraft;
+window.openEditItemModal = openEditItemModal;
+window.openEditItemFromValidation = openEditItemFromValidation;
+window.closeEditItemModal = closeEditItemModal;
+window.confirmSaveItem = confirmSaveItem;
+
 
 
