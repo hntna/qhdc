@@ -2971,51 +2971,6 @@ tr.row-cap-4 {
   text-align: center;
 }
 
-/* ==================== CELL & ROW EDITING ==================== */
-.cell-editable {
-  position: relative;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.cell-editable:hover {
-  background-color: #fef9c3 !important;
-  outline: 1.5px dashed #ca8a04;
-  outline-offset: -1.5px;
-}
-.cell-edit-input {
-  width: 100%;
-  padding: 3px 5px;
-  border: 1.5px solid #3b82f6;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: inherit;
-  background: #ffffff;
-  color: #0f172a;
-  box-sizing: border-box;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-}
-
-.btn-row-edit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-row-edit:hover {
-  background: #eef2ff;
-  border-color: #6366f1;
-  color: #4338ca;
-  transform: scale(1.08);
-}
-
 /* ==================== BẢNG BẢN LƯU SERVER ==================== */
 .drafts-table {
   width: 100%;

@@ -85,8 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initStrategyComparison();
   initVTBConverter();
   initServerDrafts();
-  initEditModalListeners();
-  initPreviewInlineEditing();
   renderPreviewTable();
 });
 
@@ -523,11 +521,6 @@ function initActionButtons() {
   const btnConfirmSave = document.getElementById('btnConfirmSaveDraft');
   if (btnConfirmSave) {
     btnConfirmSave.addEventListener('click', confirmSaveDraft);
-  }
-
-  const btnConfirmSaveItm = document.getElementById('btnConfirmSaveItem');
-  if (btnConfirmSaveItm) {
-    btnConfirmSaveItm.addEventListener('click', confirmSaveItem);
   }
 
   const searchDraftsInput = document.getElementById('searchDraftsInput');
@@ -2169,7 +2162,7 @@ function renderValidationTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
+        <td colspan="9" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
           🎉 Không có cảnh báo hoặc lỗi nào phù hợp với bộ lọc!
         </td>
       </tr>
@@ -2191,11 +2184,6 @@ function renderValidationTable() {
         <td style="text-align: center; white-space: nowrap;">${getValidationIssueBadge(issue)}</td>
         <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(issue.message)}">
           ${escapeHtml(issue.message)}
-        </td>
-        <td style="text-align: center;">
-          <button type="button" class="btn btn-outline btn-xs" style="padding: 2px 7px; font-size: 0.725rem; font-weight: 700; color: #4338ca; border-color: #c7d2fe;" onclick="openEditItemFromValidation(${issue.origRow}, '${issue.mangCode}')" title="Sửa dòng lỗi này">
-            <i data-lucide="edit-3" class="w-3 h-3 inline-block mr-0.5"></i> Sửa
-          </button>
         </td>
       </tr>
     `;
@@ -2337,8 +2325,7 @@ const PREVIEW_COLUMN_DEFS = [
   { key: 'dg', label: 'Đơn giá', className: 'num-cell preview-col-dg optional', headerStyle: 'width: 140px;', optional: true },
   { key: 'tt27', label: 'Năm 2027', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
   { key: 'tt28', label: 'Năm 2028', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
-  { key: 'total', label: 'Tổng', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' },
-  { key: 'action', label: 'Sửa', className: 'preview-col-action', headerStyle: 'width: 60px; text-align: center;' }
+  { key: 'total', label: 'Tổng', className: 'num-cell preview-col-money', headerStyle: 'width: 180px;' }
 ];
 
 function getVisiblePreviewColumns() {
@@ -2468,7 +2455,6 @@ function renderPreviewTable() {
       <td class="num-cell" style="font-weight: 800; color: #4f46e5;">${formatNumber(sum27)}</td>
       <td class="num-cell" style="font-weight: 800; color: #059669;">${formatNumber(sum28)}</td>
       <td class="num-cell" style="font-weight: 800; color: #047857;">${formatNumber(sum27 + sum28)}</td>
-      <td style="text-align: center; color: #94a3b8;">-</td>
     </tr>
   `;
 
@@ -2517,20 +2503,17 @@ function renderPreviewTable() {
     return `
       <tr class="${rowClass}">
         <td style="font-weight: ${isCap1 ? '800' : '600'}; font-family: monospace; text-align: center;">${escapeHtml(item.tt || '')}</td>
-        <td class="cell-nd ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="nd" title="${!isCap1 ? 'Bấm đúp để sửa nhanh tên hạng mục' : escapeHtml(item.nd || '')}">
+        <td class="cell-nd" title="${escapeHtml(item.nd || '')}">
           <span style="display: inline-block; width: ${indentPx}px;"></span>
           ${isCap1 ? `<strong style="font-size: 0.9rem; letter-spacing: 0.01em;">${escapeHtml(item.nd || '')}</strong>` : (isGrp ? `<strong>${escapeHtml(item.nd || '')}</strong>` : escapeHtml(item.nd || ''))}
         </td>
-        ${state.previewColumns.dvt ? `<td class="preview-col-dvt ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="dvt" title="${!isCap1 ? 'Bấm đúp để sửa nhanh ĐVT' : ''}" style="text-align: center; color: ${item.dvt ? '#334155' : '#94a3b8'};">${escapeHtml(item.dvt || '-')}</td>` : ''}
-        ${state.previewColumns.kl27 ? `<td class="num-cell preview-col-kl ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="kl27" title="${!isCap1 ? 'Bấm đúp để sửa nhanh KL 2027' : ''}">${formatPreviewOptionalNumber(item.kl27)}</td>` : ''}
-        ${state.previewColumns.kl28 ? `<td class="num-cell preview-col-kl ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="kl28" title="${!isCap1 ? 'Bấm đúp để sửa nhanh KL 2028' : ''}">${formatPreviewOptionalNumber(item.kl28)}</td>` : ''}
-        ${state.previewColumns.dg ? `<td class="num-cell preview-col-dg ${!isCap1 ? 'cell-editable' : ''}" data-item-idx="${item.index}" data-field="dg" title="${!isCap1 ? 'Bấm đúp để sửa nhanh Đơn giá' : ''}">${formatPreviewOptionalNumber(item.dg)}</td>` : ''}
+        ${state.previewColumns.dvt ? `<td class="preview-col-dvt" style="text-align: center; color: ${item.dvt ? '#334155' : '#94a3b8'};">${escapeHtml(item.dvt || '-')}</td>` : ''}
+        ${state.previewColumns.kl27 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl27)}</td>` : ''}
+        ${state.previewColumns.kl28 ? `<td class="num-cell preview-col-kl">${formatPreviewOptionalNumber(item.kl28)}</td>` : ''}
+        ${state.previewColumns.dg ? `<td class="num-cell preview-col-dg">${formatPreviewOptionalNumber(item.dg)}</td>` : ''}
         <td class="num-cell">${displayTT27}</td>
         <td class="num-cell">${displayTT28}</td>
         <td class="num-cell">${displayTotal}</td>
-        <td style="text-align: center;">
-          ${!isCap1 ? `<button type="button" class="btn-row-edit" onclick="openEditItemModal(${item.index})" title="Chỉnh sửa chi tiết dòng này"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>` : ''}
-        </td>
       </tr>
     `;
   }).join('');
@@ -5066,247 +5049,6 @@ function applyConvertedVTBToAppState() {
   closeVTBConverterModal();
 }
 
-// ==================== CHỈNH SỬA DỮ LIỆU & BẢN LƯU SERVER ====================
-
-// Cập nhật dữ liệu của 1 hạng mục và đồng bộ toàn bộ hệ thống
-function updateItemData(itemIndex, updatedFields) {
-  const item = state.extractedData[itemIndex];
-  if (!item) return;
-
-  Object.assign(item, updatedFields);
-
-  // Nếu không phải header mảng, tính lại thành tiền
-  if (!item.isMangHeader) {
-    const k27 = (item.kl27 !== null && item.kl27 !== undefined && item.kl27 !== '') ? Number(item.kl27) : null;
-    const k28 = (item.kl28 !== null && item.kl28 !== undefined && item.kl28 !== '') ? Number(item.kl28) : null;
-    const dg = (item.dg !== null && item.dg !== undefined && item.dg !== '') ? Number(item.dg) : null;
-
-    item.kl27 = k27;
-    item.kl28 = k28;
-    item.dg = dg;
-
-    if (k27 !== null && dg !== null && !isNaN(k27) && !isNaN(dg)) {
-      item.tt27 = k27 * dg;
-    } else {
-      item.tt27 = null;
-    }
-
-    if (k28 !== null && dg !== null && !isNaN(k28) && !isNaN(dg)) {
-      item.tt28 = k28 * dg;
-    } else {
-      item.tt28 = null;
-    }
-
-    item.tongTT = (item.tt27 || 0) + (item.tt28 || 0);
-  }
-
-  // Đồng bộ với mảng tương ứng trong state.extractedByMang
-  if (item.mangCode && state.extractedByMang[item.mangCode]) {
-    const list = state.extractedByMang[item.mangCode];
-    const foundIdx = list.findIndex(x => x === item || (x.origRow === item.origRow && x.nd === item.nd));
-    if (foundIdx >= 0) {
-      Object.assign(list[foundIdx], item);
-    }
-  }
-
-  // Hủy exportBlob cũ để build lại khi xuất file
-  state.exportBlob = null;
-
-  recalculateSubtotalFormulas();
-  rebuildExtractedData();
-}
-
-// Mở modal chỉnh sửa chi tiết hạng mục
-function openEditItemModal(itemIndex) {
-  const item = state.extractedData[itemIndex];
-  if (!item) return;
-
-  const modal = document.getElementById('modalEditItem');
-  if (!modal) return;
-
-  document.getElementById('editItemIndex').value = itemIndex;
-
-  const badgeMang = document.getElementById('editItemMangBadge');
-  if (badgeMang) {
-    badgeMang.className = `badge-mang badge-mang-${item.mangCode}`;
-    badgeMang.textContent = item.mangCode;
-  }
-  const origRowEl = document.getElementById('editItemOrigRow');
-  if (origRowEl) origRowEl.textContent = item.origRow || '-';
-  const ttEl = document.getElementById('editItemTT');
-  if (ttEl) ttEl.textContent = item.tt || '-';
-
-  document.getElementById('editItemND').value = item.nd || '';
-  document.getElementById('editItemDVT').value = item.dvt || '';
-  document.getElementById('editItemKL27').value = (item.kl27 !== null && item.kl27 !== undefined) ? item.kl27 : '';
-  document.getElementById('editItemKL28').value = (item.kl28 !== null && item.kl28 !== undefined) ? item.kl28 : '';
-  document.getElementById('editItemDG').value = (item.dg !== null && item.dg !== undefined) ? item.dg : '';
-
-  document.getElementById('editItemMaLoai').value = item.maLoai || '';
-  document.getElementById('editItemMaMang').value = item.maMang || '';
-  document.getElementById('editItemMaDV').value = item.maDV || '';
-
-  const dl = document.getElementById('editItemMaDVSuggestions');
-  if (dl && state.validMaDVSet.size > 0) {
-    dl.innerHTML = Array.from(state.validMaDVSet).map(code => `<option value="${escapeHtml(code)}">`).join('');
-  }
-
-  const chkGroup = document.getElementById('editItemIsGroup');
-  if (chkGroup) chkGroup.checked = !!item.isGroup;
-  const selLevel = document.getElementById('editItemLevelNum');
-  if (selLevel) selLevel.value = String(item.levelNum || (item.isGroup ? 2 : 99));
-
-  updateEditItemMoneyPreview();
-  modal.style.display = 'flex';
-  if (window.lucide) lucide.createIcons();
-}
-
-// Mở modal sửa từ bảng Validation
-function openEditItemFromValidation(origRow, mangCode) {
-  const idx = state.extractedData.findIndex(x => x.mangCode === mangCode && x.origRow === origRow);
-  if (idx >= 0) {
-    openEditItemModal(idx);
-  } else {
-    showToast('Không tìm thấy dòng tương ứng trong bảng dữ liệu!', 'warning');
-  }
-}
-
-// Tính realtime thành tiền trong modal sửa
-function updateEditItemMoneyPreview() {
-  const kl27Val = parseFloat(document.getElementById('editItemKL27')?.value);
-  const kl28Val = parseFloat(document.getElementById('editItemKL28')?.value);
-  const dgVal = parseFloat(document.getElementById('editItemDG')?.value);
-
-  const tt27 = (!isNaN(kl27Val) && !isNaN(dgVal)) ? kl27Val * dgVal : 0;
-  const tt28 = (!isNaN(kl28Val) && !isNaN(dgVal)) ? kl28Val * dgVal : 0;
-  const total = tt27 + tt28;
-
-  const p27 = document.getElementById('editItemPreviewTT27');
-  if (p27) p27.textContent = tt27 > 0 ? formatNumber(tt27) + ' USD' : '-';
-  const p28 = document.getElementById('editItemPreviewTT28');
-  if (p28) p28.textContent = tt28 > 0 ? formatNumber(tt28) + ' USD' : '-';
-  const pTot = document.getElementById('editItemPreviewTTTotal');
-  if (pTot) pTot.textContent = total > 0 ? formatNumber(total) + ' USD' : '-';
-}
-
-function closeEditItemModal() {
-  const modal = document.getElementById('modalEditItem');
-  if (modal) modal.style.display = 'none';
-}
-
-function confirmSaveItem() {
-  const idx = parseInt(document.getElementById('editItemIndex')?.value, 10);
-  if (isNaN(idx) || !state.extractedData[idx]) return;
-
-  const nd = document.getElementById('editItemND')?.value?.trim();
-  if (!nd) {
-    showToast('Tên hạng mục không được để trống!', 'warning');
-    return;
-  }
-
-  const dvt = document.getElementById('editItemDVT')?.value?.trim() || '';
-  const kl27Str = document.getElementById('editItemKL27')?.value;
-  const kl28Str = document.getElementById('editItemKL28')?.value;
-  const dgStr = document.getElementById('editItemDG')?.value;
-
-  const kl27 = (kl27Str !== '' && !isNaN(parseFloat(kl27Str))) ? parseFloat(kl27Str) : null;
-  const kl28 = (kl28Str !== '' && !isNaN(parseFloat(kl28Str))) ? parseFloat(kl28Str) : null;
-  const dg = (dgStr !== '' && !isNaN(parseFloat(dgStr))) ? parseFloat(dgStr) : null;
-
-  const maLoai = document.getElementById('editItemMaLoai')?.value?.trim() || '';
-  const maMang = document.getElementById('editItemMaMang')?.value?.trim() || '';
-  const maDV = document.getElementById('editItemMaDV')?.value?.trim() || '';
-
-  const isGroup = document.getElementById('editItemIsGroup')?.checked || false;
-  const levelNum = parseInt(document.getElementById('editItemLevelNum')?.value, 10) || (isGroup ? 2 : 99);
-
-  updateItemData(idx, {
-    nd: nd,
-    dvt: dvt,
-    kl27: kl27,
-    kl28: kl28,
-    dg: dg,
-    maLoai: maLoai,
-    maMang: maMang,
-    maDV: maDV,
-    isGroup: isGroup,
-    levelNum: levelNum,
-    level: levelNum <= 6 ? `CẤP ${levelNum}` : 'CHI TIẾT'
-  });
-
-  closeEditItemModal();
-  showToast('Đã lưu thay đổi hạng mục thành công!', 'success');
-}
-
-function initEditModalListeners() {
-  ['editItemKL27', 'editItemKL28', 'editItemDG'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateEditItemMoneyPreview);
-  });
-}
-
-// Bấm đúp chuột để chỉnh sửa nhanh ngay trên bảng Xem trước (Preview)
-function initPreviewInlineEditing() {
-  const tbody = document.getElementById('previewTableBody');
-  if (!tbody) return;
-
-  tbody.addEventListener('dblclick', (e) => {
-    const cell = e.target.closest('.cell-editable');
-    if (!cell) return;
-    if (cell.querySelector('input')) return;
-
-    const itemIdx = parseInt(cell.getAttribute('data-item-idx'), 10);
-    const field = cell.getAttribute('data-field');
-    if (isNaN(itemIdx) || !field || !state.extractedData[itemIdx]) return;
-
-    const item = state.extractedData[itemIdx];
-    if (item.isMangHeader) return;
-
-    const originalVal = (item[field] !== null && item[field] !== undefined) ? item[field] : '';
-    const oldHtml = cell.innerHTML;
-
-    const input = document.createElement('input');
-    input.type = (field === 'kl27' || field === 'kl28' || field === 'dg') ? 'number' : 'text';
-    if (input.type === 'number') input.step = 'any';
-    input.className = 'cell-edit-input';
-    input.value = originalVal;
-
-    cell.innerHTML = '';
-    cell.appendChild(input);
-    input.focus();
-    input.select();
-
-    let committed = false;
-    const commitChange = () => {
-      if (committed) return;
-      committed = true;
-      const newValStr = input.value.trim();
-      let newVal = newValStr;
-      if (field === 'kl27' || field === 'kl28' || field === 'dg') {
-        newVal = (newValStr !== '' && !isNaN(parseFloat(newValStr))) ? parseFloat(newValStr) : null;
-      }
-      if (newVal !== originalVal) {
-        updateItemData(itemIdx, { [field]: newVal });
-        showToast(`Đã cập nhật ${field.toUpperCase()} dòng ${item.origRow || itemIdx + 1}!`, 'success');
-      } else {
-        cell.innerHTML = oldHtml;
-      }
-    };
-
-    input.addEventListener('blur', commitChange);
-    input.addEventListener('keydown', (ke) => {
-      if (ke.key === 'Enter') {
-        ke.preventDefault();
-        input.blur();
-      } else if (ke.key === 'Escape') {
-        ke.preventDefault();
-        committed = true;
-        cell.innerHTML = oldHtml;
-      }
-    });
-  });
-}
-
 // ==================== BẢN LƯU SERVER (SERVER DRAFTS) ====================
 
 async function initServerDrafts() {
@@ -5759,10 +5501,6 @@ window.renderServerDraftsTable = renderServerDraftsTable;
 window.loadDraftIntoState = loadDraftIntoState;
 window.downloadServerDraftExcel = downloadServerDraftExcel;
 window.deleteServerDraft = deleteServerDraft;
-window.openEditItemModal = openEditItemModal;
-window.openEditItemFromValidation = openEditItemFromValidation;
-window.closeEditItemModal = closeEditItemModal;
-window.confirmSaveItem = confirmSaveItem;
 
 
 

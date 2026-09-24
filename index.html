@@ -296,13 +296,12 @@
               <th class="num-cell" style="width: 95px;">KL 2028</th>
               <th class="num-cell" style="width: 115px;">Đơn giá hiện tại</th>
               <th style="width: 170px; text-align: center;">Loại lỗi</th>
-              <th style="width: 350px;">Chi tiết</th>
-              <th style="width: 75px; text-align: center;">Sửa</th>
+              <th style="width: 380px;">Chi tiết</th>
             </tr>
           </thead>
           <tbody id="validationTableBody">
             <tr>
-              <td colspan="10" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+              <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
                 Chưa có dữ liệu kiểm tra. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
               </td>
             </tr>
@@ -963,126 +962,6 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline" onclick="closeServerDraftsModal()">Đóng</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL CHỈNH SỬA CHI TIẾT HẠNG MỤC -->
-  <div id="modalEditItem" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeEditItemModal()">
-    <div class="modal-box" style="max-width: 720px; width: 95%; max-height: 88vh; display: flex; flex-direction: column;">
-      <div class="modal-header" style="background: #f8fafc; border-bottom: 1.5px solid #e2e8f0;">
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: #1e293b;">
-          <i data-lucide="edit-3" class="w-5 h-5 text-indigo-600"></i>
-          <span>CHỈNH SỬA CHI TIẾT HẠNG MỤC</span>
-        </div>
-        <button class="modal-close-btn" onclick="closeEditItemModal()">✕</button>
-      </div>
-      <div class="modal-body" style="padding: 1.25rem 1.5rem; flex: 1; overflow-y: auto;">
-        <input type="hidden" id="editItemIndex" value="">
-
-        <!-- Badge mảng & dòng -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: #f1f5f9; border-radius: 6px;">
-          <span id="editItemMangBadge" class="badge-mang badge-mang-VT">VT</span>
-          <span style="font-size: 0.825rem; font-weight: 700; color: #334155;">Dòng gốc: <span id="editItemOrigRow">-</span></span>
-          <span style="font-size: 0.825rem; font-weight: 700; color: #64748b; margin-left: auto;">Chỉ mục TT: <span id="editItemTT">-</span></span>
-        </div>
-
-        <div style="margin-bottom: 0.85rem;">
-          <label style="display: block; font-weight: 700; font-size: 0.825rem; margin-bottom: 0.35rem; color: #1e293b;">
-            Tên / Nội dung hạng mục: <span style="color: #e11d48;">*</span>
-          </label>
-          <textarea id="editItemND" class="search-input" rows="2" style="width: 100%; resize: vertical; font-weight: 600;"></textarea>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 0.85rem;">
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #1e293b;">
-              Đơn vị tính (ĐVT):
-            </label>
-            <input type="text" id="editItemDVT" class="search-input" style="width: 100%;">
-          </div>
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #4338ca;">
-              Khối lượng 2027:
-            </label>
-            <input type="number" id="editItemKL27" class="search-input" step="any" style="width: 100%; font-family: monospace; font-weight: 700;">
-          </div>
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #047857;">
-              Khối lượng 2028:
-            </label>
-            <input type="number" id="editItemKL28" class="search-input" step="any" style="width: 100%; font-family: monospace; font-weight: 700;">
-          </div>
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #0f172a;">
-              Đơn giá (USD):
-            </label>
-            <input type="number" id="editItemDG" class="search-input" step="any" style="width: 100%; font-family: monospace; font-weight: 700;">
-          </div>
-        </div>
-
-        <!-- Preview Thành tiền tự tính realtime -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; padding: 0.65rem 0.85rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-          <div>
-            <div style="font-size: 0.725rem; font-weight: 700; color: #64748b;">THÀNH TIỀN 2027</div>
-            <div id="editItemPreviewTT27" style="font-size: 0.95rem; font-weight: 800; color: #4338ca; font-family: monospace; margin-top: 2px;">0</div>
-          </div>
-          <div>
-            <div style="font-size: 0.725rem; font-weight: 700; color: #64748b;">THÀNH TIỀN 2028</div>
-            <div id="editItemPreviewTT28" style="font-size: 0.95rem; font-weight: 800; color: #047857; font-family: monospace; margin-top: 2px;">0</div>
-          </div>
-          <div>
-            <div style="font-size: 0.725rem; font-weight: 700; color: #64748b;">TỔNG 2 NĂM</div>
-            <div id="editItemPreviewTTTotal" style="font-size: 0.95rem; font-weight: 900; color: #0f172a; font-family: monospace; margin-top: 2px;">0</div>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 0.85rem;">
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #1e293b;">
-              Mã Loại:
-            </label>
-            <input type="text" id="editItemMaLoai" class="search-input" placeholder="VTTB..." style="width: 100%;">
-          </div>
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #1e293b;">
-              Mã Mảng:
-            </label>
-            <input type="text" id="editItemMaMang" class="search-input" style="width: 100%;">
-          </div>
-          <div>
-            <label style="display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.3rem; color: #1e293b;">
-              Mã DV:
-            </label>
-            <input type="text" id="editItemMaDV" class="search-input" list="editItemMaDVSuggestions" style="width: 100%;">
-            <datalist id="editItemMaDVSuggestions"></datalist>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 20px; align-items: center; padding-top: 0.5rem; border-top: 1px dashed #cbd5e1;">
-          <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.825rem; cursor: pointer;">
-            <input type="checkbox" id="editItemIsGroup" style="width: 16px; height: 16px;"> Là Nhóm hạng mục
-          </label>
-          <div style="display: inline-flex; align-items: center; gap: 6px;">
-            <span style="font-size: 0.825rem; font-weight: 700; color: #475569;">Cấp bậc:</span>
-            <select id="editItemLevelNum" class="select-input" style="height: 30px; font-size: 0.8rem;">
-              <option value="1">Cấp 1 (Mảng)</option>
-              <option value="2">Cấp 2 (Nhóm chính)</option>
-              <option value="3">Cấp 3 (Nhóm phụ)</option>
-              <option value="4">Cấp 4</option>
-              <option value="5">Cấp 5</option>
-              <option value="6">Cấp 6</option>
-              <option value="99">Chi tiết (Vật tư)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline" onclick="closeEditItemModal()">Hủy</button>
-        <button type="button" class="btn btn-primary" id="btnConfirmSaveItem">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Lưu thay đổi</span>
-        </button>
       </div>
     </div>
   </div>
