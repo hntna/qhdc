@@ -17,9 +17,10 @@ Sau đó mở trình duyệt và truy cập: [http://localhost:8080](http://loca
 ---
 
 ## 📂 Cấu trúc thư mục chính
-- **`index.html`**: Giao diện chính của ứng dụng (4 Tab làm việc chuyên biệt).
+- **`index.html`**: Giao diện chính của ứng dụng với Sidebar 6 khu điều hướng (Trang chủ, Nạp dữ liệu, Kiểm tra dữ liệu, Công cụ, Cấu hình, Tổng hợp).
 - **`app.js`**: Toàn bộ logic xử lý dữ liệu, kiểm tra lỗi, tính toán Subtotal tự động và đồng bộ Profile.
-- **`styles.css`**: Hệ thống giao diện Modern SaaS Light Mode.
+- **`ui-nav.js`**: Lớp điều hướng Sidebar + đồng bộ KPI theo các khu chức năng.
+- **`styles.css`**: Hệ thống giao diện Bộ nhận diện Viettel (tông đỏ #EE0033).
 - **`server.py`**: Server Python nhẹ (dùng thư viện chuẩn, không cần `pip install`).
 - **`strategy_profiles.json`**: File lưu trữ các kịch bản số liệu Chiến lược 5 năm.
 - **`Masterlist 2027-2028_Mau.xlsx`**: File phôi mẫu Masterlist chuẩn (ghi đè kết quả trực tiếp).
