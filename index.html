@@ -65,9 +65,6 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="btnOpenVTBConverter" class="btn btn-outline" title="Công cụ chuyển đổi file Mẫu cũ (37 cột) sang Mẫu mới">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Chuyển đổi Mẫu cũ</span>
-        </button>
         <button id="btnSaveToServer" class="btn btn-outline" disabled title="Lưu bản hiện tại lên Server để nạp lại chỉnh sửa tiếp">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i><span>Lưu lên Server</span>
         </button>
@@ -415,7 +412,38 @@
 
     <!-- CONG CU (Task 6 se dien noi dung) -->
     <section class="section-panel" data-panel="tools">
-      <div id="toolsGrid"></div>
+      <div class="tools-grid" id="toolsGrid">
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="refresh-cw" class="w-5 h-5"></i><h3>Chuyển đổi form cũ</h3></div>
+          <p class="tool-card-desc">Chuyển file đầu vào Mẫu cũ (37 cột) sang Mẫu mới.</p>
+          <button id="btnOpenVTBConverter" class="btn btn-primary btn-sm"><i data-lucide="arrow-right" class="w-4 h-4"></i><span>Mở công cụ</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="binary" class="w-5 h-5"></i><h3>Đánh lại chỉ mục</h3></div>
+          <p class="tool-card-desc">Tự động đánh lại toàn bộ số thứ tự/chỉ mục theo cây phân cấp.</p>
+          <button id="btnReindexTT" class="btn btn-outline btn-sm"><i data-lucide="binary" class="w-4 h-4"></i><span>Cập nhật lại Chỉ mục</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="list-tree" class="w-5 h-5"></i><h3>Fix Group dòng</h3></div>
+          <p class="tool-card-desc">Chuẩn hóa Group dòng (Outline Level 1..5) theo cây phân cấp.</p>
+          <button id="btnFixOutlineGroups" class="btn btn-outline btn-sm"><i data-lucide="list-tree" class="w-4 h-4"></i><span>Fix Group dòng</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="split" class="w-5 h-5"></i><h3>Tách Ví → DV riêng</h3></div>
+          <p class="tool-card-desc">Ví điện tử: Mã mảng CNTT, Mã DV VI, Mã loại VTTB.</p>
+          <button id="btnSplitWalletDV" class="btn btn-outline btn-sm btn-wallet-split"><i data-lucide="split" class="w-4 h-4"></i><span>Tách Ví: DV riêng</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="git-branch" class="w-5 h-5"></i><h3>Tách Ví → Mảng riêng</h3></div>
+          <p class="tool-card-desc">Ví điện tử: Mã mảng VI, Mã DV TTKD, Mã loại VTTB.</p>
+          <button id="btnSplitWalletMang" class="btn btn-outline btn-sm btn-wallet-split"><i data-lucide="git-branch" class="w-4 h-4"></i><span>Tách Ví: Mảng riêng</span></button>
+        </div>
+        <div class="tool-card tool-card-soon">
+          <div class="tool-card-head"><i data-lucide="network" class="w-5 h-5"></i><h3>Tách IP → Mảng riêng</h3></div>
+          <p class="tool-card-desc">Tách IP thành mảng riêng.</p>
+          <button class="btn btn-outline btn-sm" disabled><span>Sắp có</span></button>
+        </div>
+      </div>
     </section>
 
     <!-- CAU HINH -->
@@ -450,25 +478,9 @@
       <!-- Action toolbar for Hierarchy -->
       <div class="toolbar">
         <div class="filter-group">
-          <button id="btnReindexTT" class="btn btn-success" title="Tự động đánh lại toàn bộ số thứ tự/chỉ mục (I, II, 1, 1.1...) theo đúng cây phân cấp chuẩn">
-            <i data-lucide="binary" class="w-4 h-4"></i>
-            <span>Cập nhật lại Chỉ mục</span>
-          </button>
-          <button id="btnFixOutlineGroups" class="btn btn-warning" title="Tự động chuẩn hóa và gán lại toàn bộ Group dòng (Outline Level 1..5) trong Excel theo đúng cây phân cấp đã nhận dạng">
-            <i data-lucide="list-tree" class="w-4 h-4"></i>
-            <span>Fix Group dòng (Outline)</span>
-          </button>
           <button id="btnRestoreOriginalTT" class="btn btn-outline" title="Khôi phục lại giá trị cột TT nguyên gốc từ các file đầu vào" style="display: none;">
             <i data-lucide="undo" class="w-4 h-4"></i>
             <span>Khôi phục TT gốc</span>
-          </button>
-          <button id="btnSplitWalletDV" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng CNTT, Mã DV VI, Mã loại VTTB">
-            <i data-lucide="split" class="w-4 h-4"></i>
-            <span>Tách Ví: DV riêng</span>
-          </button>
-          <button id="btnSplitWalletMang" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng VI, Mã DV TTKD, Mã loại VTTB">
-            <i data-lucide="git-branch" class="w-4 h-4"></i>
-            <span>Tách Ví: Mảng riêng</span>
           </button>
         </div>
         <div class="filter-group">

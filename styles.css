@@ -3040,3 +3040,11 @@ tr.row-cap-4 {
 .brand-title { font-weight: 800; font-size: 1rem; color: var(--text-main); line-height: 1.15; }
 .brand-sub { font-size: .78rem; color: var(--text-muted); }
 .header-actions { display: flex; align-items: center; gap: 10px; }
+
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.tool-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 10px; }
+.tool-card-head { display: flex; align-items: center; gap: 10px; color: var(--primary); }
+.tool-card-head h3 { font-size: .95rem; font-weight: 700; color: var(--text-main); }
+.tool-card-desc { font-size: .82rem; color: var(--text-muted); flex: 1; }
+.tool-card .btn { align-self: flex-start; }
+.tool-card-soon { opacity: .7; }
