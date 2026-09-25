@@ -1,87 +1,109 @@
-# Thiết kế: Làm lại giao diện web theo thương hiệu Viettel (chuyên nghiệp hơn)
+# Thiết kế: Làm lại giao diện & kiến trúc điều hướng theo thương hiệu Viettel
 
 - **Ngày:** 2026-09-25
 - **Ứng dụng:** QHĐC 2027-2028 — Tổng hợp & So khớp Masterlist (SPA nội bộ, chạy offline qua `server.py`)
-- **Mục tiêu:** Làm lại toàn bộ giao diện để trông chuyên nghiệp, đồng bộ theo bộ nhận diện Viettel (tông đỏ chủ đạo), giữ nguyên 100% chức năng.
+- **Mục tiêu:** Làm lại toàn bộ giao diện + tổ chức lại kiến trúc điều hướng (IA) cho chuyên nghiệp, đồng bộ bộ nhận diện Viettel (tông đỏ chủ đạo), **giữ nguyên 100% chức năng và logic JS**.
 
 ## 1. Bối cảnh & phạm vi
 
-Ứng dụng hiện dùng design system "Modern SaaS Light Mode" tông indigo (chàm). Cấu trúc:
-- `index.html` — giao diện chính, 4 tab: Kiểm tra lỗi (`tabValidation`), Xem trước (`tabPreview`), Phân cấp (`tabHierarchy`), Báo cáo Mảng & DV (`tabStrategy` với các sub-tab).
-- `styles.css` — hệ thống giao diện chính (~70KB), gồm cả một tập tiện ích thay thế Tailwind.
-- `report.css` — giao diện trang/khu báo cáo.
-- `app.js`, `report.js`, `vtb_converter.js` — toàn bộ logic (KHÔNG được thay đổi hành vi).
+Ứng dụng hiện dùng design system "Modern SaaS Light Mode" tông indigo, điều hướng bằng **4 tab ngang**, và nhiều công cụ **nằm rải rác** (nút chuyển đổi VTB trên header; Fix group / Đánh lại chỉ mục / Tách Ví nằm trong tab Cấu hình nhóm). Cấu trúc file:
+- `index.html` — giao diện chính. Các `tab-content`: `tabValidation`, `tabPreview`, `tabHierarchy`, `tabStrategy` (có sub-tab: `subtabTongHop`, `subtabMang`, `subtabDichVu`, `subtabStratDetail`).
+- `styles.css` (~70KB, gồm tập tiện ích thay Tailwind) và `report.css` — giao diện.
+- `app.js`, `report.js`, `vtb_converter.js` — toàn bộ logic. **KHÔNG thay đổi hành vi.**
 
-**Phạm vi:** Làm lại **toàn bộ** giao diện.
+**Phạm vi đợt này:** (a) tái cấu trúc điều hướng sang sidebar 6 khu; (b) reskin toàn bộ theo tông Viettel. **Không thêm tính năng nghiệp vụ mới** (trừ 1 placeholder "Sắp có", xem §3.5).
 
-**Cách tiếp cận: CSS-first.**
-- Viết lại hệ thống thiết kế trong `styles.css` và `report.css` (tokens màu, typography, spacing, shadow, radius, và các component: header, upload, tab, bảng, nút, badge, modal, báo cáo).
-- Chỉ chỉnh `index.html` ở những chỗ cần thiết: thêm/đổi class, tinh chỉnh cấu trúc header (tiêu đề 2 dòng), bỏ các `style=""` inline gán màu rời rạc trên nút.
-- **Không thay đổi** JavaScript logic, id phần tử, data-attribute mà JS đang phụ thuộc (`data-tab`, `data-subtab`, các `id` như `btnOpenResultFile`, `badgeValidationCount`, v.v.). Chỉ được thêm class trình bày.
+**Cách tiếp cận: tái dùng cấu trúc + CSS-first.**
+- Giữ nguyên các khối `tab-content` và mọi `id`, `data-tab`, `data-subtab` mà JS đang truy vấn. Chỉ **thay lớp điều hướng** (sidebar bật/tắt đúng `tab-content` tương ứng) và **di chuyển/bọc lại markup** để gom công cụ.
+- Viết lại design system trong `styles.css` + `report.css` (tokens, typography, spacing, shadow, radius, component).
+- Gỡ các `style=""` inline gán màu rời rạc trên nút/badge.
+- Không đổi JavaScript logic; nếu cần, chỉ thêm listener điều hướng sidebar (thuần trình bày, ánh xạ sang cơ chế tab hiện có).
 
-## 2. Hệ thống màu & thương hiệu (Viettel)
+## 2. Kiến trúc điều hướng (IA) — Sidebar 6 khu
 
-Cập nhật khối `:root` trong `styles.css`.
+Sidebar dọc bên trái (thu gọn được), liệt kê 6 khu; khu có nhiều trang thì dùng sub-tab ngang phía trên nội dung.
 
+| # | Khu (sidebar) | Nội dung / ánh xạ hiện có |
+|---|---|---|
+| 🏠 | **Trang chủ** | Dashboard: bảng "Xem trước Masterlist Tổng hợp" (`tabPreview`) + hàng thẻ thống kê nhanh (số dòng, số lỗi, số nhóm, tiến độ 7 mảng) |
+| 📥 | **Nạp dữ liệu** | Khu nạp 7 mảng nghiệp vụ + "Nạp file có sẵn" + "Bản lưu trên Server" (khối `uploadCard` hiện tại) |
+| ✅ | **Kiểm tra dữ liệu** | `tabValidation` — bộ lọc phân loại lỗi + bảng kiểm tra + tìm kiếm + sao chép |
+| 🧰 | **Công cụ** | Trang tập hợp các thẻ hành động (xem §3.5) |
+| ⚙️ | **Cấu hình** | `tabHierarchy` — Cấu hình nhóm hạng mục & Subtotal |
+| 📊 | **Tổng hợp** | `tabStrategy` với sub-tab: Tổng hợp chung · theo Mảng · theo Dịch vụ · So sánh CL 5 năm |
+
+- Sidebar hiển thị logo Viettel + tên app ở đầu; mục đang chọn nhấn nền đỏ nhạt + gạch/thanh đỏ bên trái.
+- Header trên cùng thu gọn lại: chừa nút hành động chính (Lưu lên Server, File tổng hợp, Làm mới) — không còn chứa nút công cụ.
+- Trạng thái điều hướng ánh xạ 1-1 sang `data-tab`/`data-subtab` sẵn có; JS chuyển tab không đổi.
+
+## 3. Hệ thống màu, thương hiệu & component
+
+### 3.1 Màu & thương hiệu (Viettel) — cập nhật `:root`
 | Token | Giá trị | Ghi chú |
 |---|---|---|
 | `--primary` | `#EE0033` | Viettel Red |
 | `--primary-hover` | `#C4002A` | đỏ đậm khi hover |
-| `--primary-soft` / active bg | `#FFF1F3` | nền nhấn/active nhạt |
-| `--primary-glow` | `rgba(238,0,51,0.18)` | focus ring / glow |
+| `--primary-soft` | `#FFF1F3` | nền active/nhấn nhạt |
+| `--primary-glow` | `rgba(238,0,51,0.18)` | focus ring |
 | `--bg-app` | `#F5F6F8` | nền app xám rất nhạt |
 | `--bg-surface` / `--bg-card` | `#FFFFFF` | thẻ trắng |
 | `--border-subtle` | `#E5E7EB` | viền tinh tế |
 | `--text-main` | `#1A1A1A` | tiêu đề |
 | `--text-secondary` | `#4B5563` | chữ thường |
-| `--text-muted` | `#6B7280` / `--text-dim` `#9CA3AF` | phụ |
+| `--text-muted` / `--text-dim` | `#6B7280` / `#9CA3AF` | phụ |
 
-- **Màu ngữ nghĩa:** giữ success (xanh lá), warning (hổ phách), info (xanh dương). `danger` dùng chung sắc đỏ brand nhưng chọn sắc độ/nền (`--danger` đậm hơn primary hoặc dùng nền `--danger-bg` rõ ràng) để badge lỗi vẫn phân biệt được với nút primary.
-- **Font:** giữ **Inter** (đã nạp offline-friendly qua Google Fonts, gần với Viettel Sans). Giữ JetBrains Mono cho cột số.
-- **7 mảng nghiệp vụ:** **GIỮ NGUYÊN hệ 7 màu phân biệt** cho badge (VT/ML/CĐBR/CNTT/TĐ/CĐ/HT), chỉ **hạ độ bão hòa nhẹ** để hài hòa với tông đỏ chủ đạo (điều chỉnh các cặp token `--bg-vt`, `--b-vt`, ... cho bớt rực). Chữ trên badge vẫn trắng, đảm bảo tương phản đạt WCAG AA.
+- Màu ngữ nghĩa: giữ success (xanh lá), warning (hổ phách), info (xanh dương). `danger` chọn sắc/nền phân biệt rõ với `--primary` để badge lỗi không lẫn nút primary.
+- Font: giữ **Inter** (gần Viettel Sans) + JetBrains Mono cho cột số.
+- **7 mảng nghiệp vụ:** GIỮ hệ 7 màu badge (VT/ML/CĐBR/CNTT/TĐ/CĐ/HT), chỉ hạ độ bão hòa nhẹ; chữ trắng, tương phản đạt WCAG AA.
 
-## 3. Component
+### 3.2 Sidebar
+- Nền trắng, viền phải mảnh; mục = icon + nhãn; hover đổi nền; active = nền `--primary-soft` + thanh đỏ trái + chữ đỏ/đậm.
+- Thu gọn được (chỉ icon) để nhường chỗ bảng rộng; trạng thái thu gọn lưu tùy chọn (localStorage, thuần trình bày).
 
-### 3.1 Header
-- Dải nền **trắng tinh**, viền dưới mảnh (`--border-subtle`), bóng đổ rất nhẹ khi cuộn (sticky). Bỏ glassmorphism tím.
-- Khối logo vuông bo góc, nền đỏ Viettel, icon trắng, bên trái.
-- Tiêu đề **2 dòng**: dòng trên "QHĐC 2027–2028" (đậm), dòng dưới "Tổng hợp & So khớp Masterlist" (nhỏ, xám). Thay cho 1 dòng in hoa dài hiện tại.
-- **Nút hành động chuẩn hóa:** đúng 1 nút primary đỏ đặc (File tổng hợp / hành động chính), còn lại kiểu `outline`/`ghost` xám nhất quán. **Bỏ toàn bộ `style=""` inline gán màu** trên các nút trong header. Kích thước, padding, icon, khoảng cách đồng đều.
+### 3.3 Header
+- Dải trắng, viền dưới mảnh, bóng nhẹ khi cuộn (sticky). Bỏ glassmorphism tím.
+- Chỉ còn nhóm nút hành động chính, chuẩn hóa: 1 nút primary đỏ đặc, còn lại `outline`/`ghost` xám; kích thước/padding/icon đồng đều. **Bỏ mọi `style=""` inline gán màu.**
 
-### 3.2 Thanh Tab
-- Đổi sang kiểu **underline tab**: gạch chân đỏ dưới tab đang chọn, không dùng nền khối. Tab thường màu xám, hover đổi màu chữ.
-- Badge số liệu bo tròn, cỡ đồng đều, dùng màu ngữ nghĩa (đỏ = lỗi, xám/xanh = thông tin). Giữ nguyên các `id` badge.
-- Áp dụng cùng nguyên tắc cho `report-subtab-btn`.
+### 3.4 Trang chủ (Dashboard)
+- Hàng thẻ thống kê (KPI cards): Số dòng gộp · Số lỗi kiểm tra · Số nhóm · Tiến độ 7 mảng (đã nạp/tổng). Số lấy từ các badge/đếm sẵn có (`badgeRowCount`, `badgeValidationCount`, `badgeGroupCount`, …), không tính toán mới.
+- Bên dưới: bảng "Xem trước Masterlist Tổng hợp" (`tabPreview`) với toolbar sẵn có.
 
-### 3.3 Thẻ & khu nạp file (7 mảng)
-- Ô upload bo góc đều, viền đứt nhạt khi trống; khi có file: viền đặc + nền nhạt theo màu mảng. Trạng thái hover/drag rõ (đổi viền/nền, con trỏ).
-- Chuẩn hóa header của mọi card: icon + tiêu đề + mô tả phụ, khoảng cách đồng đều theo lưới spacing.
+### 3.5 Trang Công cụ
+Các thẻ hành động (card: icon + tên + mô tả ngắn + nút chạy), gom các chức năng sẵn có (giữ nguyên id/handler):
+- Chuyển đổi form cũ (VTB) — `btnOpenVTBConverter`
+- Fix group dòng — handler Fix Group hiện có
+- Đánh lại chỉ mục — `btnReindexTT` / `reindexAllItems()`
+- Tách Ví → DV riêng — `btnSplitWalletDV` / `applyWalletSplit('dv')`
+- Tách Ví → Mảng riêng — `btnSplitWalletMang` / `applyWalletSplit('mang')`
+- **Tách IP → Mảng riêng — thẻ "Sắp có" (disabled).** Chức năng MỚI, logic sẽ làm ở đợt sau; đợt này chỉ dựng chỗ giao diện.
 
-### 3.4 Bảng dữ liệu
-- Header bảng nền xám nhạt, chữ đậm, **sticky** khi cuộn.
-- Zebra rất nhẹ, hover đổi nền dòng. Viền mảnh.
-- Cột số **căn phải**, dùng font mono. Hàng subtotal/tổng nhấn nền đậm hơn + chữ đậm.
+### 3.6 Tab, thẻ & khu nạp file
+- Thanh sub-tab (Tổng hợp) kiểu **underline** (gạch chân đỏ), badge bo tròn màu ngữ nghĩa, cỡ đồng đều; giữ `data-subtab` + id badge.
+- Ô upload 7 mảng: bo góc đều, viền đứt khi trống; có file thì viền đặc + nền nhạt theo màu mảng; hover/drag rõ.
+- Chuẩn hóa header mọi card: icon + tiêu đề + mô tả phụ, spacing đồng đều.
 
-### 3.5 Nút, badge, modal
-- Bộ nút thống nhất: biến thể `primary` (đỏ) / `outline` / `ghost`; kích thước `sm` / `md`. Focus ring dùng `--primary-glow`.
-- Modal: bo góc lớn (`--radius-lg`/`xl`), bóng đổ sâu, overlay tối nhẹ, header/footer nhất quán.
+### 3.7 Bảng dữ liệu
+- Header nền xám nhạt, chữ đậm, **sticky**; zebra nhẹ, hover đổi nền; viền mảnh; cột số căn phải + font mono; hàng subtotal/tổng nhấn đậm.
 
-### 3.6 Báo cáo (`report.css`)
-- Đồng bộ cùng bộ token màu, spacing, radius, shadow với `styles.css`. Bảng báo cáo áp dụng cùng quy tắc ở 3.4.
+### 3.8 Nút, badge, modal & báo cáo
+- Bộ nút thống nhất: `primary` (đỏ) / `outline` / `ghost`, cỡ `sm`/`md`, focus ring `--primary-glow`.
+- Modal: bo góc lớn, bóng sâu, overlay tối nhẹ, header/footer nhất quán.
+- `report.css`: đồng bộ token màu/spacing/radius/shadow; bảng báo cáo theo §3.7.
 
 ## 4. Nguyên tắc xuyên suốt
-- Lưới spacing bội số **4px**; tăng khoảng trắng, giảm viền/màu rối.
-- Phân cấp typography rõ (cỡ, đậm, màu).
-- Tương phản màu đạt **WCAG AA** cho chữ/nền, đặc biệt badge 7 mảng và nút primary.
+- Lưới spacing bội số 4px; tăng khoảng trắng, giảm viền/màu rối; phân cấp typography rõ.
+- Tương phản đạt WCAG AA (đặc biệt badge 7 mảng, nút primary).
 - Bo góc & shadow nhất quán qua biến `--radius-*`, `--shadow-*`.
 
 ## 5. Ràng buộc & tiêu chí hoàn thành
-- **Không đổi hành vi JS:** giữ nguyên mọi `id`, `data-tab`, `data-subtab`, cấu trúc mà JS truy vấn. Chỉ thêm class trình bày và chỉnh markup trình bày thuần túy.
-- Ứng dụng vẫn chạy offline (không thêm phụ thuộc mạng ngoài bắt buộc; font giữ như hiện trạng).
-- Tất cả 4 tab + sub-tab báo cáo + modal + công cụ chuyển đổi VTB hiển thị đúng, không vỡ layout.
-- Kiểm thử thủ công: nạp file mẫu, chuyển qua đủ 4 tab, mở modal, xuất báo cáo — giao diện đồng bộ tông Viettel, không lỗi bố cục.
+- **Không đổi hành vi JS:** giữ nguyên mọi `id`, `data-tab`, `data-subtab`, cấu trúc JS truy vấn; chỉ thêm class trình bày, markup trình bày, và listener điều hướng sidebar ánh xạ sang cơ chế tab hiện có.
+- App vẫn chạy offline (không thêm phụ thuộc mạng ngoài bắt buộc).
+- 6 khu sidebar + sub-tab Tổng hợp + modal + công cụ VTB hiển thị đúng, không vỡ layout ở màn hình phổ biến (≥1280px; xuống ~1024px sidebar thu gọn).
+- Mọi nút/hành động cũ vẫn kích hoạt đúng handler cũ sau khi di chuyển.
+- Kiểm thử thủ công: nạp file mẫu → duyệt đủ 6 khu → mở modal → chạy 1 công cụ → xuất báo cáo; giao diện đồng bộ tông Viettel, không lỗi bố cục hay JS.
 
 ## 6. Ngoài phạm vi (YAGNI)
-- Không thêm tính năng mới, không dark mode, không đổi luồng nghiệp vụ.
-- Không refactor logic JS ngoài việc gỡ các `style=""` inline liên quan trình bày.
-- Không đổi font sang font proprietary Viettel Sans (không có sẵn offline).
+- Logic thực của "Tách IP → Mảng riêng" (chỉ dựng placeholder "Sắp có").
+- Dark mode; đổi font sang Viettel Sans proprietary; responsive điện thoại.
+- Refactor logic JS ngoài listener điều hướng và gỡ `style=""` inline trình bày.
+- Thêm bất kỳ tính năng nghiệp vụ mới nào khác.
