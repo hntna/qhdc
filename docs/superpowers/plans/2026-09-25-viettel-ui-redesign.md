@@ -646,17 +646,18 @@ git commit -m "style(ui): reskin sub-tab underline, bang, nut, badge, modal theo
 **Interfaces:**
 - Consumes: token brand.
 
-- [ ] **Step 1: Quét màu tím còn sót**
+- [ ] **Step 1: Quét màu tím/indigo còn sót**
 
-Run: `grep -nE '#4338ca|#4f46e5|#6366f1|#3730a3|indigo' index.html styles.css report.css`
-Với mỗi kết quả: đổi sang token brand phù hợp (`var(--primary)` / `var(--primary-hover)` / `var(--primary-soft)`), gồm cả gradient inline `strat-title-icon` (dòng ~493) và badge inline `style="background:#4338ca"` (dòng ~205 — nếu còn sau khi gỡ tabs-nav thì bỏ qua).
+Run (bắt đủ cả hex đặc lẫn rgba indigo): `grep -nEi '#4338ca|#4f46e5|#6366f1|#3730a3|#818cf8|#a5b4fc|rgba\(\s*99\s*,\s*102\s*,\s*241|rgba\(\s*79\s*,\s*70\s*,\s*229|rgba\(\s*67\s*,\s*56\s*,\s*202|indigo' index.html styles.css report.css`
+Với mỗi kết quả: đổi sang token brand phù hợp — điểm nhấn/nút/viền focus → `var(--primary)` / `var(--primary-hover)` / `var(--primary-soft)` / `var(--primary-glow)`; gradient tím → dùng `var(--primary)`→`var(--primary-hover)`. Gồm cả gradient inline `strat-title-icon` (index.html dòng ~493) và mọi `box-shadow`/`border` focus dùng `rgba(99,102,241,...)`.
+Ngoài ra, kiểm tra riêng `#be123c` (màu crimson cũ của `--primary`/danger): nếu là điểm nhấn thương hiệu/nút thì đổi sang `var(--primary)`; nếu là ngữ cảnh "lỗi/danger" thì đổi sang `var(--danger)`. Không đổi các token màu 7 mảng.
 
 - [ ] **Step 2: Đồng bộ tokens trong `report.css`** — nếu `report.css` khai báo biến màu riêng, trỏ chúng về cùng giá trị brand (primary `#EE0033`, nền `#F5F6F8`, viền `#E5E7EB`); áp quy tắc bảng như Task 7 Step 2 cho bảng báo cáo.
 
 - [ ] **Step 3: Verify — không còn tím + guard**
 
-Run: `grep -nE '#4338ca|#4f46e5|#6366f1|#3730a3' index.html styles.css report.css`
-Expected: không kết quả (exit 1 / rỗng).
+Run: `grep -nEi '#4338ca|#4f46e5|#6366f1|#3730a3|#818cf8|#a5b4fc|rgba\(\s*99\s*,\s*102\s*,\s*241|rgba\(\s*79\s*,\s*70\s*,\s*229|rgba\(\s*67\s*,\s*56\s*,\s*202' index.html styles.css report.css`
+Expected: không kết quả (rỗng). (Lưu ý: các dòng có từ khóa `indigo` chỉ còn được phép là TÊN class tiện ích như `.text-indigo-600` đã trỏ về brand ở Task 2 — không được còn giá trị màu tím thực.)
 Run: `node tests/check_ui_structure.js` → PASS.
 
 - [ ] **Step 4: Smoke test toàn luồng (bắt buộc)**
