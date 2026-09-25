@@ -24,33 +24,55 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
 
+  <!-- Sidebar dieu huong Viettel -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo"><i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-title">QHĐC 2027–2028</span>
+        <span class="sidebar-brand-sub">Masterlist</span>
+      </div>
+      <button class="sidebar-toggle" id="btnSidebarToggle" title="Thu gọn / mở rộng menu">
+        <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-section="home"><i data-lucide="home" class="w-4 h-4"></i><span>Trang chủ</span></button>
+      <button class="nav-item" data-section="data"><i data-lucide="folder-input" class="w-4 h-4"></i><span>Nạp dữ liệu</span></button>
+      <button class="nav-item" data-section="validation"><i data-lucide="shield-check" class="w-4 h-4"></i><span>Kiểm tra dữ liệu</span><span class="nav-badge badge-danger" id="navBadgeValidation">0</span></button>
+      <button class="nav-item" data-section="tools"><i data-lucide="wrench" class="w-4 h-4"></i><span>Công cụ</span></button>
+      <button class="nav-item" data-section="config"><i data-lucide="git-merge" class="w-4 h-4"></i><span>Cấu hình</span></button>
+      <button class="nav-item" data-section="report"><i data-lucide="pie-chart" class="w-4 h-4"></i><span>Tổng hợp</span></button>
+    </nav>
+  </aside>
+
+  <!-- Legacy badge counters (giu nguyen id de app.js khong loi; se duoc thay the o Task 4/6) -->
+  <div id="legacyBadgeHolder" style="display: none;" aria-hidden="true">
+    <span id="badgeValidationCount">0</span>
+    <span id="badgeRowCount">0 dòng</span>
+    <span id="badgeGroupCount">0 nhóm</span>
+  </div>
+
+  <div class="app-shell" id="appShell">
+
   <!-- Header: Modern SaaS Glassmorphism -->
   <header class="app-header">
     <div class="header-container">
       <div class="brand-section">
-        <div class="brand-icon">
-          <i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i>
-        </div>
         <div>
-          <div class="brand-title">TỔNG HỢP & SO KHỚP MASTERLIST QHĐC 2027-2028</div>
+          <div class="brand-title">QHĐC 2027–2028</div>
+          <div class="brand-sub">Tổng hợp &amp; So khớp Masterlist</div>
         </div>
       </div>
       <div class="header-actions">
-        <button id="btnOpenVTBConverter" class="btn btn-outline" style="border-color: #6366f1; color: #4338ca; background: #eef2ff;" title="Công cụ chuyển đổi file đầu vào Mẫu cũ (37 cột) sang Mẫu mới">
-          <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
-          <span>Chuyển đổi Mẫu cũ</span>
+        <button id="btnSaveToServer" class="btn btn-outline" disabled title="Lưu bản hiện tại lên Server để nạp lại chỉnh sửa tiếp">
+          <i data-lucide="cloud-upload" class="w-4 h-4"></i><span>Lưu lên Server</span>
         </button>
-        <button id="btnSaveToServer" class="btn btn-save-server" disabled title="Lưu bản hiện tại lên Server để sau này nạp lại và tiếp tục chỉnh sửa">
-          <i data-lucide="cloud-upload" class="w-4 h-4 text-white"></i>
-          <span>Lưu lên Server</span>
+        <button id="btnOpenResultFile" class="btn btn-primary" disabled title="Tải file kết quả hoàn chỉnh về máy">
+          <i data-lucide="download" class="w-4 h-4"></i><span>File tổng hợp</span>
         </button>
-        <button id="btnOpenResultFile" class="btn btn-primary" disabled title="Tải file kết quả hoàn chỉnh về máy tính (Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx)">
-          <i data-lucide="download" class="w-4 h-4 text-white"></i>
-          <span>File tổng hợp</span>
-        </button>
-        <button id="btnReset" class="btn btn-outline" title="Làm mới toàn bộ dữ liệu để bắt đầu bản khác">
-          <i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-700"></i>
-          <span>Làm mới</span>
+        <button id="btnReset" class="btn btn-outline" title="Làm mới toàn bộ dữ liệu">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i><span>Làm mới</span>
         </button>
       </div>
     </div>
@@ -59,6 +81,100 @@
   <!-- Main Content Layout -->
   <main class="main-layout">
 
+    <!-- TRANG CHU -->
+    <section class="section-panel active" data-panel="home">
+      <div class="dashboard-kpis" id="dashboardKpis">
+        <div class="kpi-card"><span class="kpi-label">Số dòng gộp</span><span class="kpi-value" id="kpiRows">0</span></div>
+        <div class="kpi-card kpi-danger"><span class="kpi-label">Lỗi kiểm tra</span><span class="kpi-value" id="kpiErrors">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Số nhóm</span><span class="kpi-value" id="kpiGroups">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Mảng đã nạp</span><span class="kpi-value" id="kpiSectors">0/7</span></div>
+      </div>
+    <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
+    <div id="tabPreview" class="tab-content active">
+
+      <!-- Filter Toolbar -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Bộ lọc Cấp bậc:</span>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel1" checked> Cấp 1 (Mảng)
+          </label>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel2" checked> Cấp 2 (Nhóm chính)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel3"> Cấp 3 (Nhóm phụ)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel4"> Cấp 4+ (Nhóm con)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevelLeaf"> Chi tiết (Vật tư mua sắm)
+          </label>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Mảng:</span>
+          <select id="selectMangFilter" class="select-input">
+            <option value="ALL">Tất cả các mảng</option>
+            <option value="VT">VT (Vô tuyến)</option>
+            <option value="ML">ML (Mạng lõi)</option>
+            <option value="CDBR">CĐBR (Cố định băng rộng)</option>
+            <option value="CNTT">CNTT (Công nghệ thông tin)</option>
+            <option value="TD">TD (Truyền dẫn)</option>
+            <option value="CD">CĐ (Cơ điện)</option>
+            <option value="HT">HT (Hạ tầng)</option>
+          </select>
+          <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
+          <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
+            <span id="copyBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-700"></i></span>
+            <span id="copyBtnText">Sao chép bảng (Excel)</span>
+          </button>
+        </div>
+
+        <div class="filter-group preview-column-config">
+          <span class="filter-label">Cột hiển thị:</span>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dvt"> ĐVT
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl27"> KL 2027
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl28"> KL 2028
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dg"> Đơn giá
+          </label>
+        </div>
+      </div>
+
+      <!-- Preview Table -->
+      <div class="table-wrapper">
+        <table class="data-table" id="previewTable">
+          <thead id="previewTableHead"></thead>
+          <tbody id="previewTableBody">
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Chưa có dữ liệu tổng hợp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="previewFooterText">Hiển thị 0 / 0 dòng</span>
+        <div style="font-weight: 700; display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace;">
+          <span class="summary-pill summary-pill-2027">Năm 2027: <span id="sumTT2027">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-2028">Năm 2028: <span id="sumTT2028">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-total">Tổng: <span id="sumTTTotal">0</span> VNĐ</span>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <!-- NAP DU LIEU -->
+    <section class="section-panel" data-panel="data">
     <!-- Section 1: File Uploads -->
     <section class="card" id="uploadCard">
       <div class="upload-card-header">
@@ -181,31 +297,10 @@
 
       </div>
     </section>
+    </section>
 
-    <!-- Navigation Tabs (Shadcn Pill Design) -->
-    <div class="tabs-nav">
-      <button class="tab-btn active" data-tab="tabValidation">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-        <span>Kiểm tra & So khớp</span>
-        <span class="tab-badge badge-danger" id="badgeValidationCount">0</span>
-      </button>
-      <button class="tab-btn" data-tab="tabPreview">
-        <i data-lucide="table-2" class="w-4 h-4"></i>
-        <span>Xem trước Masterlist Tổng hợp</span>
-        <span class="tab-badge badge-info" id="badgeRowCount">0 dòng</span>
-      </button>
-      <button class="tab-btn" data-tab="tabHierarchy">
-        <i data-lucide="git-merge" class="w-4 h-4"></i>
-        <span>Cấu hình Nhóm hạng mục & Subtotal</span>
-        <span class="tab-badge badge-warning" id="badgeGroupCount">0 nhóm</span>
-      </button>
-      <button class="tab-btn" data-tab="tabStrategy">
-        <i data-lucide="pie-chart" class="w-4 h-4"></i>
-        <span>Tổng hợp & So sánh Chiến lược</span>
-        <span class="tab-badge" style="background: #4338ca; color: #ffffff;">Mảng & DV</span>
-      </button>
-    </div>
-
+    <!-- KIEM TRA DU LIEU -->
+    <section class="section-panel" data-panel="validation">
     <!-- TAB 1: KIỂM TRA & SO KHỚP -->
     <div id="tabValidation" class="tab-content active">
 
@@ -313,92 +408,48 @@
         <span id="validationFooterText">Hiển thị 0 / 0 cảnh báo</span>
       </div>
     </div>
+    </section>
 
-    <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
-    <div id="tabPreview" class="tab-content">
-
-      <!-- Filter Toolbar -->
-      <div class="toolbar">
-        <div class="filter-group">
-          <span class="filter-label">Bộ lọc Cấp bậc:</span>
-          <label class="chip active">
-            <input type="checkbox" id="chkLevel1" checked> Cấp 1 (Mảng)
-          </label>
-          <label class="chip active">
-            <input type="checkbox" id="chkLevel2" checked> Cấp 2 (Nhóm chính)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevel3"> Cấp 3 (Nhóm phụ)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevel4"> Cấp 4+ (Nhóm con)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevelLeaf"> Chi tiết (Vật tư mua sắm)
-          </label>
+    <!-- CONG CU (Task 6 se dien noi dung) -->
+    <section class="section-panel" data-panel="tools">
+      <div class="tools-grid" id="toolsGrid">
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="refresh-cw" class="w-5 h-5"></i><h3>Chuyển đổi form cũ</h3></div>
+          <p class="tool-card-desc">Chuyển file đầu vào Mẫu cũ (37 cột) sang Mẫu mới.</p>
+          <button id="btnOpenVTBConverter" class="btn btn-primary btn-sm"><i data-lucide="arrow-right" class="w-4 h-4"></i><span>Mở công cụ</span></button>
         </div>
-
-        <div class="filter-group">
-          <span class="filter-label">Mảng:</span>
-          <select id="selectMangFilter" class="select-input">
-            <option value="ALL">Tất cả các mảng</option>
-            <option value="VT">VT (Vô tuyến)</option>
-            <option value="ML">ML (Mạng lõi)</option>
-            <option value="CDBR">CĐBR (Cố định băng rộng)</option>
-            <option value="CNTT">CNTT (Công nghệ thông tin)</option>
-            <option value="TD">TD (Truyền dẫn)</option>
-            <option value="CD">CĐ (Cơ điện)</option>
-            <option value="HT">HT (Hạ tầng)</option>
-          </select>
-          <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
-          <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
-            <span id="copyBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-700"></i></span>
-            <span id="copyBtnText">Sao chép bảng (Excel)</span>
-          </button>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="binary" class="w-5 h-5"></i><h3>Đánh lại chỉ mục</h3></div>
+          <p class="tool-card-desc">Tự động đánh lại toàn bộ số thứ tự/chỉ mục theo cây phân cấp.</p>
+          <button id="btnReindexTT" class="btn btn-outline btn-sm"><i data-lucide="binary" class="w-4 h-4"></i><span>Cập nhật lại Chỉ mục</span></button>
         </div>
-
-        <div class="filter-group preview-column-config">
-          <span class="filter-label">Cột hiển thị:</span>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="dvt"> ĐVT
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl27"> KL 2027
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl28"> KL 2028
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="dg"> Đơn giá
-          </label>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="list-tree" class="w-5 h-5"></i><h3>Fix Group dòng</h3></div>
+          <p class="tool-card-desc">Chuẩn hóa Group dòng (Outline Level 1..5) theo cây phân cấp.</p>
+          <button id="btnFixOutlineGroups" class="btn btn-outline btn-sm"><i data-lucide="list-tree" class="w-4 h-4"></i><span>Fix Group dòng</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="split" class="w-5 h-5"></i><h3>Tách Ví → DV riêng</h3></div>
+          <p class="tool-card-desc">Ví điện tử: Mã mảng CNTT, Mã DV VI, Mã loại VTTB.</p>
+          <button id="btnSplitWalletDV" class="btn btn-outline btn-sm btn-wallet-split"><i data-lucide="split" class="w-4 h-4"></i><span>Tách Ví: DV riêng</span></button>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-head"><i data-lucide="git-branch" class="w-5 h-5"></i><h3>Tách Ví → Mảng riêng</h3></div>
+          <p class="tool-card-desc">Ví điện tử: Mã mảng VI, Mã DV TTKD, Mã loại VTTB.</p>
+          <button id="btnSplitWalletMang" class="btn btn-outline btn-sm btn-wallet-split"><i data-lucide="git-branch" class="w-4 h-4"></i><span>Tách Ví: Mảng riêng</span></button>
+        </div>
+        <div class="tool-card tool-card-soon">
+          <div class="tool-card-head"><i data-lucide="network" class="w-5 h-5"></i><h3>Tách IP → Mảng riêng</h3></div>
+          <p class="tool-card-desc">Tách IP thành mảng riêng.</p>
+          <button class="btn btn-outline btn-sm" disabled><span>Sắp có</span></button>
         </div>
       </div>
+    </section>
 
-      <!-- Preview Table -->
-      <div class="table-wrapper">
-        <table class="data-table" id="previewTable">
-          <thead id="previewTableHead"></thead>
-          <tbody id="previewTableBody">
-            <tr>
-              <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-                Chưa có dữ liệu tổng hợp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span id="previewFooterText">Hiển thị 0 / 0 dòng</span>
-        <div style="font-weight: 700; display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace;">
-          <span class="summary-pill summary-pill-2027">Năm 2027: <span id="sumTT2027">0</span> VNĐ</span>
-          <span class="summary-pill summary-pill-2028">Năm 2028: <span id="sumTT2028">0</span> VNĐ</span>
-          <span class="summary-pill summary-pill-total">Tổng: <span id="sumTTTotal">0</span> VNĐ</span>
-        </div>
-      </div>
-    </div>
-
+    <!-- CAU HINH -->
+    <section class="section-panel" data-panel="config">
     <!-- TAB 3: CẤU HÌNH NHÓM HẠNG MỤC & SUBTOTAL -->
-    <div id="tabHierarchy" class="tab-content">
+    <div id="tabHierarchy" class="tab-content active">
       <!-- Level Filter Bar -->
       <div class="level-filter-card">
         <span class="level-filter-title">Hiển thị theo cấp</span>
@@ -427,25 +478,9 @@
       <!-- Action toolbar for Hierarchy -->
       <div class="toolbar">
         <div class="filter-group">
-          <button id="btnReindexTT" class="btn btn-success" title="Tự động đánh lại toàn bộ số thứ tự/chỉ mục (I, II, 1, 1.1...) theo đúng cây phân cấp chuẩn">
-            <i data-lucide="binary" class="w-4 h-4"></i>
-            <span>Cập nhật lại Chỉ mục</span>
-          </button>
-          <button id="btnFixOutlineGroups" class="btn btn-warning" title="Tự động chuẩn hóa và gán lại toàn bộ Group dòng (Outline Level 1..5) trong Excel theo đúng cây phân cấp đã nhận dạng">
-            <i data-lucide="list-tree" class="w-4 h-4"></i>
-            <span>Fix Group dòng (Outline)</span>
-          </button>
           <button id="btnRestoreOriginalTT" class="btn btn-outline" title="Khôi phục lại giá trị cột TT nguyên gốc từ các file đầu vào" style="display: none;">
             <i data-lucide="undo" class="w-4 h-4"></i>
             <span>Khôi phục TT gốc</span>
-          </button>
-          <button id="btnSplitWalletDV" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng CNTT, Mã DV VI, Mã loại VTTB">
-            <i data-lucide="split" class="w-4 h-4"></i>
-            <span>Tách Ví: DV riêng</span>
-          </button>
-          <button id="btnSplitWalletMang" class="btn btn-outline btn-wallet-split" title="Từ dòng có chữ 'Ví điện tử' đến trước nhóm cấp 1 kế tiếp: Mã mảng VI, Mã DV TTKD, Mã loại VTTB">
-            <i data-lucide="git-branch" class="w-4 h-4"></i>
-            <span>Tách Ví: Mảng riêng</span>
           </button>
         </div>
         <div class="filter-group">
@@ -484,13 +519,16 @@
         <span id="hierarchyFooterText">Hiển thị 0 nhóm hạng mục</span>
       </div>
     </div>
+    </section>
 
+    <!-- TONG HOP -->
+    <section class="section-panel" data-panel="report">
     <!-- TAB 4: TỔNG HỢP & SO SÁNH CHIẾN LƯỢC 5 NĂM -->
-    <div id="tabStrategy" class="tab-content">
+    <div id="tabStrategy" class="tab-content active">
       <!-- Clean Modern Header Banner -->
       <div class="strat-header-banner">
         <div class="strat-title-wrap">
-          <div class="strat-title-icon" style="background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);">
+          <div class="strat-title-icon" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);">
             <i data-lucide="pie-chart" class="w-5 h-5 text-white"></i>
           </div>
           <div>
@@ -681,8 +719,8 @@
                   <th class="col-num col-p-2027" style="width: 58px;">IP</th>
                   <th class="col-num col-p-2027" style="width: 58px;">CĐ</th>
                   <th class="col-num col-p-2027" style="width: 58px;">HT</th>
-                  <th class="col-num col-p-2027 col-tot" style="width: 76px; background: #e0e7ff; color: #3730a3;">Tổng</th>
-                  <th class="col-num col-p-2027 period-sep" style="width: 62px; background: #e0e7ff; color: #3730a3;">Tỷ trọng</th>
+                  <th class="col-num col-p-2027 col-tot" style="width: 76px; background: var(--primary-soft); color: var(--primary-hover);">Tổng</th>
+                  <th class="col-num col-p-2027 period-sep" style="width: 62px; background: var(--primary-soft); color: var(--primary-hover);">Tỷ trọng</th>
 
                   <!-- 2028 columns -->
                   <th class="col-num col-p-2028" style="width: 58px;">VT</th>
@@ -827,7 +865,7 @@
               <thead>
                 <tr>
                   <th rowspan="2" style="width: 280px; text-align: left;">Mảng / Lĩnh vực</th>
-                  <th colspan="3" style="background: #eef2ff; color: #3730a3; border-right: 2px solid #cbd5e1;">QHĐC (<span class="unit-label-text">M$</span>)</th>
+                  <th colspan="3" style="background: var(--primary-soft); color: var(--primary-hover); border-right: 2px solid #cbd5e1;">QHĐC (<span class="unit-label-text">M$</span>)</th>
                   <th colspan="4" style="background: #fef3c7; color: #92400e; border-right: 2px solid #cbd5e1;">CHIẾN LƯỢC 5 NĂM (<span class="unit-label-text">M$</span>)</th>
                   <th colspan="2" style="background: #f1f5f9; color: #1e293b;">ĐỐI CHIẾU & ĐÁNH GIÁ</th>
                 </tr>
@@ -920,6 +958,7 @@
         </div>
       </div>
     </div>
+    </section>
 
   </main>
 
@@ -1001,7 +1040,7 @@
     <div class="modal-box" style="max-width: 1180px; width: 96vw; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff;">
       
       <!-- Modal Header -->
-      <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center;">
             <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
@@ -1010,7 +1049,7 @@
             <h3 class="modal-title" style="color: white; font-size: 1.05rem; font-weight: 800; margin: 0;">
               CHUYỂN ĐỔI MẪU CŨ VÔ TUYẾN SANG MASTERLIST 2027-2028
             </h3>
-            <p style="font-size: 0.775rem; color: #e0e7ff; margin: 0.2rem 0 0 0;">
+            <p style="font-size: 0.775rem; color: rgba(255,255,255,0.85); margin: 0.2rem 0 0 0;">
               Tách số lượng theo mục đích và gán vật tư vào đúng công nghệ 5G/4G/3G/2G
             </p>
           </div>
@@ -1025,12 +1064,12 @@
         <div id="vtbDropZone" class="vtb-drop-zone" onclick="document.getElementById('inputVTBFileOld').click()">
           <input type="file" id="inputVTBFileOld" accept=".xlsx,.xls" style="display: none;">
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.5rem; padding: 1.2rem;">
-            <div style="width: 48px; height: 48px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; color: #4f46e5;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
               <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
             </div>
             <div>
               <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
-                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: #4f46e5; text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
+                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
               </div>
               <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
                 Hỗ trợ file: <code>Master list VTB 2027-2028_mau cu.xlsx</code> (Bảng 37 cột chia Khối lượng & Giá trị theo mục đích)
@@ -1106,8 +1145,8 @@
                 <span id="kpiOldItemCount" style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">0</span>
                 <span style="font-size: 0.8rem; color: #64748b;">dòng cũ</span>
                 <span style="color: #cbd5e1;">➔</span>
-                <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: #4f46e5;">0</span>
-                <span style="font-size: 0.8rem; color: #4f46e5;">dòng mới</span>
+                <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">0</span>
+                <span style="font-size: 0.8rem; color: var(--primary);">dòng mới</span>
               </div>
             </div>
 
@@ -1260,7 +1299,7 @@
   <div id="modalServerDrafts" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeServerDraftsModal()">
     <div class="modal-box" style="max-width: 900px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: #4338ca;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: var(--primary);">
           <i data-lucide="cloud" class="w-5 h-5 text-indigo-600"></i>
           <span>DANH SÁCH BẢN LƯU TRÊN SERVER</span>
         </div>
@@ -1304,7 +1343,10 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 
+  </div>
+
   <!-- App Script (100% Client-side Offline) -->
   <script src="app.js" defer></script>
+  <script src="ui-nav.js" defer></script>
 </body>
 </html>
