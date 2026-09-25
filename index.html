@@ -612,7 +612,111 @@
           </div>
         </div>
 
-        <!-- Bảng Tổng hợp Toàn diện theo từng Mảng -->
+        <!-- BẢNG TỔNG HỢP THEO DỊCH VỤ & MẢNG (CHUẨN SHEET "TH THEO DV" - 33 CỘT x 28 HÀNG) -->
+        <div class="table-card" style="margin-bottom: 1.5rem;">
+          <div class="table-card-header" style="gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 class="table-card-title">
+                <i data-lucide="grid" class="w-4 h-4 text-indigo-600"></i>
+                <span>BẢNG TỔNG HỢP THEO DỊCH VỤ & MẢNG (SHEET "TH THEO DV" - 33 CỘT)</span>
+              </h2>
+              <span class="table-badge-count">28 hàng × 33 cột chuẩn Excel</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <!-- Chế độ xem kỳ -->
+              <div class="period-toggle-group" id="thdvPeriodButtons">
+                <button type="button" class="period-control-btn active" data-period="ALL" onclick="setTHDVPeriod('ALL')">
+                  Tất cả (33 cột)
+                </button>
+                <button type="button" class="period-control-btn" data-period="2027" onclick="setTHDVPeriod('2027')">
+                  Năm 2027 (10 cột)
+                </button>
+                <button type="button" class="period-control-btn" data-period="2028" onclick="setTHDVPeriod('2028')">
+                  Năm 2028 (10 cột)
+                </button>
+                <button type="button" class="period-control-btn" data-period="TOT" onclick="setTHDVPeriod('TOT')">
+                  Kỳ 2027-2028 (10 cột)
+                </button>
+              </div>
+
+              <!-- Lọc nhanh dịch vụ -->
+              <input type="text" id="searchTHDVInput" placeholder="Tìm dịch vụ / mã DV..." oninput="filterTHDVTable(this.value)" 
+                     style="padding: 0.35rem 0.65rem; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 0.775rem; width: 170px; outline: none; background: #ffffff;">
+
+              <!-- Hành động -->
+              <button type="button" class="btn btn-outline btn-xs" onclick="copyTableHtml('tableTHTheoDV', 'Tổng hợp TH theo DV & Mảng')">
+                <i data-lucide="copy" class="w-3.5 h-3.5 inline mr-1"></i> Sao chép
+              </button>
+              <button type="button" class="btn btn-outline btn-xs" onclick="exportTHTheoDVExcel()">
+                <i data-lucide="download" class="w-3.5 h-3.5 inline mr-1"></i> Xuất Excel
+              </button>
+            </div>
+          </div>
+
+          <div class="th-dv-wrapper">
+            <table class="report-table" id="tableTHTheoDV">
+              <thead>
+                <tr>
+                  <th class="col-sticky-stt" rowspan="2">STT</th>
+                  <th class="col-sticky-nd" rowspan="2">Nội dung / Dịch vụ</th>
+                  <th class="col-sticky-madv" rowspan="2">Mã DV</th>
+
+                  <!-- KỲ 2027 -->
+                  <th colspan="10" class="col-grp-header grp-2027 col-p-2027">NĂM 2027 (<span class="unit-label-text">M$</span>)</th>
+
+                  <!-- KỲ 2028 -->
+                  <th colspan="10" class="col-grp-header grp-2028 col-p-2028">NĂM 2028 (<span class="unit-label-text">M$</span>)</th>
+
+                  <!-- TỔNG KỲ 2027-2028 -->
+                  <th colspan="10" class="col-grp-header grp-tot col-p-tot">TỔNG KỲ 2027 - 2028 (<span class="unit-label-text">M$</span>)</th>
+                </tr>
+                <tr>
+                  <!-- 2027 columns -->
+                  <th class="col-num col-p-2027" style="width: 58px;">VT</th>
+                  <th class="col-num col-p-2027" style="width: 58px;">ML</th>
+                  <th class="col-num col-p-2027" style="width: 62px;">CĐBR</th>
+                  <th class="col-num col-p-2027" style="width: 62px;">CNTT</th>
+                  <th class="col-num col-p-2027" style="width: 58px;">TD</th>
+                  <th class="col-num col-p-2027" style="width: 58px;">IP</th>
+                  <th class="col-num col-p-2027" style="width: 58px;">CĐ</th>
+                  <th class="col-num col-p-2027" style="width: 58px;">HT</th>
+                  <th class="col-num col-p-2027 col-tot" style="width: 76px; background: #e0e7ff; color: #3730a3;">Tổng</th>
+                  <th class="col-num col-p-2027 period-sep" style="width: 62px; background: #e0e7ff; color: #3730a3;">Tỷ trọng</th>
+
+                  <!-- 2028 columns -->
+                  <th class="col-num col-p-2028" style="width: 58px;">VT</th>
+                  <th class="col-num col-p-2028" style="width: 58px;">ML</th>
+                  <th class="col-num col-p-2028" style="width: 62px;">CĐBR</th>
+                  <th class="col-num col-p-2028" style="width: 62px;">CNTT</th>
+                  <th class="col-num col-p-2028" style="width: 58px;">TD</th>
+                  <th class="col-num col-p-2028" style="width: 58px;">IP</th>
+                  <th class="col-num col-p-2028" style="width: 58px;">CĐ</th>
+                  <th class="col-num col-p-2028" style="width: 58px;">HT</th>
+                  <th class="col-num col-p-2028 col-tot" style="width: 76px; background: #d1fae5; color: #065f46;">Tổng</th>
+                  <th class="col-num col-p-2028 period-sep" style="width: 62px; background: #d1fae5; color: #065f46;">Tỷ trọng</th>
+
+                  <!-- 2027-2028 columns -->
+                  <th class="col-num col-p-tot" style="width: 58px;">VT</th>
+                  <th class="col-num col-p-tot" style="width: 58px;">ML</th>
+                  <th class="col-num col-p-tot" style="width: 62px;">CĐBR</th>
+                  <th class="col-num col-p-tot" style="width: 62px;">CNTT</th>
+                  <th class="col-num col-p-tot" style="width: 58px;">TD</th>
+                  <th class="col-num col-p-tot" style="width: 58px;">IP</th>
+                  <th class="col-num col-p-tot" style="width: 58px;">CĐ</th>
+                  <th class="col-num col-p-tot" style="width: 58px;">HT</th>
+                  <th class="col-num col-p-tot col-tot" style="width: 80px; background: #ede9fe; color: #5b21b6;">Tổng</th>
+                  <th class="col-num col-p-tot" style="width: 66px; background: #ede9fe; color: #5b21b6;">Tỷ trọng</th>
+                </tr>
+              </thead>
+              <tbody id="tableTHTheoDVBody">
+                <!-- Render động toàn bộ 28 dòng chuẩn bằng JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BẢNG TỔNG HỢP NHU CẦU ĐẦU TƯ THEO MẢNG (TOÀN MẠNG) -->
         <div class="table-card">
           <div class="table-card-header">
             <h2 class="table-card-title">
@@ -654,6 +758,22 @@
           </div>
         </div>
 
+        <!-- Sector filter chips -->
+        <div class="strat-sector-chips" id="mangSectorChips">
+          <span class="strat-sector-chip active" data-sector="ALL">Tất cả (11 bảng)</span>
+          <span class="strat-sector-chip" data-sector="VÔ TUYẾN">I. Vô tuyến</span>
+          <span class="strat-sector-chip" data-sector="BRCĐ">II. BRCĐ</span>
+          <span class="strat-sector-chip" data-sector="MẠNG LÕI">III. Mạng lõi</span>
+          <span class="strat-sector-chip" data-sector="THÔNG TIN">IV. CNTT</span>
+          <span class="strat-sector-chip" data-sector="TRUYỀN DẪN QUANG">V. TD Quang</span>
+          <span class="strat-sector-chip" data-sector="TRUYỀN DẪN IP">IV. TD IP</span>
+          <span class="strat-sector-chip" data-sector="CƠ ĐIỆN TỔNG TRẠM">V. CĐ Tổng trạm</span>
+          <span class="strat-sector-chip" data-sector="CƠ ĐIỆN BTS">V. CĐ BTS</span>
+          <span class="strat-sector-chip" data-sector="HẠ TẦNG">VI. Hạ tầng</span>
+          <span class="strat-sector-chip" data-sector="PHẦN MỀM VHKT">VII. PM VHKT</span>
+          <span class="strat-sector-chip" data-sector="AN TOÀN THÔNG TIN">VIII. ATTT</span>
+        </div>
+
         <div id="containerTablesMang">
           <!-- Render động toàn bộ 11 bảng trong sheet TH theo Mảng -->
         </div>
@@ -661,18 +781,31 @@
 
       <!-- ==================== SUBTAB 3: TỔNG HỢP THEO DỊCH VỤ ==================== -->
       <div id="subtabDichVu" class="report-subtab-content">
-        <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+        <div style="margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
           <div style="font-weight: 700; color: #1e293b; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
             <i data-lucide="network" class="w-4 h-4 text-emerald-600"></i>
             <span>CÁC BẢNG TRONG SHEET "TH THEO DỊCH VỤ" (4 CỘT CHUẨN)</span>
           </div>
           <div style="font-size: 0.8rem; color: #64748b;">
-            Hiển thị 4 cột: <strong>Mảng</strong>, <strong>Tổng</strong>, <strong>2027</strong>, <strong>2028</strong> (độ rộng vừa phải)
+            Hiển thị 4 cột: <strong>Dịch vụ / Hạng mục</strong>, <strong>Tổng</strong>, <strong>2027</strong>, <strong>2028</strong>
           </div>
         </div>
 
+        <!-- Service filter chips -->
+        <div class="strat-sector-chips" id="dvServiceChips">
+          <span class="strat-sector-chip active" data-service="ALL">Tất cả (14 bảng)</span>
+          <span class="strat-sector-chip" data-service="DI ĐỘNG">I. Di động (4G/5G)</span>
+          <span class="strat-sector-chip" data-service="CĐBR">II. CĐBR</span>
+          <span class="strat-sector-chip" data-service="CNTT">III. Dịch vụ CNTT</span>
+          <span class="strat-sector-chip" data-service="DATA CENTER">IV. Data Center</span>
+          <span class="strat-sector-chip" data-service="CÁC DỊCH VỤ KHÁC">V. Dịch vụ khác</span>
+          <span class="strat-sector-chip" data-service="HIỆN ĐẠI HÓA">Hiện đại hóa</span>
+          <span class="strat-sector-chip" data-service="KIÊN CỐ">Kiên cố</span>
+          <span class="strat-sector-chip" data-service="ƯCTT">ƯCTT</span>
+        </div>
+
         <div id="containerTablesDichVu">
-          <!-- Render động toàn bộ 11 bảng trong sheet TH theo Dịch vụ -->
+          <!-- Render động toàn bộ 14 bảng trong sheet TH theo Dịch vụ -->
         </div>
       </div>
 

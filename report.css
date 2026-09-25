@@ -1,139 +1,109 @@
-/* CSS Cho Trang Báo Cáo Tổng Hợp QHĐC 2027-2028 */
+/* ==========================================================================
+   QHDC3 MASTERLIST - MODERN REPORT & STRATEGY COMPARISON STYLES
+   100% Consistent with App Design System (Light Mode, SaaS, Stripe/Linear/Shadcn)
+   ========================================================================== */
 
-:root {
-  --report-bg: #f8fafc;
-  --report-card: #ffffff;
-  --report-border: #e2e8f0;
-  --report-text: #0f172a;
-  --report-text-muted: #64748b;
-  --report-primary: #4338ca;
-  --report-primary-hover: #3730a3;
-  --report-success: #059669;
-  --report-warning: #d97706;
-  --report-danger: #e11d48;
-}
-
-body.report-page {
-  background-color: var(--report-bg);
-  color: var(--report-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-}
-
-.report-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1.5rem 1.75rem 4rem 1.75rem;
-}
-
-/* Header */
-.report-header {
+/* Header Banner */
+.strat-header-banner {
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle, #cbd5e1);
+  border-radius: var(--radius-md, 12px);
+  padding: 1.15rem 1.4rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1.5px solid var(--report-border);
 }
 
-.report-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.report-main-title {
+.strat-title-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.5rem;
+  gap: 12px;
+}
+
+.strat-title-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.3);
+  flex-shrink: 0;
+}
+
+.strat-title-text {
+  font-size: 1.15rem;
   font-weight: 800;
-  color: #1e1b4b;
-  letter-spacing: -0.02em;
+  color: #0f172a;
+  letter-spacing: -0.01em;
   margin: 0;
+  line-height: 1.2;
 }
 
-.report-subtitle {
-  font-size: 0.875rem;
-  color: var(--report-text-muted);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
+.strat-title-sub {
+  font-size: 0.825rem;
+  color: var(--text-muted, #64748b);
+  margin-top: 3px;
+  margin-bottom: 0;
 }
 
-.report-file-badge {
+/* Sub-Tabs Navigation (Consistent with .tabs-nav) */
+.report-subtabs-nav {
   display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.775rem;
-  font-weight: 700;
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
-  max-width: 480px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.report-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle, #cbd5e1);
+  padding: 0.4rem 0.6rem;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
   flex-wrap: wrap;
 }
 
-/* Tabs & Subtabs */
-.report-tabs-nav, .report-subtabs-nav {
-  display: flex;
-  gap: 8px;
-  background: #e2e8f0;
-  padding: 5px;
-  border-radius: 10px;
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-}
-
-.report-tab-btn, .report-subtab-btn {
+.report-subtab-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 18px;
+  padding: 0.6rem 1.25rem;
   border: none;
   background: transparent;
   color: #475569;
   font-weight: 700;
-  font-size: 0.875rem;
-  border-radius: 7px;
+  font-size: 0.85rem;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
-.report-tab-btn:hover, .report-subtab-btn:hover {
+.report-subtab-btn:hover {
   color: #0f172a;
-  background: rgba(255, 255, 255, 0.6);
+  background: #f1f5f9;
 }
 
-.report-tab-btn.active, .report-subtab-btn.active {
-  background: #ffffff;
-  color: #4338ca;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+.report-subtab-btn.active {
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(67, 56, 202, 0.28);
 }
 
-.report-tab-content, .report-subtab-content {
+.report-subtab-btn i {
+  width: 16px;
+  height: 16px;
+}
+
+.report-subtab-content {
   display: none;
   animation: fadeIn 0.2s ease-in-out;
 }
 
-.report-tab-content.active, .report-subtab-content.active {
+.report-subtab-content.active {
   display: block;
 }
 
@@ -142,22 +112,91 @@ body.report-page {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Metric KPI Cards */
+/* Quick Filter & Search Bar */
+.report-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-subtle, #cbd5e1);
+  border-radius: var(--radius-md, 12px);
+  padding: 0.55rem 0.9rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  flex-wrap: wrap;
+}
+
+.search-report-input {
+  flex: 1;
+  min-width: 240px;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  color: #0f172a;
+  background: transparent;
+  font-family: inherit;
+}
+
+.search-report-input::placeholder {
+  color: #94a3b8;
+}
+
+/* Sector Filter Pills */
+.strat-sector-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.strat-sector-chip {
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.775rem;
+  font-weight: 700;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.strat-sector-chip:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.strat-sector-chip.active {
+  background: #4338ca;
+  color: #ffffff;
+  border-color: #3730a3;
+  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.25);
+}
+
+/* KPI Metric Cards */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .kpi-card {
   background: #ffffff;
-  border: 1px solid var(--report-border);
-  border-radius: 10px;
-  padding: 1.15rem 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1.5px solid var(--border-subtle, #cbd5e1);
+  border-radius: var(--radius-md, 12px);
+  padding: 1.05rem 1.25rem;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   position: relative;
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
 
 .kpi-card::before {
@@ -165,21 +204,21 @@ body.report-page {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
+  width: 5px;
   height: 100%;
 }
 
 .kpi-card-total::before { background: #4338ca; }
-.kpi-card-2027::before { background: #6366f1; }
+.kpi-card-2027::before { background: #0284c7; }
 .kpi-card-2028::before { background: #059669; }
 .kpi-card-strat::before { background: #d97706; }
 
 .kpi-title {
-  font-size: 0.775rem;
-  font-weight: 700;
+  font-size: 0.725rem;
+  font-weight: 800;
   text-transform: uppercase;
-  color: var(--report-text-muted);
-  letter-spacing: 0.03em;
+  color: #64748b;
+  letter-spacing: 0.04em;
   margin-bottom: 6px;
   display: flex;
   align-items: center;
@@ -189,102 +228,138 @@ body.report-page {
 .kpi-value {
   font-size: 1.75rem;
   font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'JetBrains Mono', monospace;
   color: #0f172a;
   line-height: 1.1;
   margin-bottom: 4px;
 }
 
 .kpi-sub {
-  font-size: 0.8rem;
-  color: var(--report-text-muted);
+  font-size: 0.775rem;
+  color: #64748b;
+  font-weight: 500;
 }
 
-/* Section Box / Table Cards */
+/* Table Cards */
 .table-card {
   background: #ffffff;
-  border: 1px solid var(--report-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  margin-bottom: 1.5rem;
+  border: 1.5px solid var(--border-subtle, #cbd5e1);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.25rem;
   overflow: hidden;
 }
 
 .table-card-header {
-  padding: 0.85rem 1.25rem;
-  background: #f8fafc;
-  border-bottom: 1.5px solid var(--report-border);
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1.5px solid var(--border-subtle, #cbd5e1);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .table-card-title {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 800;
-  color: #1e293b;
+  color: #0f172a;
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
+  letter-spacing: 0.01em;
 }
 
 .table-badge-count {
   font-size: 0.725rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 9999px;
   background: #e2e8f0;
   color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
-/* Bảng 4 cột chuẩn: Mảng, Tổng, 2027, 2028 (độ rộng vừa phải) */
-.report-table {
+/* Data Table Styling for Report - Consistent with App */
+.report-table,
+table.data-table.report-dt {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.825rem;
   text-align: left;
 }
 
-.report-table th {
-  background: #f1f5f9;
-  padding: 0.65rem 1rem;
-  font-weight: 700;
-  color: #334155;
-  border-bottom: 1.5px solid #cbd5e1;
-  border-right: 1px solid #e2e8f0;
+.report-table thead,
+table.data-table.report-dt thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.report-table th:last-child {
-  border-right: none;
-}
-
-.report-table td {
-  padding: 0.55rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  border-right: 1px solid #f1f5f9;
+.report-table th,
+table.data-table.report-dt th {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #0f172a;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  border-bottom: 2.5px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
+  padding: 0.52rem 0.75rem;
+  white-space: nowrap;
   vertical-align: middle;
 }
 
-.report-table td:last-child {
+.report-table th:last-child,
+table.data-table.report-dt th:last-child {
   border-right: none;
 }
 
-/* Quy định độ rộng vừa phải cho 4 cột */
-.col-mang {
-  width: 420px;
-  min-width: 320px;
+.report-table td,
+table.data-table.report-dt td {
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
+  padding: 0.46rem 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: #1e293b;
 }
 
+.report-table td:last-child,
+table.data-table.report-dt td:last-child {
+  border-right: none;
+}
+
+.report-table tbody tr:nth-child(odd),
+table.data-table.report-dt tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+.report-table tbody tr:nth-child(even),
+table.data-table.report-dt tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.report-table tbody tr:hover,
+table.data-table.report-dt tbody tr:hover {
+  background-color: #eff6ff !important;
+}
+
+/* Number formatting */
 .col-num {
-  width: 150px;
-  min-width: 120px;
   text-align: right;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 0.825rem;
 }
 
 .col-tot {
-  color: #047857;
+  color: #0f172a;
   font-weight: 800;
 }
 
@@ -294,94 +369,351 @@ body.report-page {
 }
 
 .col-28 {
-  color: #059669;
+  color: #047857;
   font-weight: 700;
 }
 
-/* Row types */
-.report-table tr:hover td {
-  background: #f8fafc;
+.col-mang {
+  width: 440px;
+  min-width: 320px;
 }
 
-.row-total-table {
-  background: #ecfdf5 !important;
+/* Distinct Row Types */
+.row-section-header td {
+  background: #eef2ff !important;
+  color: #312e81 !important;
   font-weight: 800;
+  border-top: 1.5px solid #c7d2fe;
+  border-bottom: 1.5px solid #c7d2fe;
+  font-size: 0.825rem;
 }
 
 .row-total-table td {
-  border-top: 1.5px solid #a7f3d0;
-  border-bottom: 1.5px solid #a7f3d0;
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  font-weight: 800;
+  border-top: 2px solid #6ee7b7;
+  border-bottom: 2px solid #6ee7b7;
+  font-size: 0.875rem;
 }
 
-.row-sub-item td.col-mang {
-  padding-left: 2rem;
+.row-subtotal-item td {
+  background: #f1f5f9 !important;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.row-sub-item td.col-mang,
+.row-sub-item td.cell-nd {
+  padding-left: 28px !important;
   color: #475569;
   font-size: 0.825rem;
 }
 
-/* So sánh Chiến lược 5 năm */
-.table-strat th {
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.table-strat td.num-cell {
-  text-align: right;
-  font-family: monospace;
-}
-
+/* Status Badges */
 .badge-status {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.725rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.badge-green { background: #dcfce7; color: #15803d; }
-.badge-orange { background: #ffedd5; color: #c2410c; }
-.badge-blue { background: #e0e7ff; color: #3730a3; }
+.badge-status.badge-green {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
 
-/* Filter Bar */
-.report-filter-bar {
+.badge-status.badge-orange {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-status.badge-rose,
+.badge-status.badge-red {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+.badge-status.badge-blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+/* Responsive Grid for Sector Tables */
+.sector-tables-grid {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-  background: #ffffff;
-  padding: 0.65rem 1rem;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ==========================================================================
+   MASTER SYNTHESIS TABLE (SHEET "TH THEO DV" - 33 COLUMNS x 28 ROWS)
+   ========================================================================== */
+.th-dv-wrapper {
+  position: relative;
+  max-height: 680px;
+  overflow: auto;
+  border: 1.5px solid #cbd5e1;
   border-radius: 8px;
-  border: 1px solid var(--report-border);
+  background: #ffffff;
+  box-shadow: inset 0 0 6px rgba(15, 23, 42, 0.04);
 }
 
-.search-report-input {
-  flex: 1;
-  min-width: 240px;
-  height: 36px;
-  padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
+#tableTHTheoDV {
+  width: 100%;
+  min-width: 2200px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+#tableTHTheoDV.view-single-period {
+  min-width: 1100px;
+}
+
+#tableTHTheoDV thead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+#tableTHTheoDV thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 31;
+  padding: 0.55rem 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th {
+  position: sticky;
+  top: 34px;
+  z-index: 30;
+  padding: 0.45rem 0.4rem;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
+}
+
+/* Frozen Sticky Columns */
+#tableTHTheoDV .col-sticky-stt {
+  position: sticky !important;
+  left: 0;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  text-align: center;
+}
+
+#tableTHTheoDV .col-sticky-nd {
+  position: sticky !important;
+  left: 44px;
+  width: 250px;
+  min-width: 250px;
+  max-width: 280px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tableTHTheoDV .col-sticky-madv {
+  position: sticky !important;
+  left: 294px;
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  text-align: center;
+  box-shadow: 3px 0 6px -2px rgba(15, 23, 42, 0.12);
+}
+
+/* Backgrounds for sticky columns */
+#tableTHTheoDV thead th.col-sticky-stt,
+#tableTHTheoDV thead th.col-sticky-nd,
+#tableTHTheoDV thead th.col-sticky-madv {
+  background: #e2e8f0 !important;
+  z-index: 35 !important;
+  border-right: 1px solid #cbd5e1;
+}
+
+#tableTHTheoDV thead th.col-sticky-madv {
+  box-shadow: 3px 0 6px -2px rgba(15, 23, 42, 0.15);
+}
+
+#tableTHTheoDV tbody td.col-sticky-stt,
+#tableTHTheoDV tbody td.col-sticky-nd,
+#tableTHTheoDV tbody td.col-sticky-madv {
+  z-index: 15;
+  background: #ffffff;
+  border-right: 1px solid #cbd5e1;
+}
+
+#tableTHTheoDV tbody tr:nth-child(even) td.col-sticky-stt,
+#tableTHTheoDV tbody tr:nth-child(even) td.col-sticky-nd,
+#tableTHTheoDV tbody tr:nth-child(even) td.col-sticky-madv {
+  background: #f8fafc;
+}
+
+#tableTHTheoDV tbody tr:hover td.col-sticky-stt,
+#tableTHTheoDV tbody tr:hover td.col-sticky-nd,
+#tableTHTheoDV tbody tr:hover td.col-sticky-madv {
+  background: #eff6ff !important;
+}
+
+#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-stt,
+#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-nd,
+#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-madv {
+  background: #ecfdf5 !important;
+  z-index: 16;
+}
+
+#tableTHTheoDV tbody tr.row-share-header td.col-sticky-stt,
+#tableTHTheoDV tbody tr.row-share-header td.col-sticky-nd,
+#tableTHTheoDV tbody tr.row-share-header td.col-sticky-madv {
+  background: #f0fdf4 !important;
+  z-index: 16;
+}
+
+#tableTHTheoDV tbody tr.row-group td.col-sticky-stt,
+#tableTHTheoDV tbody tr.row-group td.col-sticky-nd,
+#tableTHTheoDV tbody tr.row-group td.col-sticky-madv {
+  background: #eef2ff !important;
+  z-index: 15;
+}
+
+#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-stt,
+#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-nd,
+#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-madv {
+  background: #f1f5f9 !important;
+  z-index: 15;
+}
+
+/* Header Group Colors */
+.grp-2027 {
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1e40af !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  border-right: 2px solid #94a3b8 !important;
+}
+
+.grp-2028 {
+  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important;
+  color: #065f46 !important;
+  border-bottom: 2px solid #10b981 !important;
+  border-right: 2px solid #94a3b8 !important;
+}
+
+.grp-tot {
+  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%) !important;
+  color: #5b21b6 !important;
+  border-bottom: 2px solid #8b5cf6 !important;
+}
+
+/* Column Period Classes */
+#tableTHTheoDV.view-p-2027 .col-p-2028,
+#tableTHTheoDV.view-p-2027 .col-p-tot,
+#tableTHTheoDV.view-p-2027 .grp-2028,
+#tableTHTheoDV.view-p-2027 .grp-tot {
+  display: none !important;
+}
+
+#tableTHTheoDV.view-p-2028 .col-p-2027,
+#tableTHTheoDV.view-p-2028 .col-p-tot,
+#tableTHTheoDV.view-p-2028 .grp-2027,
+#tableTHTheoDV.view-p-2028 .grp-tot {
+  display: none !important;
+}
+
+#tableTHTheoDV.view-p-tot .col-p-2027,
+#tableTHTheoDV.view-p-tot .col-p-2028,
+#tableTHTheoDV.view-p-tot .grp-2027,
+#tableTHTheoDV.view-p-tot .grp-2028 {
+  display: none !important;
+}
+
+/* Row Type Styles */
+#tableTHTheoDV tr.row-grand-total td {
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 800;
+  border-top: 2px solid #6ee7b7;
+  border-bottom: 2px solid #6ee7b7;
+  font-size: 0.85rem;
+}
+
+#tableTHTheoDV tr.row-share-header td {
+  background: #f0fdf4;
+  color: #047857;
+  font-weight: 700;
+  border-bottom: 1.5px solid #a7f3d0;
+  font-size: 0.8rem;
+}
+
+#tableTHTheoDV tr.row-group td {
+  background: #eef2ff;
+  color: #312e81;
+  font-weight: 800;
+  border-top: 1.5px solid #c7d2fe;
+  border-bottom: 1.5px solid #c7d2fe;
   font-size: 0.825rem;
-  outline: none;
 }
 
-.search-report-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+#tableTHTheoDV tr.row-subgroup td {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 700;
+  border-top: 1px solid #cbd5e1;
+  border-bottom: 1px solid #cbd5e1;
 }
 
-@media print {
-  .report-header, .report-tabs-nav, .report-actions, .report-filter-bar {
-    display: none !important;
-  }
-  .report-tab-content {
-    display: block !important;
-  }
-  .table-card {
-    box-shadow: none !important;
-    border: 1px solid #000 !important;
-    page-break-inside: avoid;
-  }
+#tableTHTheoDV tr.row-leaf td.cell-sub-item {
+  padding-left: 20px !important;
+  color: #475569;
+}
+
+.period-sep {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+/* Control Pills in Toolbar */
+.period-control-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.775rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-control-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.period-control-btn.active {
+  background: #4338ca;
+  color: #ffffff;
+  border-color: #3730a3;
+  box-shadow: 0 2px 6px rgba(67, 56, 202, 0.25);
 }

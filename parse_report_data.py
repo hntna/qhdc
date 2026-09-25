@@ -36,14 +36,31 @@ def safe_num(val):
         return 0.0
 
 # Ánh xạ cột trong sheet "TH theo DV"
-# D-J: 2027 (VT, ML, CĐBR, CNTT, TD, CĐ, HT)
-# M-S: 2028 (VT, ML, CĐBR, CNTT, TD, CĐ, HT)
+# 2027: D=VT, E=ML, F=CĐBR, G=CNTT, H=TD, I=IP, J=CĐ, K=HT, L=TOTAL
+# 2028: N=VT, O=ML, P=CĐBR, Q=CNTT, R=TD, S=IP, T=CĐ, U=HT, V=TOTAL
 MANG_COL_MAP_2027 = {
-    'D': 'VT', 'E': 'ML', 'F': 'CĐBR', 'G': 'CNTT', 'H': 'TD', 'I': 'CĐ', 'J': 'HT', 'K': 'TOTAL'
+    'D': 'VT', 'E': 'ML', 'F': 'CĐBR', 'G': 'CNTT', 'H': 'TD', 'I': 'IP', 'J': 'CĐ', 'K': 'HT', 'L': 'TOTAL'
 }
 MANG_COL_MAP_2028 = {
-    'M': 'VT', 'N': 'ML', 'O': 'CĐBR', 'P': 'CNTT', 'Q': 'TD', 'R': 'CĐ', 'S': 'HT', 'T': 'TOTAL'
+    'N': 'VT', 'O': 'ML', 'P': 'CĐBR', 'Q': 'CNTT', 'R': 'TD', 'S': 'IP', 'T': 'CĐ', 'U': 'HT', 'V': 'TOTAL'
 }
+
+def norm_mang(m):
+    if not m: return ''
+    s = str(m).strip().upper()
+    if s in ['CDBR', 'CĐBR', 'CO DINH', 'CỐ ĐỊNH', 'BRCĐ']: return 'CĐBR'
+    if s in ['CD', 'CĐ', 'CO DIEN', 'CƠ ĐIỆN']: return 'CĐ'
+    if s in ['VT', 'VO TUYEN', 'VÔ TUYẾN']: return 'VT'
+    if s in ['ML', 'MANG LOI', 'MẠNG LÕI']: return 'ML'
+    if s in ['CNTT', 'CONG NGHE THONG TIN']: return 'CNTT'
+    if s in ['TD', 'TRUYEN DAN', 'TRUYỀN DẪN']: return 'TD'
+    if s in ['IP']: return 'IP'
+    if s in ['HT', 'HA TANG', 'HẠ TẦNG']: return 'HT'
+    return s
+
+def norm_madv(d):
+    if not d: return ''
+    return str(d).strip().upper().replace('Ư', 'U').replace('Đ', 'D')
 
 def build_th_dv_matrix(wb_val):
     """Tính toán ma trận TH theo DV trực tiếp từ PL1.1 nếu có dữ liệu"""
@@ -66,8 +83,8 @@ def build_th_dv_matrix(wb_val):
         if not mang or (tt27 is None and tt28 is None):
             continue
 
-        mang_key = str(mang).strip().upper()
-        madv_key = str(madv or '').strip().upper()
+        mang_key = norm_mang(mang)
+        madv_key = norm_madv(madv)
 
         val27 = safe_num(tt27) / 1000000.0
         val28 = safe_num(tt28) / 1000000.0
@@ -82,11 +99,15 @@ def parse_report_workbook(file_path):
     if not file_path or not os.path.exists(file_path):
         raise FileNotFoundError(f"Không tìm thấy file: {file_path}")
 
-    wb_val = openpyxl.load_workbook(file_path, data_only=True)
+    # 1. Đọc dữ liệu vật tư và build ma trận SUMIFS từ file đầu vào của người dùng
+    wb_input = openpyxl.load_workbook(file_path, data_only=True)
+    matrix_27, matrix_28 = build_th_dv_matrix(wb_input)
+
+    # 2. Kiểm tra xem file có sẵn sheet "TH theo Mảng" và "TH theo Dịch vụ" không
+    wb_val = wb_input
     wb_form = openpyxl.load_workbook(file_path, data_only=False)
 
     sheet_names = wb_val.sheetnames
-
     name_m = None
     name_dv = None
     for s in sheet_names:
@@ -96,30 +117,32 @@ def parse_report_workbook(file_path):
         if 'dịch vụ' in s_lower or 'dich vu' in s_lower:
             name_dv = s
 
+    # Nếu file đầu vào chỉ là file 1 mảng (không có 2 sheet này), mượn cấu trúc bảng từ file mẫu
+    layout_file = file_path
     if not name_m or not name_dv:
-        if os.path.exists(FALLBACK_TACH_PATH):
-            wb_val = openpyxl.load_workbook(FALLBACK_TACH_PATH, data_only=True)
-            wb_form = openpyxl.load_workbook(FALLBACK_TACH_PATH, data_only=False)
-            file_path = FALLBACK_TACH_PATH
+        fallback = FALLBACK_TACH_PATH if os.path.exists(FALLBACK_TACH_PATH) else FALLBACK_MAU_PATH
+        if os.path.exists(fallback):
+            wb_val = openpyxl.load_workbook(fallback, data_only=True)
+            wb_form = openpyxl.load_workbook(fallback, data_only=False)
+            layout_file = fallback
             name_m = 'TH theo Mảng'
             name_dv = 'TH theo Dịch vụ'
 
-    # Build dynamic matrix nếu PL1.1 có dữ liệu
-    matrix_27, matrix_28 = build_th_dv_matrix(wb_val)
-
-    # Đọc bản đồ Mã DV theo hàng trong sheet 'TH theo DV'
+    # Đọc bản đồ Mã DV theo hàng trong sheet 'TH theo DV' (từ file layout)
     dv_row_map = {}
-    if 'TH theo DV' in wb_val.sheetnames:
-        ws_dv_ref = wb_val['TH theo DV']
+    target_dv_sheet = 'TH theo DV' if 'TH theo DV' in wb_val.sheetnames else ('TH theo DV' if 'TH theo DV' in wb_input.sheetnames else None)
+    ws_dv_ref = wb_val[target_dv_sheet] if (target_dv_sheet and target_dv_sheet in wb_val.sheetnames) else (wb_input[target_dv_sheet] if (target_dv_sheet and target_dv_sheet in wb_input.sheetnames) else None)
+    if ws_dv_ref:
         for r in range(4, ws_dv_ref.max_row + 1):
             c_val = ws_dv_ref.cell(r, 3).value
             if c_val:
-                dv_row_map[r] = str(c_val).strip().upper()
+                dv_row_map[r] = norm_madv(c_val)
 
     tables_mang = parse_sheet_mang(wb_val, wb_form, name_m, matrix_27, matrix_28, dv_row_map) if name_m else []
     tables_dv = parse_sheet_dv(wb_val, wb_form, name_dv, matrix_27, matrix_28, dv_row_map) if name_dv else []
     summary_data = compute_overall_summary(wb_val, tables_mang, tables_dv)
     strategy_comp = build_strategy_comparison(tables_mang, tables_dv)
+    th_theo_dv = compute_th_theo_dv(matrix_27, matrix_28)
 
     return {
         'success': True,
@@ -130,26 +153,40 @@ def parse_report_workbook(file_path):
         'summary': summary_data,
         'tables_mang': tables_mang,
         'tables_dv': tables_dv,
+        'th_theo_dv': th_theo_dv,
         'strategy_comparison': strategy_comp
     }
 
 def resolve_cell_formula(form_val, val_val, matrix_27, matrix_28, dv_row_map):
     """Giải giá trị công thức tham chiếu 'TH theo DV'!<Col><Row> nếu có matrix từ PL1.1"""
+    if form_val and isinstance(form_val, str) and (matrix_27 or matrix_28):
+        matches = re.findall(r"'?TH theo DV'?!([A-Z]+)(\d+)", form_val, re.IGNORECASE)
+        if matches:
+            tot = 0.0
+            found = False
+            for col_letter, row_idx_str in matches:
+                col = col_letter.upper()
+                r_idx = int(row_idx_str)
+                ma_dv = dv_row_map.get(r_idx, '')
+                if col in MANG_COL_MAP_2027:
+                    mang = MANG_COL_MAP_2027[col]
+                    if mang == 'TOTAL':
+                        tot += sum(v for (m, dv), v in matrix_27.items() if dv == ma_dv)
+                    else:
+                        tot += matrix_27.get((mang, ma_dv), 0.0)
+                    found = True
+                elif col in MANG_COL_MAP_2028:
+                    mang = MANG_COL_MAP_2028[col]
+                    if mang == 'TOTAL':
+                        tot += sum(v for (m, dv), v in matrix_28.items() if dv == ma_dv)
+                    else:
+                        tot += matrix_28.get((mang, ma_dv), 0.0)
+                    found = True
+            if found:
+                return tot
+
     if val_val is not None and isinstance(val_val, (int, float)) and val_val > 0:
         return float(val_val)
-
-    if form_val and isinstance(form_val, str) and matrix_27:
-        m = re.search(r"'?TH theo DV'?!([A-Z]+)(\d+)", form_val, re.IGNORECASE)
-        if m:
-            col_letter = m.group(1).upper()
-            row_idx = int(m.group(2))
-            ma_dv = dv_row_map.get(row_idx, '')
-            if col_letter in MANG_COL_MAP_2027:
-                mang = MANG_COL_MAP_2027[col_letter]
-                return matrix_27.get((mang, ma_dv), 0.0)
-            elif col_letter in MANG_COL_MAP_2028:
-                mang = MANG_COL_MAP_2028[col_letter]
-                return matrix_28.get((mang, ma_dv), 0.0)
 
     return safe_num(val_val)
 
@@ -451,3 +488,124 @@ def build_strategy_comparison(tables_mang, tables_dv):
             })
 
     return comparison
+
+TH_DV_SECTORS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'IP', 'CD', 'HT']
+
+TH_DV_ROW_DEFS = [
+    {'id': 'R04', 'type': 'grand_total', 'stt': '*', 'nd': 'Tổng', 'madv': None},
+    {'id': 'R05', 'type': 'share_header', 'stt': '', 'nd': 'Tỷ trọng theo mảng (%)', 'madv': None},
+    {'id': 'R06', 'type': 'group', 'stt': 'I', 'nd': 'Công nghệ mới triển khai diện rộng cho kinh doanh', 'madv': None, 'children': ['R07', 'R08', 'R09', 'R10']},
+    {'id': 'R07', 'type': 'leaf', 'stt': '1', 'nd': 'Mạng 5G', 'madv': '5G'},
+    {'id': 'R08', 'type': 'leaf', 'stt': '2', 'nd': 'XGSPON', 'madv': 'XGSPON'},
+    {'id': 'R09', 'type': 'leaf', 'stt': '3', 'nd': 'AI/GPU', 'madv': 'AI/GPU'},
+    {'id': 'R10', 'type': 'leaf', 'stt': '4', 'nd': 'Private Mobile Network', 'madv': 'PMN'},
+    {'id': 'R11', 'type': 'group', 'stt': 'II', 'nd': 'Mở rộng mạng lưới hiện tại cho kinh doanh', 'madv': None, 'children': ['R12', 'R15', 'R20', 'R21', 'R22']},
+    {'id': 'R12', 'type': 'subgroup', 'stt': '1', 'nd': 'Mạng 2/3/4G', 'madv': None, 'children': ['R13', 'R14']},
+    {'id': 'R13', 'type': 'leaf', 'stt': '-', 'nd': '2/3/4G vùng phủ', 'madv': 'VPDD'},
+    {'id': 'R14', 'type': 'leaf', 'stt': '-', 'nd': '2/3/4G dung lượng', 'madv': 'DLDD'},
+    {'id': 'R15', 'type': 'subgroup', 'stt': '2', 'nd': 'Mạng BRCĐ&TH', 'madv': None, 'children': ['R16', 'R17', 'R18', 'R19']},
+    {'id': 'R16', 'type': 'leaf', 'stt': '-', 'nd': 'Vùng phủ GPON', 'madv': 'VPGPON'},
+    {'id': 'R17', 'type': 'leaf', 'stt': '-', 'nd': 'Dung lượng Internet', 'madv': 'DLGPON'},
+    {'id': 'R18', 'type': 'leaf', 'stt': '-', 'nd': 'Dung lượng Truyền hình', 'madv': 'TH'},
+    {'id': 'R19', 'type': 'leaf', 'stt': '-', 'nd': 'Kênh truyền', 'madv': 'KT'},
+    {'id': 'R20', 'type': 'leaf', 'stt': '3', 'nd': 'Phục vụ kinh doanh Cloud', 'madv': 'CLOUD_KD'},
+    {'id': 'R21', 'type': 'leaf', 'stt': '4', 'nd': 'Data Center', 'madv': 'DC'},
+    {'id': 'R22', 'type': 'subgroup', 'stt': '5', 'nd': 'Triển khai hạ tầng CNTT', 'madv': None, 'children': ['R23', 'R24', 'R25']},
+    {'id': 'R23', 'type': 'leaf', 'stt': '-', 'nd': 'Trực tiếp kinh doanh', 'madv': 'TTKD'},
+    {'id': 'R24', 'type': 'leaf', 'stt': '-', 'nd': 'Hỗ trợ kinh doanh và quản trị', 'madv': 'HTKD'},
+    {'id': 'R25', 'type': 'leaf', 'stt': '-', 'nd': 'Phần mềm', 'madv': 'PM'},
+    {'id': 'R26', 'type': 'group', 'stt': 'III', 'nd': 'Đảm bảo VHKT, kiên cố, bền vững trong thiên tai', 'madv': None, 'children': ['R27', 'R28', 'R29', 'R30']},
+    {'id': 'R27', 'type': 'leaf', 'stt': '1', 'nd': 'Đảm bảo dự phòng ƯCTT', 'madv': 'UCTT'},
+    {'id': 'R28', 'type': 'leaf', 'stt': '2', 'nd': 'Đảm bảo VHKT và nâng cao chất lượng mạng', 'madv': 'VHKT'},
+    {'id': 'R29', 'type': 'leaf', 'stt': '3', 'nd': 'Củng cố kiên cố thường trình', 'madv': 'KCTT'},
+    {'id': 'R30', 'type': 'leaf', 'stt': '4', 'nd': 'Bền vững mạng lưới trong thiên tai', 'madv': 'PCTT'},
+    {'id': 'R31', 'type': 'leaf', 'stt': 'IV', 'nd': 'Ví điện tử', 'madv': 'VI'}
+]
+
+def compute_th_theo_dv(matrix_27, matrix_28):
+    row_data = {}
+    for r in TH_DV_ROW_DEFS:
+        row_data[r['id']] = {
+            'id': r['id'],
+            'type': r['type'],
+            'stt': r['stt'],
+            'nd': r['nd'],
+            'madv': r['madv'],
+            'y2027': {s: 0.0 for s in TH_DV_SECTORS} | {'total': 0.0, 'share': 0.0},
+            'y2028': {s: 0.0 for s in TH_DV_SECTORS} | {'total': 0.0, 'share': 0.0},
+            'yTotal': {s: 0.0 for s in TH_DV_SECTORS} | {'total': 0.0, 'share': 0.0}
+        }
+
+    # 1. Fill leaf rows
+    for r in TH_DV_ROW_DEFS:
+        if r['madv']:
+            d = row_data[r['id']]
+            code = norm_madv(r['madv'])
+            for s in TH_DV_SECTORS:
+                s_key = 'CĐBR' if s == 'CDBR' else ('CĐ' if s == 'CD' else s)
+                v27 = matrix_27.get((s_key, code), 0.0) or matrix_27.get((s, code), 0.0)
+                v28 = matrix_28.get((s_key, code), 0.0) or matrix_28.get((s, code), 0.0)
+                d['y2027'][s] = v27
+                d['y2028'][s] = v28
+                d['yTotal'][s] = v27 + v28
+            d['y2027']['total'] = sum(d['y2027'][s] for s in TH_DV_SECTORS)
+            d['y2028']['total'] = sum(d['y2028'][s] for s in TH_DV_SECTORS)
+            d['yTotal']['total'] = sum(d['yTotal'][s] for s in TH_DV_SECTORS)
+
+    # 2. Subgroups (R12, R15, R22)
+    for sub_id in ['R12', 'R15', 'R22']:
+        def_r = next(r for r in TH_DV_ROW_DEFS if r['id'] == sub_id)
+        d = row_data[sub_id]
+        for s in TH_DV_SECTORS:
+            d['y2027'][s] = sum(row_data[c]['y2027'][s] for c in def_r['children'])
+            d['y2028'][s] = sum(row_data[c]['y2028'][s] for c in def_r['children'])
+            d['yTotal'][s] = sum(row_data[c]['yTotal'][s] for c in def_r['children'])
+        d['y2027']['total'] = sum(d['y2027'][s] for s in TH_DV_SECTORS)
+        d['y2028']['total'] = sum(d['y2028'][s] for s in TH_DV_SECTORS)
+        d['yTotal']['total'] = sum(d['yTotal'][s] for s in TH_DV_SECTORS)
+
+    # 3. Groups (R06, R11, R26)
+    for grp_id in ['R06', 'R11', 'R26']:
+        def_r = next(r for r in TH_DV_ROW_DEFS if r['id'] == grp_id)
+        d = row_data[grp_id]
+        for s in TH_DV_SECTORS:
+            d['y2027'][s] = sum(row_data[c]['y2027'][s] for c in def_r['children'])
+            d['y2028'][s] = sum(row_data[c]['y2028'][s] for c in def_r['children'])
+            d['yTotal'][s] = sum(row_data[c]['yTotal'][s] for c in def_r['children'])
+        d['y2027']['total'] = sum(d['y2027'][s] for s in TH_DV_SECTORS)
+        d['y2028']['total'] = sum(d['y2028'][s] for s in TH_DV_SECTORS)
+        d['yTotal']['total'] = sum(d['yTotal'][s] for s in TH_DV_SECTORS)
+
+    # 4. Grand Total R04
+    r04 = row_data['R04']
+    for s in TH_DV_SECTORS:
+        r04['y2027'][s] = sum(row_data[c]['y2027'][s] for c in ['R06', 'R11', 'R26', 'R31'])
+        r04['y2028'][s] = sum(row_data[c]['y2028'][s] for c in ['R06', 'R11', 'R26', 'R31'])
+        r04['yTotal'][s] = sum(row_data[c]['yTotal'][s] for c in ['R06', 'R11', 'R26', 'R31'])
+    r04['y2027']['total'] = sum(r04['y2027'][s] for s in TH_DV_SECTORS)
+    r04['y2028']['total'] = sum(r04['y2028'][s] for s in TH_DV_SECTORS)
+    r04['yTotal']['total'] = sum(r04['yTotal'][s] for s in TH_DV_SECTORS)
+    r04['y2027']['share'] = 100.0
+    r04['y2028']['share'] = 100.0
+    r04['yTotal']['share'] = 100.0
+
+    # 5. Share row R05
+    r05 = row_data['R05']
+    for s in TH_DV_SECTORS:
+        r05['y2027'][s] = round((r04['y2027'][s] / r04['y2027']['total'] * 100), 2) if r04['y2027']['total'] > 0 else 0.0
+        r05['y2028'][s] = round((r04['y2028'][s] / r04['y2028']['total'] * 100), 2) if r04['y2028']['total'] > 0 else 0.0
+        r05['yTotal'][s] = round((r04['yTotal'][s] / r04['yTotal']['total'] * 100), 2) if r04['yTotal']['total'] > 0 else 0.0
+    r05['y2027']['total'] = 100.0
+    r05['y2028']['total'] = 100.0
+    r05['yTotal']['total'] = 100.0
+
+    # 6. Row shares
+    for r in TH_DV_ROW_DEFS:
+        if r['id'] in ['R04', 'R05']:
+            continue
+        d = row_data[r['id']]
+        d['y2027']['share'] = round((d['y2027']['total'] / r04['y2027']['total'] * 100), 2) if r04['y2027']['total'] > 0 else 0.0
+        d['y2028']['share'] = round((d['y2028']['total'] / r04['y2028']['total'] * 100), 2) if r04['y2028']['total'] > 0 else 0.0
+        d['yTotal']['share'] = round((d['yTotal']['total'] / r04['yTotal']['total'] * 100), 2) if r04['yTotal']['total'] > 0 else 0.0
+
+    return [row_data[r['id']] for r in TH_DV_ROW_DEFS]

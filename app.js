@@ -208,7 +208,9 @@ function initTabs() {
       if (target) {
         target.classList.add('active');
         if (tabId === 'tabStrategy') {
-          if (typeof window.renderAllReportTabs === 'function') {
+          if (typeof updateReportFromExtractedData === 'function') {
+            updateReportFromExtractedData(state.extractedData, state.extractedByMang);
+          } else if (typeof window.renderAllReportTabs === 'function') {
             window.renderAllReportTabs();
           }
           if (typeof renderStrategyComparisonTable === 'function') {
@@ -471,6 +473,11 @@ function rebuildExtractedData() {
   renderPreviewTable();
   renderHierarchyTable();
   renderStrategyComparisonTable();
+
+  // Đồng bộ và tính toán dữ liệu Báo cáo Tổng hợp & So sánh Chiến lược theo công thức chuẩn
+  if (typeof updateReportFromExtractedData === 'function') {
+    updateReportFromExtractedData(state.extractedData, state.extractedByMang);
+  }
 
   const hasData = state.extractedData.length > 0;
   const btnDownload = document.getElementById('btnOpenResultFile');
