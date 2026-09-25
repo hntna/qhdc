@@ -2987,3 +2987,56 @@ tr.row-cap-4 {
   justify-content: center;
 }
 
+
+/* ===== Viettel Sidebar Layout ===== */
+.app-sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+  background: var(--bg-surface); border-right: 1px solid var(--border-subtle);
+  display: flex; flex-direction: column; z-index: 40; transition: width .18s ease;
+}
+.app-sidebar.collapsed { width: var(--sidebar-w-collapsed); }
+.app-sidebar.collapsed .sidebar-brand-text,
+.app-sidebar.collapsed .nav-item span:not(.nav-badge),
+.app-sidebar.collapsed .nav-badge { display: none; }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 14px 16px; height: var(--header-h); border-bottom: 1px solid var(--border-subtle); }
+.sidebar-logo { width: 34px; height: 34px; border-radius: 9px; background: var(--primary); display: grid; place-items: center; flex-shrink: 0; }
+.sidebar-brand-text { display: flex; flex-direction: column; line-height: 1.15; overflow: hidden; }
+.sidebar-brand-title { font-weight: 800; font-size: .92rem; color: var(--text-main); white-space: nowrap; }
+.sidebar-brand-sub { font-size: .72rem; color: var(--text-muted); }
+.sidebar-toggle { margin-left: auto; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; }
+.sidebar-toggle:hover { background: var(--bg-subtle); color: var(--text-main); }
+.sidebar-nav { padding: 10px 10px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 9px; border: none; background: none; cursor: pointer; color: var(--text-secondary); font-size: .87rem; font-weight: 600; text-align: left; position: relative; width: 100%; }
+.nav-item span:not(.nav-badge) { white-space: nowrap; }
+.nav-item:hover { background: var(--bg-subtle); color: var(--text-main); }
+.nav-item.active { background: var(--primary-soft); color: var(--primary); }
+.nav-item.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary); }
+.nav-badge { margin-left: auto; font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--bg-muted); color: var(--text-secondary); }
+.nav-badge.badge-danger { background: var(--danger-bg); color: var(--danger); }
+
+.app-shell { margin-left: var(--sidebar-w); transition: margin-left .18s ease; }
+.app-sidebar.collapsed ~ .app-shell { margin-left: var(--sidebar-w-collapsed); }
+
+/* Section panels */
+.section-panel { display: none; }
+.section-panel.active { display: block; }
+
+/* KPI cards */
+.dashboard-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px 18px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 6px; }
+.kpi-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; }
+.kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.kpi-card.kpi-danger .kpi-value { color: var(--danger); }
+
+@media (max-width: 1100px) {
+  .app-sidebar { width: var(--sidebar-w-collapsed); }
+  .app-sidebar .sidebar-brand-text, .app-sidebar .nav-item span:not(.nav-badge), .app-sidebar .nav-badge { display: none; }
+  .app-shell { margin-left: var(--sidebar-w-collapsed); }
+  .dashboard-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+
+.app-header { position: sticky; top: 0; z-index: 30; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); height: var(--header-h); }
+.app-header .header-container { display: flex; align-items: center; justify-content: space-between; height: 100%; padding: 0 22px; }
+.brand-title { font-weight: 800; font-size: 1rem; color: var(--text-main); line-height: 1.15; }
+.brand-sub { font-size: .78rem; color: var(--text-muted); }
+.header-actions { display: flex; align-items: center; gap: 10px; }
