@@ -27,6 +27,11 @@
       const s = document.getElementById(src), d = document.getElementById(dst);
       if (s && d) d.textContent = (s.textContent || '').replace(/[^0-9]/g, '') || '0';
     });
+    var sectorsEl = document.getElementById('kpiSectors');
+    if (sectorsEl) {
+      var loaded = document.querySelectorAll('.upload-box.has-file').length;
+      sectorsEl.textContent = loaded + '/7';
+    }
   }
   window.syncSidebarBadges = syncSidebarBadges;
 
