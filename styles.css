@@ -249,20 +249,23 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: .84rem;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   border: 1px solid transparent;
   user-select: none;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1;
+  transition: background .12s, border-color .12s, box-shadow .12s;
   text-decoration: none;
   white-space: nowrap;
 }
-.btn:hover {
-  transform: translateY(-1px);
-}
-.btn:active {
-  transform: translateY(0);
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 .btn i, .btn svg {
   flex-shrink: 0;
@@ -270,19 +273,11 @@ body {
 
 /* CẤP 1: Nút hành động chính (Primary - to, màu đậm, nổi bật, icon đậm rõ) */
 .btn-primary {
-  padding: 0.65rem 1.35rem;
-  font-size: 0.925rem;
-  font-weight: 700;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  color: #ffffff;
-  border: 1.5px solid #4338ca;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35), 0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--primary);
+  color: #fff;
 }
-.btn-primary:hover {
-  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.48);
-  transform: translateY(-2px);
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
 }
 .btn-primary i, .btn-primary svg {
   width: 20px;
@@ -291,19 +286,14 @@ body {
 }
 
 .btn-success {
-  padding: 0.65rem 1.35rem;
-  font-size: 0.925rem;
-  font-weight: 700;
-  border-radius: 10px;
   background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
   color: #ffffff;
-  border: 1.5px solid #047857;
+  border-color: #047857;
   box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35), 0 1px 2px rgba(0, 0, 0, 0.08);
 }
-.btn-success:hover {
+.btn-success:hover:not(:disabled) {
   background: linear-gradient(135deg, #047857 0%, #0f766e 100%);
   box-shadow: 0 6px 20px rgba(5, 150, 105, 0.48);
-  transform: translateY(-2px);
 }
 .btn-success i, .btn-success svg {
   width: 20px;
@@ -313,20 +303,13 @@ body {
 
 /* CẤP 2: Nút phụ / chức năng bổ trợ (Secondary / Outline - viền rõ, cỡ vừa) */
 .btn-outline, .btn-secondary {
-  padding: 0.52rem 1.1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #1e293b;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--bg-surface);
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
 }
-.btn-outline:hover, .btn-secondary:hover {
-  background: #f8fafc;
-  border-color: #64748b;
-  color: #0f172a;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+.btn-outline:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-main);
 }
 .btn-outline i, .btn-outline svg,
 .btn-secondary i, .btn-secondary svg {
@@ -348,49 +331,39 @@ body {
 }
 
 .btn-light {
-  padding: 0.48rem 1rem;
-  font-size: 0.825rem;
-  font-weight: 600;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: #1e293b;
-  border: 1px solid #cbd5e1;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
 }
-.btn-light:hover {
-  background: #e2e8f0;
-  border-color: #94a3b8;
-  color: #0f172a;
+.btn-light:hover:not(:disabled) {
+  background: var(--bg-muted);
+  border-color: var(--text-dim);
+  color: var(--text-main);
 }
 
 .btn-warning {
-  padding: 0.52rem 1.1rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  border-radius: 8px;
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   color: #ffffff;
   border-color: #92400e;
   box-shadow: 0 2px 8px rgba(217, 119, 6, 0.28);
 }
-.btn-warning:hover {
+.btn-warning:hover:not(:disabled) {
   background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
   box-shadow: 0 4px 12px rgba(217, 119, 6, 0.38);
 }
 
 /* CẤP 3: Nút nhỏ & Icon button (như Chọn file, nút xóa "✕", mở rộng/thu gọn) */
 .btn-sm {
-  padding: 0.32rem 0.68rem;
-  font-size: 0.775rem;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+  padding: 6px 11px;
+  font-size: .8rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
 }
-.btn-sm:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #0f172a;
+.btn-sm:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--text-dim);
+  color: var(--text-main);
 }
 
 .btn-remove-file {
@@ -419,9 +392,8 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: .5;
   cursor: not-allowed;
-  transform: none !important;
   box-shadow: none !important;
 }
 
@@ -951,24 +923,32 @@ body {
   transform: translateY(-2px);
 }
 
-.tab-badge {
-  font-size: 0.725rem;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: 9999px;
-  line-height: 1.4;
-  color: #ffffff !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+.tab-badge, .table-badge-count {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
 }
 .tab-badge.badge-danger {
-  background: #ea580c;
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 .tab-badge.badge-info {
-  background: #059669;
+  background: var(--info-bg);
+  color: var(--info);
 }
 .tab-badge.badge-warning {
-  background: #7c3aed;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
+
+/* Sub-tab underline (Viettel design system) */
+.report-subtabs-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 1.25rem; }
+.report-subtab-btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; border: none; background: none; cursor: pointer; color: var(--text-muted); font-weight: 600; font-size: .86rem; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.report-subtab-btn:hover { color: var(--text-main); }
+.report-subtab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 .tab-content {
   display: none;
@@ -1602,43 +1582,31 @@ body {
 
 .data-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.825rem;
-  text-align: left;
-}
-
-.data-table th,
-.data-table td {
-  border-bottom: 1px solid #cbd5e1;
-  border-right: 1px solid #cbd5e1;
-  padding: 0.48rem 0.68rem;
+  border-collapse: collapse;
+  font-size: .82rem;
   line-height: 1.4;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-.data-table th:last-child,
-.data-table td:last-child {
-  border-right: none;
 }
 
-.data-table thead {
+.data-table thead th {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 2;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+  user-select: none;
 }
 
-.data-table th {
-  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
-  color: #0f172a;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  border-bottom: 2.5px solid #94a3b8;
-  padding: 0.55rem 0.72rem;
-  position: relative;
-  user-select: none;
+.data-table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 /* Column Resizing Handle */
@@ -1678,10 +1646,15 @@ body.resizing-col * {
   background-color: #ffffff;
 }
 .data-table tbody tr:nth-child(even) {
-  background-color: #f8fafc;
+  background: #FCFCFD;
 }
 .data-table tbody tr:hover {
-  background-color: #eff6ff !important;
+  background: var(--primary-soft) !important;
+}
+.data-table .num-cell {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Masterlist Preview Table - Distinct Row Styles */
@@ -2134,7 +2107,7 @@ tr.row-cap-4 {
 .modal-backdrop {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(16, 24, 40, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -2146,7 +2119,7 @@ tr.row-cap-4 {
 
 .modal-box {
   background: #ffffff;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dropdown);
   width: 90%;
   max-width: 520px;
