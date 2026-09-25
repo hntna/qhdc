@@ -1214,6 +1214,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.lucide) lucide.createIcons();
     });
   });
+
+  // Lắng nghe click các nút chuyển Sub-tab báo cáo (Tổng hợp / theo Mảng / theo Dịch vụ / So sánh CL 5 năm)
+  document.querySelectorAll('.report-subtab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const subtabId = btn.getAttribute('data-subtab');
+      if (subtabId) switchReportSubtab(subtabId);
+      if (window.lucide) lucide.createIcons();
+    });
+  });
 });
 
 // Expose toàn cục
