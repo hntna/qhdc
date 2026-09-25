@@ -444,6 +444,9 @@ Style khung mới: sidebar cố định trái, app-shell chừa lề trái, head
         </div>
       </div>
       <div class="header-actions">
+        <button id="btnOpenVTBConverter" class="btn btn-outline" title="Công cụ chuyển đổi file Mẫu cũ (37 cột) sang Mẫu mới">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i><span>Chuyển đổi Mẫu cũ</span>
+        </button>
         <button id="btnSaveToServer" class="btn btn-outline" disabled title="Lưu bản hiện tại lên Server để nạp lại chỉnh sửa tiếp">
           <i data-lucide="cloud-upload" class="w-4 h-4"></i><span>Lưu lên Server</span>
         </button>
@@ -458,7 +461,7 @@ Style khung mới: sidebar cố định trái, app-shell chừa lề trái, head
   </header>
 ```
 
-(Lưu ý: `btnOpenVTBConverter` được chuyển sang trang Công cụ ở Task 6 — không còn ở header.)
+(Lưu ý: `btnOpenVTBConverter` GIỮ TẠM ở header trong task này — chỉ bỏ `style=""` inline; Task 6 mới di chuyển nó sang trang Công cụ. Nhờ vậy guard test luôn PASS ở mọi task.)
 
 - [ ] **Step 3: Thêm CSS header brand-sub + sticky** vào cuối `styles.css`:
 
@@ -531,7 +534,7 @@ Chuyển các nút công cụ vào `#toolsGrid` dạng thẻ hành động; thê
       </div>
 ```
 
-- [ ] **Step 2: Gỡ các nút gốc đã chuyển đi.** Trong toolbar `#tabHierarchy` (dòng ~427-450): xóa 4 nút `btnReindexTT`, `btnFixOutlineGroups`, `btnSplitWalletDV`, `btnSplitWalletMang` (giữ lại `btnRestoreOriginalTT` và ô tìm kiếm `searchGroupInput`). Trong header cũ đã bỏ `btnOpenVTBConverter` ở Task 5. Đảm bảo mỗi id trên **chỉ còn xuất hiện đúng 1 lần** trong file (grep kiểm tra ở Step 4).
+- [ ] **Step 2: Gỡ các nút gốc đã chuyển đi.** Trong toolbar `#tabHierarchy` (dòng ~427-450): xóa 4 nút `btnReindexTT`, `btnFixOutlineGroups`, `btnSplitWalletDV`, `btnSplitWalletMang` (giữ lại `btnRestoreOriginalTT` và ô tìm kiếm `searchGroupInput`). Đồng thời **gỡ `btnOpenVTBConverter` khỏi header** (nút đã được thêm lại vào `#toolsGrid` ở Step 1). Đảm bảo mỗi id trên **chỉ còn xuất hiện đúng 1 lần** trong file (grep kiểm tra ở Step 4).
 
 - [ ] **Step 3: CSS thẻ công cụ** — thêm cuối `styles.css`:
 
