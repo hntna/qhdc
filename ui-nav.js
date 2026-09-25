@@ -9,7 +9,7 @@
     });
     if (key === 'report') {
       try {
-        if (typeof updateReportFromExtractedData === 'function' && window.state) {
+        if (typeof updateReportFromExtractedData === 'function' && typeof state !== 'undefined' && state) {
           updateReportFromExtractedData(state.extractedData, state.extractedByMang);
         } else if (typeof window.renderAllReportTabs === 'function') {
           window.renderAllReportTabs();

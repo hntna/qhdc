@@ -126,19 +126,6 @@ body {
 }
 
 /* App Header - Colorful Modern SaaS */
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1.5px solid #cbd5e1;
-  padding: 0.9rem 1.75rem;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-}
-
 .app-header::before {
   content: '';
   position: absolute;
@@ -146,7 +133,7 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #2563eb 0%, #059669 18%, #e11d48 36%, #ea580c 54%, #8bd409 72%, #7c3aed 88%, #0891b2 100%);
+  background: var(--primary);
 }
 
 .header-container {
@@ -180,13 +167,6 @@ body {
 }
 .brand-icon:hover {
   transform: scale(1.08) rotate(3deg);
-}
-
-.brand-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #0f172a;
 }
 
 .brand-subtitle {
@@ -492,9 +472,9 @@ body {
 }
 
 .upload-box.drag-over {
-  border-color: #2563eb !important;
+  border-color: var(--primary) !important;
   border-style: solid !important;
-  background: #eff6ff !important;
+  background: var(--primary-soft) !important;
   box-shadow: 0 0 18px rgba(37, 99, 235, 0.25) !important;
   transform: scale(1.02);
 }
