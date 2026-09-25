@@ -24,6 +24,37 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-500/20 selection:text-indigo-800 antialiased">
 
+  <!-- Sidebar dieu huong Viettel -->
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo"><i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i></div>
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-title">QHĐC 2027–2028</span>
+        <span class="sidebar-brand-sub">Masterlist</span>
+      </div>
+      <button class="sidebar-toggle" id="btnSidebarToggle" title="Thu gọn / mở rộng menu">
+        <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-section="home"><i data-lucide="home" class="w-4 h-4"></i><span>Trang chủ</span></button>
+      <button class="nav-item" data-section="data"><i data-lucide="folder-input" class="w-4 h-4"></i><span>Nạp dữ liệu</span></button>
+      <button class="nav-item" data-section="validation"><i data-lucide="shield-check" class="w-4 h-4"></i><span>Kiểm tra dữ liệu</span><span class="nav-badge badge-danger" id="navBadgeValidation">0</span></button>
+      <button class="nav-item" data-section="tools"><i data-lucide="wrench" class="w-4 h-4"></i><span>Công cụ</span></button>
+      <button class="nav-item" data-section="config"><i data-lucide="git-merge" class="w-4 h-4"></i><span>Cấu hình</span></button>
+      <button class="nav-item" data-section="report"><i data-lucide="pie-chart" class="w-4 h-4"></i><span>Tổng hợp</span></button>
+    </nav>
+  </aside>
+
+  <!-- Legacy badge counters (giu nguyen id de app.js khong loi; se duoc thay the o Task 4/6) -->
+  <div id="legacyBadgeHolder" style="display: none;" aria-hidden="true">
+    <span id="badgeValidationCount">0</span>
+    <span id="badgeRowCount">0 dòng</span>
+    <span id="badgeGroupCount">0 nhóm</span>
+  </div>
+
+  <div class="app-shell" id="appShell">
+
   <!-- Header: Modern SaaS Glassmorphism -->
   <header class="app-header">
     <div class="header-container">
@@ -59,6 +90,100 @@
   <!-- Main Content Layout -->
   <main class="main-layout">
 
+    <!-- TRANG CHU -->
+    <section class="section-panel active" data-panel="home">
+      <div class="dashboard-kpis" id="dashboardKpis">
+        <div class="kpi-card"><span class="kpi-label">Số dòng gộp</span><span class="kpi-value" id="kpiRows">0</span></div>
+        <div class="kpi-card kpi-danger"><span class="kpi-label">Lỗi kiểm tra</span><span class="kpi-value" id="kpiErrors">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Số nhóm</span><span class="kpi-value" id="kpiGroups">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Mảng đã nạp</span><span class="kpi-value" id="kpiSectors">0/7</span></div>
+      </div>
+    <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
+    <div id="tabPreview" class="tab-content active">
+
+      <!-- Filter Toolbar -->
+      <div class="toolbar">
+        <div class="filter-group">
+          <span class="filter-label">Bộ lọc Cấp bậc:</span>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel1" checked> Cấp 1 (Mảng)
+          </label>
+          <label class="chip active">
+            <input type="checkbox" id="chkLevel2" checked> Cấp 2 (Nhóm chính)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel3"> Cấp 3 (Nhóm phụ)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevel4"> Cấp 4+ (Nhóm con)
+          </label>
+          <label class="chip">
+            <input type="checkbox" id="chkLevelLeaf"> Chi tiết (Vật tư mua sắm)
+          </label>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Mảng:</span>
+          <select id="selectMangFilter" class="select-input">
+            <option value="ALL">Tất cả các mảng</option>
+            <option value="VT">VT (Vô tuyến)</option>
+            <option value="ML">ML (Mạng lõi)</option>
+            <option value="CDBR">CĐBR (Cố định băng rộng)</option>
+            <option value="CNTT">CNTT (Công nghệ thông tin)</option>
+            <option value="TD">TD (Truyền dẫn)</option>
+            <option value="CD">CĐ (Cơ điện)</option>
+            <option value="HT">HT (Hạ tầng)</option>
+          </select>
+          <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
+          <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
+            <span id="copyBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-700"></i></span>
+            <span id="copyBtnText">Sao chép bảng (Excel)</span>
+          </button>
+        </div>
+
+        <div class="filter-group preview-column-config">
+          <span class="filter-label">Cột hiển thị:</span>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dvt"> ĐVT
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl27"> KL 2027
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl28"> KL 2028
+          </label>
+          <label class="chip preview-column-chip">
+            <input type="checkbox" class="preview-column-toggle" data-preview-column="dg"> Đơn giá
+          </label>
+        </div>
+      </div>
+
+      <!-- Preview Table -->
+      <div class="table-wrapper">
+        <table class="data-table" id="previewTable">
+          <thead id="previewTableHead"></thead>
+          <tbody id="previewTableBody">
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                Chưa có dữ liệu tổng hợp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="previewFooterText">Hiển thị 0 / 0 dòng</span>
+        <div style="font-weight: 700; display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace;">
+          <span class="summary-pill summary-pill-2027">Năm 2027: <span id="sumTT2027">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-2028">Năm 2028: <span id="sumTT2028">0</span> VNĐ</span>
+          <span class="summary-pill summary-pill-total">Tổng: <span id="sumTTTotal">0</span> VNĐ</span>
+        </div>
+      </div>
+    </div>
+    </section>
+
+    <!-- NAP DU LIEU -->
+    <section class="section-panel" data-panel="data">
     <!-- Section 1: File Uploads -->
     <section class="card" id="uploadCard">
       <div class="upload-card-header">
@@ -181,31 +306,10 @@
 
       </div>
     </section>
+    </section>
 
-    <!-- Navigation Tabs (Shadcn Pill Design) -->
-    <div class="tabs-nav">
-      <button class="tab-btn active" data-tab="tabValidation">
-        <i data-lucide="shield-check" class="w-4 h-4"></i>
-        <span>Kiểm tra & So khớp</span>
-        <span class="tab-badge badge-danger" id="badgeValidationCount">0</span>
-      </button>
-      <button class="tab-btn" data-tab="tabPreview">
-        <i data-lucide="table-2" class="w-4 h-4"></i>
-        <span>Xem trước Masterlist Tổng hợp</span>
-        <span class="tab-badge badge-info" id="badgeRowCount">0 dòng</span>
-      </button>
-      <button class="tab-btn" data-tab="tabHierarchy">
-        <i data-lucide="git-merge" class="w-4 h-4"></i>
-        <span>Cấu hình Nhóm hạng mục & Subtotal</span>
-        <span class="tab-badge badge-warning" id="badgeGroupCount">0 nhóm</span>
-      </button>
-      <button class="tab-btn" data-tab="tabStrategy">
-        <i data-lucide="pie-chart" class="w-4 h-4"></i>
-        <span>Tổng hợp & So sánh Chiến lược</span>
-        <span class="tab-badge" style="background: #4338ca; color: #ffffff;">Mảng & DV</span>
-      </button>
-    </div>
-
+    <!-- KIEM TRA DU LIEU -->
+    <section class="section-panel" data-panel="validation">
     <!-- TAB 1: KIỂM TRA & SO KHỚP -->
     <div id="tabValidation" class="tab-content active">
 
@@ -313,92 +417,17 @@
         <span id="validationFooterText">Hiển thị 0 / 0 cảnh báo</span>
       </div>
     </div>
+    </section>
 
-    <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
-    <div id="tabPreview" class="tab-content">
+    <!-- CONG CU (Task 6 se dien noi dung) -->
+    <section class="section-panel" data-panel="tools">
+      <div id="toolsGrid"></div>
+    </section>
 
-      <!-- Filter Toolbar -->
-      <div class="toolbar">
-        <div class="filter-group">
-          <span class="filter-label">Bộ lọc Cấp bậc:</span>
-          <label class="chip active">
-            <input type="checkbox" id="chkLevel1" checked> Cấp 1 (Mảng)
-          </label>
-          <label class="chip active">
-            <input type="checkbox" id="chkLevel2" checked> Cấp 2 (Nhóm chính)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevel3"> Cấp 3 (Nhóm phụ)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevel4"> Cấp 4+ (Nhóm con)
-          </label>
-          <label class="chip">
-            <input type="checkbox" id="chkLevelLeaf"> Chi tiết (Vật tư mua sắm)
-          </label>
-        </div>
-
-        <div class="filter-group">
-          <span class="filter-label">Mảng:</span>
-          <select id="selectMangFilter" class="select-input">
-            <option value="ALL">Tất cả các mảng</option>
-            <option value="VT">VT (Vô tuyến)</option>
-            <option value="ML">ML (Mạng lõi)</option>
-            <option value="CDBR">CĐBR (Cố định băng rộng)</option>
-            <option value="CNTT">CNTT (Công nghệ thông tin)</option>
-            <option value="TD">TD (Truyền dẫn)</option>
-            <option value="CD">CĐ (Cơ điện)</option>
-            <option value="HT">HT (Hạ tầng)</option>
-          </select>
-          <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
-          <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
-            <span id="copyBtnIcon"><i data-lucide="copy" class="w-4 h-4 text-indigo-700"></i></span>
-            <span id="copyBtnText">Sao chép bảng (Excel)</span>
-          </button>
-        </div>
-
-        <div class="filter-group preview-column-config">
-          <span class="filter-label">Cột hiển thị:</span>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="dvt"> ĐVT
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl27"> KL 2027
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="kl28"> KL 2028
-          </label>
-          <label class="chip preview-column-chip">
-            <input type="checkbox" class="preview-column-toggle" data-preview-column="dg"> Đơn giá
-          </label>
-        </div>
-      </div>
-
-      <!-- Preview Table -->
-      <div class="table-wrapper">
-        <table class="data-table" id="previewTable">
-          <thead id="previewTableHead"></thead>
-          <tbody id="previewTableBody">
-            <tr>
-              <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
-                Chưa có dữ liệu tổng hợp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <span id="previewFooterText">Hiển thị 0 / 0 dòng</span>
-        <div style="font-weight: 700; display: flex; gap: 0.75rem; flex-wrap: wrap; font-family: 'JetBrains Mono', monospace;">
-          <span class="summary-pill summary-pill-2027">Năm 2027: <span id="sumTT2027">0</span> VNĐ</span>
-          <span class="summary-pill summary-pill-2028">Năm 2028: <span id="sumTT2028">0</span> VNĐ</span>
-          <span class="summary-pill summary-pill-total">Tổng: <span id="sumTTTotal">0</span> VNĐ</span>
-        </div>
-      </div>
-    </div>
-
+    <!-- CAU HINH -->
+    <section class="section-panel" data-panel="config">
     <!-- TAB 3: CẤU HÌNH NHÓM HẠNG MỤC & SUBTOTAL -->
-    <div id="tabHierarchy" class="tab-content">
+    <div id="tabHierarchy" class="tab-content active">
       <!-- Level Filter Bar -->
       <div class="level-filter-card">
         <span class="level-filter-title">Hiển thị theo cấp</span>
@@ -484,9 +513,12 @@
         <span id="hierarchyFooterText">Hiển thị 0 nhóm hạng mục</span>
       </div>
     </div>
+    </section>
 
+    <!-- TONG HOP -->
+    <section class="section-panel" data-panel="report">
     <!-- TAB 4: TỔNG HỢP & SO SÁNH CHIẾN LƯỢC 5 NĂM -->
-    <div id="tabStrategy" class="tab-content">
+    <div id="tabStrategy" class="tab-content active">
       <!-- Clean Modern Header Banner -->
       <div class="strat-header-banner">
         <div class="strat-title-wrap">
@@ -920,6 +952,7 @@
         </div>
       </div>
     </div>
+    </section>
 
   </main>
 
@@ -1303,6 +1336,8 @@
 
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
+
+  </div>
 
   <!-- App Script (100% Client-side Offline) -->
   <script src="app.js" defer></script>
