@@ -528,7 +528,7 @@
       <!-- Clean Modern Header Banner -->
       <div class="strat-header-banner">
         <div class="strat-title-wrap">
-          <div class="strat-title-icon" style="background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);">
+          <div class="strat-title-icon" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);">
             <i data-lucide="pie-chart" class="w-5 h-5 text-white"></i>
           </div>
           <div>
@@ -719,8 +719,8 @@
                   <th class="col-num col-p-2027" style="width: 58px;">IP</th>
                   <th class="col-num col-p-2027" style="width: 58px;">CĐ</th>
                   <th class="col-num col-p-2027" style="width: 58px;">HT</th>
-                  <th class="col-num col-p-2027 col-tot" style="width: 76px; background: #e0e7ff; color: #3730a3;">Tổng</th>
-                  <th class="col-num col-p-2027 period-sep" style="width: 62px; background: #e0e7ff; color: #3730a3;">Tỷ trọng</th>
+                  <th class="col-num col-p-2027 col-tot" style="width: 76px; background: var(--primary-soft); color: var(--primary-hover);">Tổng</th>
+                  <th class="col-num col-p-2027 period-sep" style="width: 62px; background: var(--primary-soft); color: var(--primary-hover);">Tỷ trọng</th>
 
                   <!-- 2028 columns -->
                   <th class="col-num col-p-2028" style="width: 58px;">VT</th>
@@ -865,7 +865,7 @@
               <thead>
                 <tr>
                   <th rowspan="2" style="width: 280px; text-align: left;">Mảng / Lĩnh vực</th>
-                  <th colspan="3" style="background: #eef2ff; color: #3730a3; border-right: 2px solid #cbd5e1;">QHĐC (<span class="unit-label-text">M$</span>)</th>
+                  <th colspan="3" style="background: var(--primary-soft); color: var(--primary-hover); border-right: 2px solid #cbd5e1;">QHĐC (<span class="unit-label-text">M$</span>)</th>
                   <th colspan="4" style="background: #fef3c7; color: #92400e; border-right: 2px solid #cbd5e1;">CHIẾN LƯỢC 5 NĂM (<span class="unit-label-text">M$</span>)</th>
                   <th colspan="2" style="background: #f1f5f9; color: #1e293b;">ĐỐI CHIẾU & ĐÁNH GIÁ</th>
                 </tr>
@@ -1040,7 +1040,7 @@
     <div class="modal-box" style="max-width: 1180px; width: 96vw; max-height: 92vh; display: flex; flex-direction: column; background: #ffffff;">
       
       <!-- Modal Header -->
-      <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
+      <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white; border-bottom: none; padding: 1.1rem 1.5rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
           <div style="background: rgba(255,255,255,0.2); border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center;">
             <i data-lucide="refresh-cw" class="w-5 h-5 text-white"></i>
@@ -1049,7 +1049,7 @@
             <h3 class="modal-title" style="color: white; font-size: 1.05rem; font-weight: 800; margin: 0;">
               CHUYỂN ĐỔI MẪU CŨ VÔ TUYẾN SANG MASTERLIST 2027-2028
             </h3>
-            <p style="font-size: 0.775rem; color: #e0e7ff; margin: 0.2rem 0 0 0;">
+            <p style="font-size: 0.775rem; color: rgba(255,255,255,0.85); margin: 0.2rem 0 0 0;">
               Tách số lượng theo mục đích và gán vật tư vào đúng công nghệ 5G/4G/3G/2G
             </p>
           </div>
@@ -1064,12 +1064,12 @@
         <div id="vtbDropZone" class="vtb-drop-zone" onclick="document.getElementById('inputVTBFileOld').click()">
           <input type="file" id="inputVTBFileOld" accept=".xlsx,.xls" style="display: none;">
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.5rem; padding: 1.2rem;">
-            <div style="width: 48px; height: 48px; border-radius: 50%; background: #e0e7ff; display: flex; align-items: center; justify-content: center; color: #4f46e5;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; color: var(--primary);">
               <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
             </div>
             <div>
               <div style="font-weight: 700; font-size: 0.95rem; color: #1e293b;">
-                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: #4f46e5; text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
+                Kéo thả file Mẫu cũ vào đây hoặc <span style="color: var(--primary); text-decoration: underline; cursor: pointer;">Chọn file từ máy tính</span>
               </div>
               <div style="font-size: 0.775rem; color: #64748b; margin-top: 0.25rem;">
                 Hỗ trợ file: <code>Master list VTB 2027-2028_mau cu.xlsx</code> (Bảng 37 cột chia Khối lượng & Giá trị theo mục đích)
@@ -1145,8 +1145,8 @@
                 <span id="kpiOldItemCount" style="font-size: 1.3rem; font-weight: 800; color: #1e293b;">0</span>
                 <span style="font-size: 0.8rem; color: #64748b;">dòng cũ</span>
                 <span style="color: #cbd5e1;">➔</span>
-                <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: #4f46e5;">0</span>
-                <span style="font-size: 0.8rem; color: #4f46e5;">dòng mới</span>
+                <span id="kpiMappedCount" style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">0</span>
+                <span style="font-size: 0.8rem; color: var(--primary);">dòng mới</span>
               </div>
             </div>
 
@@ -1299,7 +1299,7 @@
   <div id="modalServerDrafts" class="modal-backdrop" style="display: none;" onclick="if(event.target===this) closeServerDraftsModal()">
     <div class="modal-box" style="max-width: 900px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-header">
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: #4338ca;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.05rem; color: var(--primary);">
           <i data-lucide="cloud" class="w-5 h-5 text-indigo-600"></i>
           <span>DANH SÁCH BẢN LƯU TRÊN SERVER</span>
         </div>
