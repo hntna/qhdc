@@ -38,11 +38,17 @@
     </div>
     <nav class="sidebar-nav">
       <button class="nav-item active" data-section="home"><i data-lucide="home" class="w-4 h-4"></i><span>Trang chủ</span></button>
+      <div class="nav-subnav" id="homeSubnav">
+        <button class="nav-subitem active" data-subnav="subtabTongHop"><i data-lucide="pie-chart" class="w-3.5 h-3.5"></i><span>Tổng hợp</span></button>
+        <button class="nav-subitem" data-subnav="subtabMang"><i data-lucide="layers" class="w-3.5 h-3.5"></i><span>Tổng hợp theo Mảng</span></button>
+        <button class="nav-subitem" data-subnav="subtabDichVu"><i data-lucide="network" class="w-3.5 h-3.5"></i><span>Tổng hợp theo Dịch vụ</span></button>
+        <button class="nav-subitem" data-subnav="subtabStratDetail"><i data-lucide="scale" class="w-3.5 h-3.5"></i><span>So sánh với chiến lược 5 năm</span></button>
+      </div>
       <button class="nav-item" data-section="data"><i data-lucide="folder-input" class="w-4 h-4"></i><span>Nạp dữ liệu</span></button>
       <button class="nav-item" data-section="validation"><i data-lucide="shield-check" class="w-4 h-4"></i><span>Kiểm tra dữ liệu</span><span class="nav-badge badge-danger" id="navBadgeValidation">0</span></button>
       <button class="nav-item" data-section="tools"><i data-lucide="wrench" class="w-4 h-4"></i><span>Công cụ</span></button>
       <button class="nav-item" data-section="config"><i data-lucide="git-merge" class="w-4 h-4"></i><span>Cấu hình</span></button>
-      <button class="nav-item" data-section="report"><i data-lucide="pie-chart" class="w-4 h-4"></i><span>Tổng hợp</span></button>
+      <button class="nav-item" data-section="detail"><i data-lucide="table-2" class="w-4 h-4"></i><span>Chi tiết ML</span></button>
     </nav>
   </aside>
 
@@ -81,14 +87,8 @@
   <!-- Main Content Layout -->
   <main class="main-layout">
 
-    <!-- TRANG CHU -->
-    <section class="section-panel active" data-panel="home">
-      <div class="dashboard-kpis" id="dashboardKpis">
-        <div class="kpi-card"><span class="kpi-label">Số dòng gộp</span><span class="kpi-value" id="kpiRows">0</span></div>
-        <div class="kpi-card kpi-danger"><span class="kpi-label">Lỗi kiểm tra</span><span class="kpi-value" id="kpiErrors">0</span></div>
-        <div class="kpi-card"><span class="kpi-label">Số nhóm</span><span class="kpi-value" id="kpiGroups">0</span></div>
-        <div class="kpi-card"><span class="kpi-label">Mảng đã nạp</span><span class="kpi-value" id="kpiSectors">0/7</span></div>
-      </div>
+    <!-- CHI TIET ML (bang xem truoc Masterlist gop) -->
+    <section class="section-panel" data-panel="detail">
     <!-- TAB 2: XEM TRƯỚC MASTERLIST TỔNG HỢP -->
     <div id="tabPreview" class="tab-content active">
 
@@ -521,8 +521,14 @@
     </div>
     </section>
 
-    <!-- TONG HOP -->
-    <section class="section-panel" data-panel="report">
+    <!-- TRANG CHU (bao cao Tong hop + KPI) -->
+    <section class="section-panel active" data-panel="home">
+      <div class="dashboard-kpis" id="dashboardKpis">
+        <div class="kpi-card"><span class="kpi-label">Số dòng gộp</span><span class="kpi-value" id="kpiRows">0</span></div>
+        <div class="kpi-card kpi-danger"><span class="kpi-label">Lỗi kiểm tra</span><span class="kpi-value" id="kpiErrors">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Số nhóm</span><span class="kpi-value" id="kpiGroups">0</span></div>
+        <div class="kpi-card"><span class="kpi-label">Mảng đã nạp</span><span class="kpi-value" id="kpiSectors">0/7</span></div>
+      </div>
     <!-- TAB 4: TỔNG HỢP & SO SÁNH CHIẾN LƯỢC 5 NĂM -->
     <div id="tabStrategy" class="tab-content active">
       <!-- Clean Modern Header Banner -->
@@ -572,8 +578,8 @@
         </div>
       </div>
 
-      <!-- Sub-Tabs Navigation (3 Tab theo yêu cầu + Đối chiếu chiến lược 5 năm) -->
-      <div class="report-subtabs-nav">
+      <!-- Sub-Tabs Navigation (da chuyen len sidebar; giu an de dong bo trang thai) -->
+      <div class="report-subtabs-nav" style="display: none;">
         <button type="button" class="report-subtab-btn active" data-subtab="subtabTongHop">
           <i data-lucide="pie-chart" class="w-4 h-4"></i>
           <span>Tổng hợp</span>

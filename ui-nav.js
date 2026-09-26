@@ -7,7 +7,8 @@
     document.querySelectorAll('.nav-item').forEach(n => {
       n.classList.toggle('active', n.getAttribute('data-section') === key);
     });
-    if (key === 'report') {
+    // Bao cao Tong hop hien nam trong khu "home" (Trang chu)
+    if (key === 'home') {
       try {
         if (typeof updateReportFromExtractedData === 'function' && typeof state !== 'undefined' && state) {
           updateReportFromExtractedData(state.extractedData, state.extractedByMang);
@@ -17,6 +18,17 @@
         if (typeof renderStrategyComparisonTable === 'function') renderStrategyComparisonTable();
       } catch (e) { console.warn('render report on nav:', e); }
     }
+    if (window.lucide) setTimeout(() => lucide.createIcons(), 10);
+  }
+
+  // Chon menu con cua Trang chu (dong bo voi sub-tab bao cao)
+  function selectHomeSubtab(subtabId) {
+    if (!subtabId) return;
+    showSection('home');
+    document.querySelectorAll('.nav-subitem').forEach(n => {
+      n.classList.toggle('active', n.getAttribute('data-subnav') === subtabId);
+    });
+    if (typeof switchReportSubtab === 'function') switchReportSubtab(subtabId);
     if (window.lucide) setTimeout(() => lucide.createIcons(), 10);
   }
 
@@ -38,6 +50,9 @@
   function init() {
     document.querySelectorAll('.nav-item').forEach(btn => {
       btn.addEventListener('click', () => showSection(btn.getAttribute('data-section')));
+    });
+    document.querySelectorAll('.nav-subitem').forEach(btn => {
+      btn.addEventListener('click', () => selectHomeSubtab(btn.getAttribute('data-subnav')));
     });
     const toggle = document.getElementById('btnSidebarToggle');
     if (toggle) toggle.addEventListener('click', () => {

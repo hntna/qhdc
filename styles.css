@@ -4,21 +4,21 @@
    ========================================================================== */
 
 :root {
-  /* Viettel Brand Light System */
-  --bg-app: #F5F6F8;
+  /* Viettel Brand Light System - tang tuong phan */
+  --bg-app: #E7EAF0;         /* nen app dam hon de card noi bat */
   --bg-surface: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #FBFBFC;
-  --bg-subtle: #F3F4F6;
-  --bg-muted: #E5E7EB;
+  --bg-card-hover: #F6F8FB;
+  --bg-subtle: #EBEEF3;      /* nen phu cho toolbar/frame */
+  --bg-muted: #D8DDE6;       /* nen header bang / badge trung tinh */
 
-  --text-main: #1A1A1A;
-  --text-secondary: #4B5563;
-  --text-muted: #6B7280;
-  --text-dim: #9CA3AF;
+  --text-main: #141821;
+  --text-secondary: #3C4656;
+  --text-muted: #5B6472;
+  --text-dim: #8A92A0;
 
-  --border-subtle: #E5E7EB;
-  --border-strong: #D1D5DB;
+  --border-subtle: #CBD2DC;  /* vien ro hon */
+  --border-strong: #A6AFBD;
   --border-focus: #EE0033;
 
   /* Primary: Viettel Red */
@@ -3001,3 +3001,36 @@ tr.row-cap-4 {
 .tool-card-desc { font-size: .82rem; color: var(--text-muted); flex: 1; }
 .tool-card .btn { align-self: flex-start; }
 .tool-card-soon { opacity: .7; }
+
+/* ===== Menu con sidebar (Trang chu) ===== */
+.nav-subnav { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 8px 0; }
+.nav-subitem { display: flex; align-items: center; gap: 9px; padding: 7px 12px 7px 34px; border: none; background: none; cursor: pointer; color: var(--text-muted); font-size: .82rem; font-weight: 600; text-align: left; width: 100%; border-radius: 8px; position: relative; }
+.nav-subitem span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-subitem:hover { background: var(--bg-subtle); color: var(--text-main); }
+.nav-subitem.active { background: var(--primary-soft); color: var(--primary); }
+.nav-subitem.active::before { content: ""; position: absolute; left: 17px; top: 50%; transform: translateY(-50%); width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+.app-sidebar.collapsed .nav-subnav { display: none; }
+
+/* ===== Tang tuong phan: card / frame / badge / bang ===== */
+.kpi-card, .tool-card { border: 1px solid var(--border-strong); box-shadow: 0 1px 3px rgba(16,24,40,0.08); }
+.kpi-card { border-left: 4px solid var(--primary); background: linear-gradient(180deg, #ffffff 0%, #F7F9FC 100%); }
+.kpi-card.kpi-danger { border-left-color: var(--danger); }
+.tool-card { background: linear-gradient(180deg, #ffffff 0%, #F7F9FC 100%); }
+
+.card, .table-card { border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card); }
+.toolbar, .level-filter-card, .report-filter-bar, .validation-toolbar {
+  background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+}
+.table-wrapper, .strat-table-wrapper { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+
+/* Bang thuong (loai tru bang chien luoc de giu mau header dac thu) */
+.data-table:not(.strategy-table) thead th {
+  background: var(--bg-muted); color: var(--text-main);
+  border-bottom: 2px solid var(--border-strong); font-weight: 700;
+}
+.data-table:not(.strategy-table) tbody td { border-bottom: 1px solid var(--border-subtle); }
+.data-table:not(.strategy-table) tbody tr:nth-child(even) { background: #EEF2F7; }
+.data-table:not(.strategy-table) tbody tr:hover { background: var(--primary-soft); }
+
+/* Badge co vien de noi tren nen */
+.tab-badge, .table-badge-count, .nav-badge, .chip-badge { border: 1px solid rgba(0,0,0,0.06); }
