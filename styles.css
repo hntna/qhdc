@@ -2637,6 +2637,17 @@ tr.row-cap-4 {
 }
 
 /* Header Groups */
+.strategy-table th.strat-th-stt {
+  background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: center;
+  width: 50px;
+}
+
 .strategy-table th.strat-th-mang {
   background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
   color: #0f172a;
@@ -2825,6 +2836,13 @@ tr.row-cap-4 {
   text-align: center;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
+}
+
+.strategy-table td.strat-cell-stt {
+  text-align: center;
+  font-weight: 700;
+  color: #64748b;
+  width: 50px;
 }
 
 .strat-cell-qhdc {

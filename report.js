@@ -183,6 +183,9 @@ function updateReportFromExtractedData(extractedData, extractedByMang) {
   };
 
   renderAllTabs();
+  if (typeof renderStrategyComparisonTable === 'function') {
+    renderStrategyComparisonTable();
+  }
 }
 
 // Hàm giải công thức tham chiếu 'TH theo DV'!ColRow

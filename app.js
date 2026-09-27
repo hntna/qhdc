@@ -3845,35 +3845,73 @@ function escapeXml(s) {
 
 // ==================== TÍNH NĂNG SO SÁNH VỚI CHIẾN LƯỢC 5 NĂM ====================
 
+const STRATEGY_ITEM_DEFS = [
+  { stt: 1, key: 'VT', name: 'Vô tuyến', badge: 'VT' },
+  { stt: 2, key: 'ML', name: 'Mạng lõi', badge: 'ML' },
+  { stt: 3, key: 'CDBR', name: 'BRCĐ-TH', badge: 'CĐBR' },
+  { stt: 4, key: 'CNTT', name: 'Công nghệ thông tin', badge: 'CNTT' },
+  { stt: 5, key: 'ATTT', name: 'An toàn thông tin', badge: 'ATTT' },
+  { stt: 6, key: 'PM', name: 'Phần mềm, công cụ', badge: 'PM' },
+  { stt: 7, key: 'VI', name: 'Ví điện tử', badge: 'Ví' },
+  { stt: 8, key: 'TD_QUANG', name: 'Truyền dẫn quang', badge: 'TD' },
+  { stt: 9, key: 'TD_IP', name: 'Truyền dẫn IP', badge: 'IP' },
+  { stt: 10, key: 'CD_TT', name: 'Cơ điện tổng trạm', badge: 'CĐ' },
+  { stt: 11, key: 'CD_BTS', name: 'Cơ điện BTS', badge: 'BTS' },
+  { stt: 12, key: 'HT', name: 'Hạ tầng', badge: 'HT' }
+];
+
 const DEFAULT_STRATEGY_DATA = {
   VT: { name: 'Vô tuyến', strat27: 37.04, strat28: 28.27 },
   ML: { name: 'Mạng lõi', strat27: 4.14, strat28: 5.15 },
   CDBR: { name: 'BRCĐ-TH', strat27: 0.95, strat28: 0.96 },
-  CNTT: { name: 'CNTT', strat27: 12.92, strat28: 5.66 },
-  TD: { name: 'Truyền dẫn', strat27: 21.02, strat28: 18.51 },
-  CD: { name: 'Cơ điện', strat27: 13.07, strat28: 26.28 },
-  HT: { name: 'Hạ tầng', strat27: 14.21, strat28: 18.04 },
-  ATTT: { name: 'ATTT', strat27: 0.58, strat28: 0.68 },
-  VI: { name: 'Ví', strat27: 7.62, strat28: 7.62 }
+  CNTT: { name: 'Công nghệ thông tin', strat27: 12.92, strat28: 5.66 },
+  ATTT: { name: 'An toàn thông tin', strat27: 0.58, strat28: 0.68 },
+  PM: { name: 'Phần mềm, công cụ', strat27: 0, strat28: 0 },
+  VI: { name: 'Ví điện tử', strat27: 7.62, strat28: 7.62 },
+  TD_QUANG: { name: 'Truyền dẫn quang', strat27: 15.00, strat28: 13.00 },
+  TD_IP: { name: 'Truyền dẫn IP', strat27: 6.02, strat28: 5.51 },
+  CD_TT: { name: 'Cơ điện tổng trạm', strat27: 8.00, strat28: 16.00 },
+  CD_BTS: { name: 'Cơ điện BTS', strat27: 5.07, strat28: 10.28 },
+  HT: { name: 'Hạ tầng', strat27: 14.21, strat28: 18.04 }
 };
 
 const STRATEGY_ROWS = [
-  { key: 'KHONG_VI', name: 'Tổng đầu tư (không gồm ví) (m$)', isTotal: true, className: 'strat-row-total-not-wallet' },
-  { key: 'TONG', name: 'Tổng đầu tư (m$)', isTotal: true, className: 'strat-row-total-all' },
-  { key: 'VT', name: 'Vô tuyến', badge: 'VT', isTotal: false },
-  { key: 'ML', name: 'Mạng lõi', badge: 'ML', isTotal: false },
-  { key: 'CDBR', name: 'BRCĐ-TH', badge: 'CĐBR', isTotal: false },
-  { key: 'CNTT', name: 'CNTT', badge: 'CNTT', isTotal: false },
-  { key: 'TD', name: 'Truyền dẫn', badge: 'TD', isTotal: false },
-  { key: 'CD', name: 'Cơ điện', badge: 'CĐ', isTotal: false },
-  { key: 'HT', name: 'Hạ tầng', badge: 'HT', isTotal: false },
-  { key: 'ATTT', name: 'ATTT', badge: 'ATTT', isTotal: false },
-  { key: 'VI', name: 'Ví', badge: 'Ví', isTotal: false }
+  { key: 'TONG', name: 'Tổng (m$)', isTotal: true, className: 'strat-row-total-all' },
+  ...STRATEGY_ITEM_DEFS.map(d => ({ ...d, isTotal: false }))
 ];
 
-const STRATEGY_ITEM_KEYS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT', 'ATTT', 'VI'];
-const STRATEGY_KHONG_VI_KEYS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT', 'ATTT'];
-const STRATEGY_TOTAL_KEYS = ['KHONG_VI', 'TONG'];
+const STRATEGY_ITEM_KEYS = STRATEGY_ITEM_DEFS.map(d => d.key);
+
+function normalizeProfileData(data) {
+  if (!data) return JSON.parse(JSON.stringify(DEFAULT_STRATEGY_DATA));
+  const res = {};
+  for (const def of STRATEGY_ITEM_DEFS) {
+    const k = def.key;
+    if (data[k]) {
+      res[k] = {
+        name: def.name,
+        strat27: parseFloat(data[k].strat27) || 0,
+        strat28: parseFloat(data[k].strat28) || 0
+      };
+    } else {
+      if (k === 'TD_QUANG' && data['TD']) {
+        res[k] = { name: def.name, strat27: parseFloat(data['TD'].strat27) || 0, strat28: parseFloat(data['TD'].strat28) || 0 };
+      } else if (k === 'TD_IP') {
+        res[k] = { name: def.name, strat27: 0, strat28: 0 };
+      } else if (k === 'CD_TT' && data['CD']) {
+        res[k] = { name: def.name, strat27: parseFloat(data['CD'].strat27) || 0, strat28: parseFloat(data['CD'].strat28) || 0 };
+      } else if (k === 'CD_BTS') {
+        res[k] = { name: def.name, strat27: 0, strat28: 0 };
+      } else if (k === 'PM') {
+        res[k] = { name: def.name, strat27: 0, strat28: 0 };
+      } else {
+        const defaultItem = DEFAULT_STRATEGY_DATA[k] || { strat27: 0, strat28: 0 };
+        res[k] = { name: def.name, strat27: defaultItem.strat27 || 0, strat28: defaultItem.strat28 || 0 };
+      }
+    }
+  }
+  return res;
+}
 
 function getNormalizedStrategyRowOrder(profile) {
   const rawOrder = Array.isArray(profile?.rowOrder) ? profile.rowOrder : STRATEGY_ITEM_KEYS;
@@ -3883,31 +3921,11 @@ function getNormalizedStrategyRowOrder(profile) {
 }
 
 function getStrategyDisplayRows(profile) {
-  const totals = STRATEGY_TOTAL_KEYS.map(key => STRATEGY_ROWS.find(row => row.key === key)).filter(Boolean);
+  const totalRow = STRATEGY_ROWS.find(row => row.key === 'TONG');
   const details = getNormalizedStrategyRowOrder(profile)
     .map(key => STRATEGY_ROWS.find(row => row.key === key))
     .filter(Boolean);
-  return [...totals, ...details];
-}
-
-function formatStratShare(part, total) {
-  if (part === null || part === undefined || total === null || total === undefined) return '';
-  const numerator = typeof part === 'number' ? part : parseFloat(part);
-  const denominator = typeof total === 'number' ? total : parseFloat(total);
-  if (isNaN(numerator) || isNaN(denominator) || Math.abs(denominator) < 0.0001) return '';
-  const pct = (numerator / denominator) * 100;
-  if (Math.abs(pct) < 0.0001) return '<span style="color: #94a3b8;">-</span>';
-  return `${pct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
-}
-
-function formatStratShareRaw(part, total) {
-  if (part === null || part === undefined || total === null || total === undefined) return '';
-  const numerator = typeof part === 'number' ? part : parseFloat(part);
-  const denominator = typeof total === 'number' ? total : parseFloat(total);
-  if (isNaN(numerator) || isNaN(denominator) || Math.abs(denominator) < 0.0001) return '';
-  const pct = (numerator / denominator) * 100;
-  if (Math.abs(pct) < 0.0001) return '-';
-  return `${pct.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+  return [totalRow, ...details];
 }
 
 // Khởi tạo các sự kiện cho tab Chiến lược 5 năm
@@ -3991,6 +4009,7 @@ async function loadStrategyProfiles() {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+        parsed.profiles.forEach(p => { p.data = normalizeProfileData(p.data); });
         state.strategyProfiles = parsed.profiles;
         state.activeStrategyProfileId = parsed.activeProfileId || parsed.profiles[0].id;
         renderStrategyProfileSelect();
@@ -4006,6 +4025,7 @@ async function loadStrategyProfiles() {
     if (resp.ok) {
       const data = await resp.json();
       if (data && Array.isArray(data.profiles) && data.profiles.length > 0) {
+        data.profiles.forEach(p => { p.data = normalizeProfileData(p.data); });
         state.strategyProfiles = data.profiles;
         state.activeStrategyProfileId = data.activeProfileId || data.profiles[0].id;
         renderStrategyProfileSelect();
@@ -4087,57 +4107,110 @@ function renderStrategyProfileSelect() {
   `).join('');
 }
 
-// Trích xuất số liệu QHĐC tự động thời gian thực (realtime) từ Masterlist
+// Trích xuất số liệu QHĐC tự động thời gian thực (realtime) từ Masterlist theo đúng công thức sheet So sanh CL
 function getQHDCDataFromMasterlist() {
-  const result = {
-    VT: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    ML: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    CDBR: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    CNTT: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    TD: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    CD: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    HT: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    ATTT: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false },
-    VI: { qhdc27: null, qhdc28: null, qhdcTong: null, hasData: false }
-  };
+  const result = {};
+  for (const k of STRATEGY_ITEM_KEYS) {
+    result[k] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: false };
+  }
 
+  // Nếu đã có báo cáo matrix TH theo DV (tính từ sheet TH theo DV row 4)
+  const thTheoDvRows = (typeof reportState !== 'undefined' && reportState.rawResponse && reportState.rawResponse.th_theo_dv) 
+    ? reportState.rawResponse.th_theo_dv 
+    : null;
+  const r04 = thTheoDvRows ? thTheoDvRows.find(r => r.id === 'R04') : null;
+
+  if (r04) {
+    // Đọc trực tiếp các giá trị từ hàng Tổng (R04) của sheet TH theo DV (đơn vị Triệu USD - M$)
+    // 1. Vô tuyến = TH theo DV!D4 (2027) & N4 (2028)
+    const vt27 = r04.y2027['VT'] || 0;
+    const vt28 = r04.y2028['VT'] || 0;
+    result['VT'] = { qhdc27: vt27, qhdc28: vt28, qhdcTong: vt27 + vt28, hasData: true };
+
+    // 2. Mạng lõi = TH theo DV!E4 (2027) & O4 (2028)
+    const ml27 = r04.y2027['ML'] || 0;
+    const ml28 = r04.y2028['ML'] || 0;
+    result['ML'] = { qhdc27: ml27, qhdc28: ml28, qhdcTong: ml27 + ml28, hasData: true };
+
+    // 3. BRCĐ-TH = TH theo DV!F4 (2027) & P4 (2028)
+    const cdbr27 = r04.y2027['CDBR'] || 0;
+    const cdbr28 = r04.y2028['CDBR'] || 0;
+    result['CDBR'] = { qhdc27: cdbr27, qhdc28: cdbr28, qhdcTong: cdbr27 + cdbr28, hasData: true };
+
+    // 4. Công nghệ thông tin = TH theo DV!G4 (2027) & Q4 (2028)
+    const cntt27 = r04.y2027['CNTT'] || 0;
+    const cntt28 = r04.y2028['CNTT'] || 0;
+    result['CNTT'] = { qhdc27: cntt27, qhdc28: cntt28, qhdcTong: cntt27 + cntt28, hasData: true };
+
+    // 5. An toàn thông tin = 0
+    result['ATTT'] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: true };
+
+    // 6. Phần mềm, công cụ = 0
+    result['PM'] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: true };
+
+    // 7. Ví điện tử = 0
+    result['VI'] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: true };
+
+    // 8. Truyền dẫn quang = TH theo DV!H4 (2027) & R4 (2028)
+    const td27 = r04.y2027['TD'] || 0;
+    const td28 = r04.y2028['TD'] || 0;
+    result['TD_QUANG'] = { qhdc27: td27, qhdc28: td28, qhdcTong: td27 + td28, hasData: true };
+
+    // 9. Truyền dẫn IP = TH theo DV!I4 (2027) & S4 (2028)
+    const ip27 = r04.y2027['IP'] || 0;
+    const ip28 = r04.y2028['IP'] || 0;
+    result['TD_IP'] = { qhdc27: ip27, qhdc28: ip28, qhdcTong: ip27 + ip28, hasData: true };
+
+    // 10. Cơ điện tổng trạm = 0
+    result['CD_TT'] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: true };
+
+    // 11. Cơ điện BTS = 0
+    result['CD_BTS'] = { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: true };
+
+    // 12. Hạ tầng = TH theo DV!K4 (2027) & U4 (2028)
+    const ht27 = r04.y2027['HT'] || 0;
+    const ht28 = r04.y2028['HT'] || 0;
+    result['HT'] = { qhdc27: ht27, qhdc28: ht28, qhdcTong: ht27 + ht28, hasData: true };
+
+    return result;
+  }
+
+  // Fallback: Tính trực tiếp từ state.extractedData nếu chưa nạp/tính reportState
   if (!state.extractedData || state.extractedData.length === 0) {
     return result;
   }
 
-  const totals = {
-    VT: { tt27: 0, tt28: 0, count: 0 },
-    ML: { tt27: 0, tt28: 0, count: 0 },
-    CDBR: { tt27: 0, tt28: 0, count: 0 },
-    CNTT: { tt27: 0, tt28: 0, count: 0 },
-    TD: { tt27: 0, tt28: 0, count: 0 },
-    CD: { tt27: 0, tt28: 0, count: 0 },
-    HT: { tt27: 0, tt28: 0, count: 0 },
-    ATTT: { tt27: 0, tt28: 0, count: 0 },
-    VI: { tt27: 0, tt28: 0, count: 0 }
-  };
+  const totals = {};
+  for (const k of STRATEGY_ITEM_KEYS) {
+    totals[k] = { tt27: 0, tt28: 0, count: 0 };
+  }
 
-  // Quét qua các dòng chi tiết trong state.extractedData
   for (const item of state.extractedData) {
     if (item.isMangHeader || item.isGroup) continue;
 
-    let targetKey = item.mangCode;
-    if (!targetKey) continue;
+    const m = (typeof normMangCode === 'function')
+      ? normMangCode(item.maMang || item.ma_mang || item.mangCode || item.mang)
+      : item.mangCode;
+    if (!m) continue;
 
-    // Tách riêng nhánh CNTT thành VI, ATTT, CNTT
-    if (targetKey === 'CNTT') {
-      const ma = (item.maMang || '').toUpperCase();
+    let targetKey = null;
+    if (m === 'VT') targetKey = 'VT';
+    else if (m === 'ML') targetKey = 'ML';
+    else if (m === 'CDBR') targetKey = 'CDBR';
+    else if (m === 'CNTT') targetKey = 'CNTT';
+    else if (m === 'IP') targetKey = 'TD_IP';
+    else if (m === 'TD') {
+      const ma = (item.maMang || item.ma_mang || '').toUpperCase();
       const nd = (item.nd || '').toUpperCase();
-      if (ma.includes('VI') || ma.includes('VÍ') || nd.includes('VÍ') || nd.includes('VI DIEN TU')) {
-        targetKey = 'VI';
-      } else if (ma.includes('ATTT') || nd.includes('ATTT') || nd.includes('AN TOÀN THÔNG TIN')) {
-        targetKey = 'ATTT';
+      const madv = (item.maDV || item.ma_dv || '').toUpperCase();
+      if (ma.includes('IP') || madv.includes('IP') || nd.includes('TRUYỀN DẪN IP')) {
+        targetKey = 'TD_IP';
       } else {
-        targetKey = 'CNTT';
+        targetKey = 'TD_QUANG';
       }
-    }
+    } else if (m === 'HT') targetKey = 'HT';
 
-    if (totals[targetKey]) {
+    if (targetKey && totals[targetKey]) {
       const val27 = (typeof item.tt27 === 'number' && !isNaN(item.tt27)) ? item.tt27 : ((item.kl27 && item.dg) ? item.kl27 * item.dg : 0);
       const val28 = (typeof item.tt28 === 'number' && !isNaN(item.tt28)) ? item.tt28 : ((item.kl28 && item.dg) ? item.kl28 * item.dg : 0);
       totals[targetKey].count++;
@@ -4146,19 +4219,15 @@ function getQHDCDataFromMasterlist() {
     }
   }
 
-  // Đổi từ USD sang Triệu USD (M$)
-  for (const k of Object.keys(totals)) {
-    const fileLoaded = (k === 'VI' || k === 'ATTT') ? !!state.files['CNTT'] : !!state.files[k];
-    if (fileLoaded && totals[k].count > 0) {
-      const q27 = Math.round((totals[k].tt27 / 1000000) * 100) / 100;
-      const q28 = Math.round((totals[k].tt28 / 1000000) * 100) / 100;
-      result[k] = {
-        qhdc27: q27,
-        qhdc28: q28,
-        qhdcTong: Math.round((q27 + q28) * 100) / 100,
-        hasData: true
-      };
-    }
+  for (const k of STRATEGY_ITEM_KEYS) {
+    const q27 = Math.round((totals[k].tt27 / 1000000) * 100) / 100;
+    const q28 = Math.round((totals[k].tt28 / 1000000) * 100) / 100;
+    result[k] = {
+      qhdc27: q27,
+      qhdc28: q28,
+      qhdcTong: Math.round((q27 + q28) * 100) / 100,
+      hasData: true
+    };
   }
 
   return result;
@@ -4167,30 +4236,29 @@ function getQHDCDataFromMasterlist() {
 // Tính toán toàn bộ các giá trị của bảng so sánh (QHĐC realtime từ Masterlist, không sửa được; Chiến lược nhập theo Profile)
 function computeStrategyTableData(profile) {
   if (!profile || !profile.data) return null;
-  const data = profile.data;
+  const data = normalizeProfileData(profile.data);
   const qhdcLive = getQHDCDataFromMasterlist();
 
-  // 1. Tính toán cho 9 mảng nghiệp vụ
+  // 1. Tính toán cho 12 mục
   const rowData = {};
+  let totalS27 = 0, totalS28 = 0, totalSTong = 0;
+  let totalQ27 = 0, totalQ28 = 0, totalQTong = 0;
+
   for (const k of STRATEGY_ITEM_KEYS) {
     const item = data[k] || { name: k, strat27: 0, strat28: 0 };
-    const q = qhdcLive[k];
+    const q = qhdcLive[k] || { qhdc27: 0, qhdc28: 0, qhdcTong: 0, hasData: false };
 
     const s27 = parseFloat(item.strat27) || 0;
     const s28 = parseFloat(item.strat28) || 0;
-    const sTong = s27 + s28;
+    const sTong = Math.round((s27 + s28) * 100) / 100;
 
-    let qTong = null, q27 = null, q28 = null;
-    let dTong = null, d27 = null, d28 = null;
+    const q27 = (q && q.hasData && q.qhdc27 !== null) ? q.qhdc27 : 0;
+    const q28 = (q && q.hasData && q.qhdc28 !== null) ? q.qhdc28 : 0;
+    const qTong = Math.round((q27 + q28) * 100) / 100;
 
-    if (q && q.hasData) {
-      q27 = q.qhdc27;
-      q28 = q.qhdc28;
-      qTong = q.qhdcTong;
-      dTong = qTong - sTong;
-      d27 = q27 - s27;
-      d28 = q28 - s28;
-    }
+    const d27 = Math.round((q27 - s27) * 100) / 100;
+    const d28 = Math.round((q28 - s28) * 100) / 100;
+    const dTong = Math.round((qTong - sTong) * 100) / 100;
 
     rowData[k] = {
       hasQHDC: !!(q && q.hasData),
@@ -4198,70 +4266,40 @@ function computeStrategyTableData(profile) {
       stratTong: sTong, strat27: s27, strat28: s28,
       diffTong: dTong, diff27: d27, diff28: d28
     };
+
+    totalS27 += s27;
+    totalS28 += s28;
+    totalSTong += sTong;
+
+    totalQ27 += q27;
+    totalQ28 += q28;
+    totalQTong += qTong;
   }
 
-  // 2. Dòng 1: Tổng đầu tư (không gồm ví) (m$)
-  let kv_s27 = 0, kv_s28 = 0;
-  let kv_q27 = 0, kv_q28 = 0, hasAnyKV = false;
+  // 2. Dòng Tổng (m$) = Row 3 trong Excel: SUBTOTAL(9, ...)
+  totalS27 = Math.round(totalS27 * 100) / 100;
+  totalS28 = Math.round(totalS28 * 100) / 100;
+  totalSTong = Math.round(totalSTong * 100) / 100;
 
-  for (const k of STRATEGY_KHONG_VI_KEYS) {
-    kv_s27 += rowData[k].strat27;
-    kv_s28 += rowData[k].strat28;
-    if (rowData[k].hasQHDC) {
-      hasAnyKV = true;
-      kv_q27 += rowData[k].qhdc27;
-      kv_q28 += rowData[k].qhdc28;
-    }
-  }
+  totalQ27 = Math.round(totalQ27 * 100) / 100;
+  totalQ28 = Math.round(totalQ28 * 100) / 100;
+  totalQTong = Math.round(totalQTong * 100) / 100;
 
-  const kv_sTong = kv_s27 + kv_s28;
-  let kv_qTong = null, kv_dTong = null, kv_d27 = null, kv_d28 = null;
-
-  if (hasAnyKV) {
-    kv_qTong = kv_q27 + kv_q28;
-    kv_dTong = kv_qTong - kv_sTong;
-    kv_d27 = kv_q27 - kv_s27;
-    kv_d28 = kv_q28 - kv_s28;
-  }
-
-  rowData['KHONG_VI'] = {
-    hasQHDC: hasAnyKV,
-    qhdcTong: kv_qTong, qhdc27: hasAnyKV ? kv_q27 : null, qhdc28: hasAnyKV ? kv_q28 : null,
-    stratTong: kv_sTong, strat27: kv_s27, strat28: kv_s28,
-    diffTong: kv_dTong, diff27: kv_d27, diff28: kv_d28
-  };
-
-  // 3. Dòng 2: Tổng đầu tư (m$) = Không ví + Ví
-  const vi = rowData['VI'];
-  const t_s27 = kv_s27 + vi.strat27;
-  const t_s28 = kv_s28 + vi.strat28;
-  const t_sTong = t_s27 + t_s28;
-
-  let t_q27 = null, t_q28 = null, t_qTong = null;
-  let t_dTong = null, t_d27 = null, t_d28 = null;
-  const hasAnyTotal = hasAnyKV || vi.hasQHDC;
-
-  if (hasAnyTotal) {
-    t_q27 = (hasAnyKV ? kv_q27 : 0) + (vi.hasQHDC ? vi.qhdc27 : 0);
-    t_q28 = (hasAnyKV ? kv_q28 : 0) + (vi.hasQHDC ? vi.qhdc28 : 0);
-    t_qTong = t_q27 + t_q28;
-    t_dTong = t_qTong - t_sTong;
-    t_d27 = t_q27 - t_s27;
-    t_d28 = t_q28 - t_s28;
-  }
+  const totalD27 = Math.round((totalQ27 - totalS27) * 100) / 100;
+  const totalD28 = Math.round((totalQ28 - totalS28) * 100) / 100;
+  const totalDTong = Math.round((totalQTong - totalSTong) * 100) / 100;
 
   rowData['TONG'] = {
-    hasQHDC: hasAnyTotal,
-    qhdcTong: t_qTong, qhdc27: t_q27, qhdc28: t_q28,
-    stratTong: t_sTong, strat27: t_s27, strat28: t_s28,
-    diffTong: t_dTong, diff27: t_d27, diff28: t_d28
+    hasQHDC: true,
+    qhdcTong: totalQTong, qhdc27: totalQ27, qhdc28: totalQ28,
+    stratTong: totalSTong, strat27: totalS27, strat28: totalS28,
+    diffTong: totalDTong, diff27: totalD27, diff28: totalD28
   };
 
   return rowData;
 }
 
-// Định dạng số hiển thị trong bảng (Chuẩn theo hình ảnh: Viettel Red #EE0033, số căn giữa, Chênh lệch có dấu + và -, không có dữ liệu để trống)
-// Định dạng số hiển thị trong bảng (Chuẩn SaaS hiện đại, số căn giữa, Chênh lệch có tag xanh/đỏ rõ ràng)
+// Định dạng số hiển thị trong bảng
 function formatStratCell(val, isDiff = false) {
   if (val === null || val === undefined) return '';
   const num = typeof val === 'number' ? val : parseFloat(val);
@@ -4296,14 +4334,14 @@ function formatStratRaw(val, isDiff = false) {
   return num < 0 ? `-${formatted}` : formatted;
 }
 
-// Render toàn bộ bảng so sánh chiến lược
+// Render toàn bộ bảng so sánh chiến lược (11 cột chuẩn sheet So sanh CL)
 function renderStrategyComparisonTable() {
   const tbody = document.getElementById('strategyTableBody');
   if (!tbody) return;
 
   const profile = getActiveStrategyProfile();
   if (!profile) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 2.5rem; color: #94a3b8;">Chưa có dữ liệu Profile</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 2.5rem; color: #94a3b8;">Chưa có dữ liệu Profile</td></tr>`;
     return;
   }
 
@@ -4311,26 +4349,22 @@ function renderStrategyComparisonTable() {
   let html = '';
   const rows = getStrategyDisplayRows(profile);
   const order = getNormalizedStrategyRowOrder(profile);
-  const totalRow = computed['TONG'] || {};
 
   for (const r of rows) {
     const c = computed[r.key];
-    const itemData = profile.data[r.key] || {};
+    if (!c) continue;
     const trClass = r.className ? `class="${r.className}"` : '';
-    const qhdcShare = formatStratShare(c.qhdcTong, totalRow.qhdcTong);
-    const stratShare = formatStratShare(c.stratTong, totalRow.stratTong);
 
     if (r.isTotal) {
-      // Dòng Tổng 1 & 2: các ô đều tính tự động
+      // Dòng Tổng (m$): Row 3 trong Excel
       html += `
         <tr ${trClass}>
+          <td class="strat-cell-stt" style="font-weight: 800;"></td>
           <td class="strat-cell-mang-total">${escapeHtml(r.name)}</td>
           <td id="strat_cell_${r.key}_qhdcTong" class="strat-cell-qhdc" style="font-weight: 800;">${formatStratCell(c.qhdcTong)}</td>
-          <td id="strat_cell_${r.key}_qhdcShare" class="strat-cell-share strat-cell-qhdc" style="font-weight: 800;">${qhdcShare}</td>
           <td id="strat_cell_${r.key}_qhdc27" class="strat-cell-qhdc" style="font-weight: 800;">${formatStratCell(c.qhdc27)}</td>
           <td id="strat_cell_${r.key}_qhdc28" class="strat-cell-qhdc strat-border-group-right" style="font-weight: 800;">${formatStratCell(c.qhdc28)}</td>
           <td id="strat_cell_${r.key}_stratTong" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.stratTong)}</td>
-          <td id="strat_cell_${r.key}_stratShare" class="strat-cell-share" style="font-weight: 800; color: #5b21b6;">${stratShare}</td>
           <td id="strat_cell_${r.key}_strat27" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.strat27)}</td>
           <td id="strat_cell_${r.key}_strat28" class="strat-border-group-right" style="font-weight: 800; color: #5b21b6;">${formatStratCell(c.strat28)}</td>
           <td id="strat_cell_${r.key}_diffTong" style="font-weight: 800;">${formatStratCell(c.diffTong, true)}</td>
@@ -4339,17 +4373,14 @@ function renderStrategyComparisonTable() {
         </tr>
       `;
     } else {
-      // Các dòng mảng chi tiết (VT, ML, CDBR, CNTT, TD, CD, HT, ATTT, VI):
-      // QHĐC: Lấy thời gian thực từ Masterlist, CỐ ĐỊNH KHÔNG CHO SỬA (chỉ hiển thị text)
-      // Chiến lược: Cho phép nhập/sửa theo Profile kịch bản
-      const valS27 = (itemData.strat27 !== undefined && itemData.strat27 !== null) ? itemData.strat27 : '';
-      const valS28 = (itemData.strat28 !== undefined && itemData.strat28 !== null) ? itemData.strat28 : '';
+      // 12 Dòng chi tiết (VT, ML, CDBR, CNTT, ATTT, PM, VI, TD_QUANG, TD_IP, CD_TT, CD_BTS, HT)
       const rowIndex = order.indexOf(r.key);
       const canMoveUp = rowIndex > 0;
       const canMoveDown = rowIndex >= 0 && rowIndex < order.length - 1;
 
       html += `
         <tr ${trClass}>
+          <td class="strat-cell-stt">${r.stt}</td>
           <td class="strat-cell-mang">
             <div class="strat-row-label-wrap">
               <span>${escapeHtml(r.name)}</span>
@@ -4364,11 +4395,9 @@ function renderStrategyComparisonTable() {
             </div>
           </td>
           <td id="strat_cell_${r.key}_qhdcTong" class="strat-cell-qhdc" style="font-weight: 700;">${formatStratCell(c.qhdcTong)}</td>
-          <td id="strat_cell_${r.key}_qhdcShare" class="strat-cell-share strat-cell-qhdc">${qhdcShare}</td>
           <td id="strat_cell_${r.key}_qhdc27" class="strat-cell-qhdc">${formatStratCell(c.qhdc27)}</td>
           <td id="strat_cell_${r.key}_qhdc28" class="strat-cell-qhdc strat-border-group-right">${formatStratCell(c.qhdc28)}</td>
           <td id="strat_cell_${r.key}_stratTong" class="strat-cell-strat" style="font-weight: 700;">${formatStratCell(c.stratTong)}</td>
-          <td id="strat_cell_${r.key}_stratShare" class="strat-cell-share strat-cell-strat">${stratShare}</td>
           <td id="strat_cell_${r.key}_strat27" class="strat-cell-strat">${formatStratCell(c.strat27)}</td>
           <td id="strat_cell_${r.key}_strat28" class="strat-cell-strat strat-border-group-right">${formatStratCell(c.strat28)}</td>
           <td id="strat_cell_${r.key}_diffTong">${formatStratCell(c.diffTong, true)}</td>
@@ -4388,49 +4417,44 @@ function updateCalculatedCells() {
   const profile = getActiveStrategyProfile();
   if (!profile) return;
   const computed = computeStrategyTableData(profile);
-  const totalRow = computed['TONG'] || {};
 
   for (const r of STRATEGY_ROWS) {
     const c = computed[r.key];
+    if (!c) continue;
     const setCell = (id, html) => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
     };
 
     setCell(`strat_cell_${r.key}_qhdcTong`, formatStratCell(c.qhdcTong));
-    setCell(`strat_cell_${r.key}_qhdcShare`, formatStratShare(c.qhdcTong, totalRow.qhdcTong));
     setCell(`strat_cell_${r.key}_qhdc27`, formatStratCell(c.qhdc27));
     setCell(`strat_cell_${r.key}_qhdc28`, formatStratCell(c.qhdc28));
     setCell(`strat_cell_${r.key}_stratTong`, formatStratCell(c.stratTong));
-    setCell(`strat_cell_${r.key}_stratShare`, formatStratShare(c.stratTong, totalRow.stratTong));
+    setCell(`strat_cell_${r.key}_strat27`, formatStratCell(c.strat27));
+    setCell(`strat_cell_${r.key}_strat28`, formatStratCell(c.strat28));
     setCell(`strat_cell_${r.key}_diffTong`, formatStratCell(c.diffTong, true));
     setCell(`strat_cell_${r.key}_diff27`, formatStratCell(c.diff27, true));
     setCell(`strat_cell_${r.key}_diff28`, formatStratCell(c.diff28, true));
-
-    if (r.isTotal) {
-      setCell(`strat_cell_${r.key}_strat27`, formatStratCell(c.strat27));
-      setCell(`strat_cell_${r.key}_strat28`, formatStratCell(c.strat28));
-    }
   }
 }
 
-// Sao chép bảng so sánh sang Clipboard (Excel định dạng thanh lịch, hiện đại)
+// Sao chép bảng so sánh sang Clipboard (Excel 11 cột chuẩn file mẫu)
 async function copyStrategyTableToClipboard() {
   const profile = getActiveStrategyProfile();
   if (!profile) return;
 
   const computed = computeStrategyTableData(profile);
   const rows = getStrategyDisplayRows(profile);
-  const totalRow = computed['TONG'] || {};
 
   let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>SoSanhChienLuoc5Nam</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>So sanh CL</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
 <style>
   table { border-collapse: collapse; font-family: Calibri, 'Segoe UI', Arial, sans-serif; font-size: 10pt; }
   th { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: center; font-weight: bold; }
   td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; }
+  .th-stt { background-color: #f1f5f9; color: #0f172a; width: 40px; text-align: center; }
   .th-mang { background-color: #f1f5f9; color: #0f172a; text-align: left; padding-left: 10px; }
   .th-qhdc { background-color: #dbeafe; color: #1e40af; }
   .th-strat { background-color: #ede9fe; color: #5b21b6; }
@@ -4442,33 +4466,35 @@ async function copyStrategyTableToClipboard() {
 <table>
 <thead>
   <tr>
-    <th rowspan="2" class="th-mang">Mảng nghiệp vụ</th>
-    <th colspan="4" class="th-qhdc" style="border-right: 2px solid #94a3b8;">QHĐC 2027-2028 (M$)</th>
-    <th colspan="4" class="th-strat" style="border-right: 2px solid #94a3b8;">CHIẾN LƯỢC 5 NĂM (M$)</th>
+    <th rowspan="2" class="th-stt">STT</th>
+    <th rowspan="2" class="th-mang">MẢNG / LĨNH VỰC</th>
+    <th colspan="3" class="th-qhdc" style="border-right: 2px solid #94a3b8;">QHĐC 2027-2028 (M$)</th>
+    <th colspan="3" class="th-strat" style="border-right: 2px solid #94a3b8;">CHIẾN LƯỢC 5 NĂM (M$)</th>
     <th colspan="3" class="th-diff">CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (M$)</th>
   </tr>
   <tr>
-    <th class="th-qhdc">Tổng</th>
-    <th class="th-qhdc">Tỉ trọng</th>
+    <th class="th-qhdc">TỔNG</th>
     <th class="th-qhdc">2027</th>
     <th class="th-qhdc" style="border-right: 2px solid #94a3b8;">2028</th>
-    <th class="th-strat">Tổng</th>
-    <th class="th-strat">Tỉ trọng</th>
+    <th class="th-strat">TỔNG</th>
     <th class="th-strat">2027</th>
     <th class="th-strat" style="border-right: 2px solid #94a3b8;">2028</th>
-    <th class="th-diff">Tổng</th>
+    <th class="th-diff">TỔNG</th>
     <th class="th-diff">2027</th>
     <th class="th-diff">2028</th>
   </tr>
 </thead>
 <tbody>`;
 
-  let tsv = "Mảng\tQHĐC Tổng\tQHĐC Tỉ trọng\tQHĐC 2027\tQHĐC 2028\tChiến lược Tổng\tChiến lược Tỉ trọng\tChiến lược 2027\tChiến lược 2028\tChênh lệch Tổng\tChênh lệch 2027\tChênh lệch 2028\r\n";
+  let tsv = "STT\tMẢNG / LĨNH VỰC\tQHĐC TỔNG\tQHĐC 2027\tQHĐC 2028\tCHIẾN LƯỢC TỔNG\tCHIẾN LƯỢC 2027\tCHIẾN LƯỢC 2028\tCHÊNH LỆCH TỔNG\tCHÊNH LỆCH 2027\tCHÊNH LỆCH 2028\r\n";
 
   for (const r of rows) {
     const c = computed[r.key];
+    if (!c) continue;
     const bold = r.isTotal ? 'font-weight: bold;' : '';
     const rowBg = r.isTotal ? 'background-color: #f8fafc;' : 'background-color: #ffffff;';
+    const sttVal = r.isTotal ? '' : (r.stt || '');
+    const sttStyle = `${rowBg} color: #64748b; font-weight: bold; text-align: center; border: 1px solid #cbd5e1; width: 40px;`;
     const mangStyle = r.isTotal
       ? `background-color: #f1f5f9; color: #0f172a; font-weight: bold; text-align: left; padding: 6px 10px; border: 1px solid #cbd5e1;`
       : `background-color: #ffffff; color: #1e293b; font-weight: bold; text-align: left; padding-left: 12px; border: 1px solid #cbd5e1; padding: 5px 8px;`;
@@ -4482,13 +4508,12 @@ async function copyStrategyTableToClipboard() {
 
     html += `
       <tr>
+        <td style="${sttStyle}">${sttVal}</td>
         <td style="${mangStyle}">${escapeHtml(r.name)}</td>
         <td style="${tdBase} color: #0369a1;">${formatStratRaw(c.qhdcTong)}</td>
-        <td style="${tdBase} color: #0369a1;">${formatStratShareRaw(c.qhdcTong, totalRow.qhdcTong)}</td>
         <td style="${tdBase} color: #0369a1;">${formatStratRaw(c.qhdc27)}</td>
         <td style="${tdDivider} color: #0369a1;">${formatStratRaw(c.qhdc28)}</td>
         <td style="${tdBase} color: #5b21b6;">${formatStratRaw(c.stratTong)}</td>
-        <td style="${tdBase} color: #5b21b6;">${formatStratShareRaw(c.stratTong, totalRow.stratTong)}</td>
         <td style="${tdBase} color: #5b21b6;">${formatStratRaw(c.strat27)}</td>
         <td style="${tdDivider} color: #5b21b6;">${formatStratRaw(c.strat28)}</td>
         <td style="${tdBase} ${diffTongColor}">${formatStratRaw(c.diffTong, true)}</td>
@@ -4497,7 +4522,7 @@ async function copyStrategyTableToClipboard() {
       </tr>
     `;
 
-    tsv += `${r.name}\t${formatStratRaw(c.qhdcTong)}\t${formatStratShareRaw(c.qhdcTong, totalRow.qhdcTong)}\t${formatStratRaw(c.qhdc27)}\t${formatStratRaw(c.qhdc28)}\t${formatStratRaw(c.stratTong)}\t${formatStratShareRaw(c.stratTong, totalRow.stratTong)}\t${formatStratRaw(c.strat27)}\t${formatStratRaw(c.strat28)}\t${formatStratRaw(c.diffTong, true)}\t${formatStratRaw(c.diff27, true)}\t${formatStratRaw(c.diff28, true)}\r\n`;
+    tsv += `${sttVal}\t${r.name}\t${formatStratRaw(c.qhdcTong)}\t${formatStratRaw(c.qhdc27)}\t${formatStratRaw(c.qhdc28)}\t${formatStratRaw(c.stratTong)}\t${formatStratRaw(c.strat27)}\t${formatStratRaw(c.strat28)}\t${formatStratRaw(c.diffTong, true)}\t${formatStratRaw(c.diff27, true)}\t${formatStratRaw(c.diff28, true)}\r\n`;
   }
 
   html += `</tbody></table></body></html>`;
@@ -4622,6 +4647,9 @@ function renderModalProfileTable(data) {
 
     html += `
       <tr>
+        <td style="padding: 0.5rem 0.5rem; font-weight: 700; color: #64748b; text-align: center;">
+          ${r.stt}
+        </td>
         <td style="padding: 0.5rem 0.85rem; font-weight: 600; color: #1e293b; text-align: left;">
           ${escapeHtml(r.name)}
         </td>
@@ -4638,16 +4666,11 @@ function renderModalProfileTable(data) {
     `;
   }
 
-  // 2 Dòng tổng tính toán tự động
+  // 1 Dòng tổng tính toán tự động
   html += `
-    <tr style="background: #f8fafc; font-weight: 800; border-top: 2px solid #cbd5e1;">
-      <td style="padding: 0.5rem 0.75rem; color: #0f172a;">Tổng đầu tư (không gồm ví)</td>
-      <td id="modal_total_kv_27" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.45rem;">0.00</td>
-      <td id="modal_total_kv_28" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.45rem;">0.00</td>
-      <td id="modal_total_kv_tong" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.6rem;">0.00</td>
-    </tr>
-    <tr style="background: #f1f5f9; font-weight: 800; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
-      <td style="padding: 0.5rem 0.75rem; color: #0f172a;">Tổng đầu tư (m$)</td>
+    <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid #cbd5e1; border-bottom: 2px solid #94a3b8;">
+      <td style="padding: 0.5rem 0.5rem; text-align: center;"></td>
+      <td style="padding: 0.5rem 0.75rem; color: #0f172a;">Tổng (m$)</td>
       <td id="modal_total_all_27" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.45rem;">0.00</td>
       <td id="modal_total_all_28" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.45rem;">0.00</td>
       <td id="modal_total_all_tong" style="text-align: center; font-family: 'JetBrains Mono', monospace; color: #5b21b6; padding: 0.5rem 0.6rem;">0.00</td>
@@ -4671,7 +4694,6 @@ function updateModalProfileCalculations() {
   if (!tbody) return;
 
   const itemRows = STRATEGY_ROWS.filter(r => !r.isTotal);
-  let kv27 = 0, kv28 = 0;
   let all27 = 0, all28 = 0;
 
   for (const r of itemRows) {
@@ -4684,17 +4706,9 @@ function updateModalProfileCalculations() {
     const sumEl = document.getElementById(`modal_row_sum_${r.key}`);
     if (sumEl) sumEl.textContent = formatStratRaw(rowSum);
 
-    if (r.key !== 'VI') {
-      kv27 += val27;
-      kv28 += val28;
-    }
     all27 += val27;
     all28 += val28;
   }
-
-  kv27 = Math.round(kv27 * 100) / 100;
-  kv28 = Math.round(kv28 * 100) / 100;
-  const kvTong = Math.round((kv27 + kv28) * 100) / 100;
 
   all27 = Math.round(all27 * 100) / 100;
   all28 = Math.round(all28 * 100) / 100;
@@ -4704,10 +4718,6 @@ function updateModalProfileCalculations() {
     const el = document.getElementById(id);
     if (el) el.textContent = formatStratRaw(val);
   };
-
-  setEl('modal_total_kv_27', kv27);
-  setEl('modal_total_kv_28', kv28);
-  setEl('modal_total_kv_tong', kvTong);
 
   setEl('modal_total_all_27', all27);
   setEl('modal_total_all_28', all28);
