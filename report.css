@@ -310,14 +310,14 @@ table.data-table.report-dt thead {
 
 .report-table th,
 table.data-table.report-dt th {
-  background: #f1f6fd;
-  color: #334155;
+  background: #1e293b;
+  color: #ffffff;
   font-weight: 800;
   letter-spacing: 0.03em;
   font-size: 0.8rem;
   text-transform: uppercase;
-  border-bottom: 1.5px solid #cbd5e1;
-  border-right: 1px solid var(--border-subtle, #e2e8f0);
+  border-bottom: 2px solid #0f172a;
+  border-right: 1px solid #334155;
   padding: 6px 10px;
   white-space: nowrap;
   vertical-align: middle;
@@ -330,13 +330,13 @@ table.data-table.report-dt th:last-child {
 
 .report-table td,
 table.data-table.report-dt td {
-  border-bottom: 1px solid #f1f5f9;
-  border-right: 1px solid #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  border-right: 1px solid #cbd5e1;
   padding: 5px 10px;
   line-height: 1.35;
   white-space: nowrap;
   vertical-align: middle;
-  color: var(--text-main, #141821);
+  color: var(--text-main, #0f172a);
 }
 
 .report-table td:last-child,
@@ -351,12 +351,12 @@ table.data-table.report-dt tbody tr:nth-child(odd) {
 
 .report-table tbody tr:nth-child(even),
 table.data-table.report-dt tbody tr:nth-child(even) {
-  background-color: #FCFCFD;
+  background-color: #f8fafc;
 }
 
 .report-table tbody tr:hover,
 table.data-table.report-dt tbody tr:hover {
-  background-color: var(--primary-soft) !important;
+  background-color: #eff6ff !important;
 }
 
 /* Number formatting */
@@ -373,7 +373,7 @@ table.data-table.report-dt tbody tr:hover {
 }
 
 .col-27 {
-  color: var(--primary);
+  color: var(--primary, #2563eb);
   font-weight: 700;
 }
 
@@ -389,33 +389,35 @@ table.data-table.report-dt tbody tr:hover {
 
 /* Distinct Row Types */
 .row-section-header td {
-  background: #eef2ff !important;
-  color: #312e81 !important;
+  background: #dbeafe !important;
+  color: #1e3a8a !important;
   font-weight: 800;
-  border-top: 1.5px solid #c7d2fe;
-  border-bottom: 1.5px solid #c7d2fe;
-  font-size: 0.825rem;
+  border-top: 2px solid #2563eb;
+  border-bottom: 2px solid #2563eb;
+  font-size: 0.84rem;
 }
 
 .row-total-table td {
-  background: #ecfdf5 !important;
-  color: #065f46 !important;
+  background: #dcfce7 !important;
+  color: #064e3b !important;
   font-weight: 800;
-  border-top: 2px solid #6ee7b7;
-  border-bottom: 2px solid #6ee7b7;
-  font-size: 0.875rem;
+  border-top: 2.5px solid #059669;
+  border-bottom: 2px solid #059669;
+  font-size: 0.88rem;
 }
 
 .row-subtotal-item td {
   background: #f1f5f9 !important;
   font-weight: 700;
-  color: #1e293b;
+  color: #0f172a;
+  border-top: 1px solid #94a3b8;
+  border-bottom: 1px solid #94a3b8;
 }
 
 .row-sub-item td.col-mang,
 .row-sub-item td.cell-nd {
   padding-left: 28px !important;
-  color: #475569;
+  color: #334155;
   font-size: 0.825rem;
 }
 
@@ -586,24 +588,105 @@ table.data-table.report-dt tbody tr:hover {
   position: sticky;
   top: 0;
   z-index: 31;
-  padding: 0.4rem 0.35rem;
+  padding: 0.45rem 0.4rem;
   text-align: center;
   font-weight: 800;
   font-size: 0.82rem;
   letter-spacing: 0.02em;
 }
 
+#tableTHTheoDV thead th.col-sticky-stt,
+#tableTHTheoDV thead th.col-sticky-nd,
+#tableTHTheoDV thead th.col-sticky-madv {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 1px solid #334155 !important;
+  border-bottom: 2px solid #0f172a !important;
+  z-index: 36 !important;
+}
+
 #tableTHTheoDV thead tr:nth-child(2) th {
   position: sticky;
   top: 29px;
   z-index: 30;
-  padding: 0.32rem 0.3rem;
+  padding: 0.35rem 0.35rem;
   text-align: right;
   font-weight: 700;
-  font-size: 0.785rem;
-  background: #f1f5f9;
-  border-bottom: 2px solid #94a3b8;
-  border-right: 1px solid #cbd5e1;
+  font-size: 0.77rem;
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-bottom: 2.5px solid #0f172a !important;
+  border-right: 1px solid #334155 !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2027.col-tot {
+  background: #1e40af !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 1px solid #3b82f6 !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2027.period-sep {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 2.5px solid #0f172a !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2028.col-tot {
+  background: #065f46 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 1px solid #10b981 !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2028.period-sep {
+  background: #059669 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 2.5px solid #0f172a !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-tot.col-tot {
+  background: #5b21b6 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-right: 1px solid #8b5cf6 !important;
+}
+
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-tot:last-child {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  font-weight: 800;
+}
+
+/* Header Group Colors */
+.grp-2027 {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-bottom: 2px solid #1e40af !important;
+  border-right: 2.5px solid #0f172a !important;
+  text-align: center;
+}
+
+.grp-2028 {
+  background: #047857 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-bottom: 2px solid #065f46 !important;
+  border-right: 2.5px solid #0f172a !important;
+  text-align: center;
+}
+
+.grp-tot {
+  background: #6d28d9 !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  border-bottom: 2px solid #5b21b6 !important;
+  border-right: 2px solid #cbd5e1 !important;
+  text-align: center;
 }
 
 /* Frozen Sticky Columns (Chỉ áp dụng khi xem Tất cả 33 cột cần cuộn ngang) */
@@ -638,19 +721,7 @@ table.data-table.report-dt tbody tr:hover {
   box-shadow: 3px 0 6px -2px rgba(15, 23, 42, 0.12);
 }
 
-/* Backgrounds for sticky columns */
-#tableTHTheoDV thead th.col-sticky-stt,
-#tableTHTheoDV thead th.col-sticky-nd,
-#tableTHTheoDV thead th.col-sticky-madv {
-  background: #e2e8f0 !important;
-  z-index: 35 !important;
-  border-right: 1px solid #cbd5e1;
-}
-
-#tableTHTheoDV thead th.col-sticky-madv {
-  box-shadow: 3px 0 6px -2px rgba(15, 23, 42, 0.15);
-}
-
+/* Backgrounds for sticky columns in tbody */
 #tableTHTheoDV tbody td.col-sticky-stt,
 #tableTHTheoDV tbody td.col-sticky-nd,
 #tableTHTheoDV tbody td.col-sticky-madv {
@@ -668,59 +739,10 @@ table.data-table.report-dt tbody tr:hover {
 #tableTHTheoDV tbody tr:hover td.col-sticky-stt,
 #tableTHTheoDV tbody tr:hover td.col-sticky-nd,
 #tableTHTheoDV tbody tr:hover td.col-sticky-madv {
-  background: var(--primary-soft) !important;
+  background: #eff6ff !important;
 }
 
-#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-stt,
-#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-nd,
-#tableTHTheoDV tbody tr.row-grand-total td.col-sticky-madv {
-  background: #ecfdf5 !important;
-  z-index: 16;
-}
-
-#tableTHTheoDV tbody tr.row-share-header td.col-sticky-stt,
-#tableTHTheoDV tbody tr.row-share-header td.col-sticky-nd,
-#tableTHTheoDV tbody tr.row-share-header td.col-sticky-madv {
-  background: #f0fdf4 !important;
-  z-index: 16;
-}
-
-#tableTHTheoDV tbody tr.row-group td.col-sticky-stt,
-#tableTHTheoDV tbody tr.row-group td.col-sticky-nd,
-#tableTHTheoDV tbody tr.row-group td.col-sticky-madv {
-  background: #eef2ff !important;
-  z-index: 15;
-}
-
-#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-stt,
-#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-nd,
-#tableTHTheoDV tbody tr.row-subgroup td.col-sticky-madv {
-  background: #f1f5f9 !important;
-  z-index: 15;
-}
-
-/* Header Group Colors */
-.grp-2027 {
-  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%) !important;
-  color: #1e40af !important;
-  border-bottom: 2px solid #3b82f6 !important;
-  border-right: 2px solid #94a3b8 !important;
-}
-
-.grp-2028 {
-  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%) !important;
-  color: #065f46 !important;
-  border-bottom: 2px solid #10b981 !important;
-  border-right: 2px solid #94a3b8 !important;
-}
-
-.grp-tot {
-  background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%) !important;
-  color: #5b21b6 !important;
-  border-bottom: 2px solid #8b5cf6 !important;
-}
-
-/* Column Period Classes */
+/* Column Period Classes (Visibility toggles) */
 #tableTHTheoDV.view-p-2027 .col-p-2028,
 #tableTHTheoDV.view-p-2027 .col-p-tot,
 #tableTHTheoDV.view-p-2027 .grp-2028,
@@ -742,48 +764,249 @@ table.data-table.report-dt tbody tr:hover {
   display: none !important;
 }
 
-/* Row Type Styles */
+/* Grid borders for all cells */
+#tableTHTheoDV td,
+#tableTHTheoDV th {
+  border-right: 1px solid #cbd5e1 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.period-sep,
+#tableTHTheoDV td.period-sep,
+#tableTHTheoDV th.period-sep {
+  border-right: 2.5px solid #475569 !important;
+}
+
+/* ==================== ROW HIERARCHY LEVELS ==================== */
+
+/* Level 1: Grand Total (* Tổng nhu cầu) */
 #tableTHTheoDV tr.row-grand-total td {
-  background: #ecfdf5;
-  color: #065f46;
-  font-weight: 800;
-  border-top: 2px solid #6ee7b7;
-  border-bottom: 2px solid #6ee7b7;
-  font-size: 0.9rem;
+  background: #dcfce7 !important;
+  color: #064e3b !important;
+  font-weight: 800 !important;
+  border-top: 2.5px solid #059669 !important;
+  border-bottom: 2px solid #059669 !important;
+  font-size: 0.88rem !important;
+}
+#tableTHTheoDV tr.row-grand-total td.col-sticky-stt,
+#tableTHTheoDV tr.row-grand-total td.col-sticky-nd,
+#tableTHTheoDV tr.row-grand-total td.col-sticky-madv {
+  background: #dcfce7 !important;
+  color: #064e3b !important;
+  font-weight: 800 !important;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-grand-total td.col-sticky-stt {
+  background: #bbf7d0 !important;
+  font-weight: 900 !important;
+  text-align: center;
+}
+#tableTHTheoDV tr.row-grand-total td.col-tot,
+#tableTHTheoDV tr.row-grand-total td.period-sep {
+  background: #bbf7d0 !important;
+  color: #064e3b !important;
+  font-weight: 900 !important;
 }
 
+/* Level 2: Share Header (% Tỷ trọng theo mảng) */
 #tableTHTheoDV tr.row-share-header td {
-  background: #f0fdf4;
-  color: #047857;
-  font-weight: 700;
-  border-bottom: 1.5px solid #a7f3d0;
-  font-size: 0.85rem;
+  background: #f0fdf4 !important;
+  color: #047857 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #10b981 !important;
+  font-size: 0.83rem !important;
+}
+#tableTHTheoDV tr.row-share-header td.col-sticky-stt,
+#tableTHTheoDV tr.row-share-header td.col-sticky-nd,
+#tableTHTheoDV tr.row-share-header td.col-sticky-madv {
+  background: #f0fdf4 !important;
+  color: #047857 !important;
+  font-weight: 700 !important;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-share-header td.col-sticky-stt {
+  background: #dcfce7 !important;
+  font-weight: 800 !important;
+  text-align: center;
+}
+#tableTHTheoDV tr.row-share-header td.col-tot,
+#tableTHTheoDV tr.row-share-header td.period-sep {
+  background: #dcfce7 !important;
+  color: #047857 !important;
+  font-weight: 800 !important;
 }
 
+/* Level 3: Major Group Header (I, II, III, IV...) */
 #tableTHTheoDV tr.row-group td {
-  background: #eef2ff;
-  color: #312e81;
-  font-weight: 800;
-  border-top: 1.5px solid #c7d2fe;
-  border-bottom: 1.5px solid #c7d2fe;
-  font-size: 0.88rem;
+  background: #dbeafe !important;
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  border-top: 2.5px solid #2563eb !important;
+  border-bottom: 1.5px solid #3b82f6 !important;
+  font-size: 0.84rem !important;
+}
+#tableTHTheoDV tr.row-group td.col-sticky-stt {
+  background: #bfdbfe !important;
+  color: #1e3a8a !important;
+  font-weight: 900 !important;
+  text-align: center;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-group td.col-sticky-nd,
+#tableTHTheoDV tr.row-group td.col-sticky-madv {
+  background: #dbeafe !important;
+  color: #1e3a8a !important;
+  font-weight: 800 !important;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-group td.col-tot,
+#tableTHTheoDV tr.row-group td.period-sep {
+  background: #bfdbfe !important;
+  color: #1e3a8a !important;
+  font-weight: 900 !important;
 }
 
+/* Level 4: Subgroup (1, 2, 3...) */
 #tableTHTheoDV tr.row-subgroup td {
-  background: #f1f5f9;
-  color: #1e293b;
-  font-weight: 700;
-  border-top: 1px solid #cbd5e1;
-  border-bottom: 1px solid #cbd5e1;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  border-top: 1.5px solid #94a3b8 !important;
+  border-bottom: 1.5px solid #94a3b8 !important;
+  font-size: 0.82rem !important;
+}
+#tableTHTheoDV tr.row-subgroup td.col-sticky-stt {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  text-align: center;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-subgroup td.col-sticky-nd,
+#tableTHTheoDV tr.row-subgroup td.col-sticky-madv {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  z-index: 16;
+}
+#tableTHTheoDV tr.row-subgroup td.col-tot,
+#tableTHTheoDV tr.row-subgroup td.period-sep {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
 }
 
+/* Level 5: Detail leaf rows (-) */
+#tableTHTheoDV tr.row-leaf td {
+  color: #0f172a;
+}
+#tableTHTheoDV tr.row-leaf:nth-child(odd) td {
+  background-color: #ffffff;
+}
+#tableTHTheoDV tr.row-leaf:nth-child(even) td {
+  background-color: #f8fafc;
+}
+#tableTHTheoDV tr.row-leaf:hover td {
+  background-color: #eff6ff !important;
+}
 #tableTHTheoDV tr.row-leaf td.cell-sub-item {
   padding-left: 20px !important;
-  color: #475569;
+  color: #334155;
 }
 
-.period-sep {
-  border-right: 2px solid #94a3b8 !important;
+/* Leaf column accents */
+#tableTHTheoDV tr.row-leaf td.col-tot.col-p-2027 {
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  border-left: 1.5px solid #bfdbfe !important;
+  border-right: 1.5px solid #bfdbfe !important;
+}
+#tableTHTheoDV tr.row-leaf td.period-sep.col-p-2027 {
+  background: #f8faff;
+  color: #1e40af;
+  font-weight: 700;
+}
+#tableTHTheoDV tr.row-leaf td.col-tot.col-p-2028 {
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+  border-left: 1.5px solid #bbf7d0 !important;
+  border-right: 1.5px solid #bbf7d0 !important;
+}
+#tableTHTheoDV tr.row-leaf td.period-sep.col-p-2028 {
+  background: #f0fdf4;
+  color: #065f46;
+  font-weight: 700;
+}
+#tableTHTheoDV tr.row-leaf td.col-tot.col-p-tot {
+  background: #f5f3ff;
+  color: #6d28d9;
+  font-weight: 700;
+  border-left: 1.5px solid #ddd6fe !important;
+  border-right: 1.5px solid #ddd6fe !important;
+}
+#tableTHTheoDV tr.row-leaf td.col-p-tot:last-child {
+  background: #faf5ff;
+  color: #5b21b6;
+  font-weight: 700;
+}
+
+/* Value contrast helper classes */
+.cell-zero {
+  color: #94a3b8 !important;
+  font-weight: 400;
+}
+.cell-val {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Strategy Table High Contrast Styles */
+.table-strat thead tr:first-child th {
+  background: #1e293b;
+  color: #ffffff;
+  font-weight: 800;
+  border-bottom: 1.5px solid #0f172a;
+  border-right: 1px solid #334155;
+  padding: 6px 10px;
+}
+.table-strat thead th.strat-th-name {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+.table-strat thead th.strat-th-qhdc {
+  background: #1e40af !important;
+  color: #ffffff !important;
+  border-right: 2px solid #0f172a !important;
+}
+.table-strat thead th.strat-th-cl {
+  background: #92400e !important;
+  color: #ffffff !important;
+  border-right: 2px solid #0f172a !important;
+}
+.table-strat thead th.strat-th-eval {
+  background: #334155 !important;
+  color: #ffffff !important;
+}
+.table-strat thead tr:nth-child(2) th {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  font-weight: 700;
+  font-size: 0.78rem;
+  border-bottom: 2.5px solid #0f172a;
+  border-right: 1px solid #334155;
+  padding: 5px 8px;
+}
+.table-strat thead tr:nth-child(2) th.col-27,
+.table-strat thead tr:nth-child(2) th.col-28,
+.table-strat thead tr:nth-child(2) th.col-tot {
+  background: #1e3a8a !important;
+  color: #ffffff !important;
+}
+.table-strat td {
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-right: 1px solid #cbd5e1 !important;
 }
 
 /* Control Pills in Toolbar (Segmented Pill Bar chuẩn đồng bộ) */

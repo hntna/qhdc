@@ -690,12 +690,12 @@ function renderTableTHTheoDV() {
 
   const cellFmt = (val, isShare) => {
     if (isShare) {
-      return (val !== null && val !== undefined && val > 0.0001) ? (val.toFixed(1) + '%') : '-';
+      return (val !== null && val !== undefined && val > 0.0001) ? `<span class="cell-val">${val.toFixed(1)}%</span>` : '<span class="cell-zero">-</span>';
     }
     if (val === null || val === undefined || isNaN(val) || Math.abs(val) < 0.000001) {
-      return '<span style="color: #cbd5e1;">-</span>';
+      return '<span class="cell-zero">-</span>';
     }
-    return fmtVal(val);
+    return `<span class="cell-val">${fmtVal(val)}</span>`;
   };
 
   let html = '';
@@ -714,28 +714,28 @@ function renderTableTHTheoDV() {
     html += `<tr class="${rowClass}" data-nd="${escapeHtml(r.nd).toLowerCase()}" data-madv="${escapeHtml(r.madv || '').toLowerCase()}">`;
     html += `<td class="col-sticky-stt">${escapeHtml(r.stt || '')}</td>`;
     html += `<td class="${ndClass}" style="${ndStyle}" title="${escapeHtml(r.nd)}">${escapeHtml(r.nd)}</td>`;
-    html += `<td class="col-sticky-madv" style="font-weight: 600; color: #64748b;">${escapeHtml(r.madv || '')}</td>`;
+    html += `<td class="col-sticky-madv" style="font-weight: 600;">${escapeHtml(r.madv || '')}</td>`;
 
     // 2027 (10 cột)
     TH_DV_SECTORS.forEach(s => {
       html += `<td class="col-num col-p-2027">${cellFmt(r.y2027[s], isShareHeader)}</td>`;
     });
-    html += `<td class="col-num col-p-2027 col-tot" style="font-weight: 800; background: #e0e7ff; color: #3730a3;">${isShareHeader ? '100%' : cellFmt(r.y2027.total, false)}</td>`;
-    html += `<td class="col-num col-p-2027 period-sep" style="font-weight: 700; color: #4338ca; background: #eef2ff;">${isShareHeader ? '-' : cellFmt(r.y2027.share, true)}</td>`;
+    html += `<td class="col-num col-p-2027 col-tot">${isShareHeader ? '<span class="cell-val">100%</span>' : cellFmt(r.y2027.total, false)}</td>`;
+    html += `<td class="col-num col-p-2027 period-sep">${isShareHeader ? '<span class="cell-zero">-</span>' : cellFmt(r.y2027.share, true)}</td>`;
 
     // 2028 (10 cột)
     TH_DV_SECTORS.forEach(s => {
       html += `<td class="col-num col-p-2028">${cellFmt(r.y2028[s], isShareHeader)}</td>`;
     });
-    html += `<td class="col-num col-p-2028 col-tot" style="font-weight: 800; background: #d1fae5; color: #065f46;">${isShareHeader ? '100%' : cellFmt(r.y2028.total, false)}</td>`;
-    html += `<td class="col-num col-p-2028 period-sep" style="font-weight: 700; color: #047857; background: #ecfdf5;">${isShareHeader ? '-' : cellFmt(r.y2028.share, true)}</td>`;
+    html += `<td class="col-num col-p-2028 col-tot">${isShareHeader ? '<span class="cell-val">100%</span>' : cellFmt(r.y2028.total, false)}</td>`;
+    html += `<td class="col-num col-p-2028 period-sep">${isShareHeader ? '<span class="cell-zero">-</span>' : cellFmt(r.y2028.share, true)}</td>`;
 
     // 2027-2028 (10 cột)
     TH_DV_SECTORS.forEach(s => {
       html += `<td class="col-num col-p-tot">${cellFmt(r.yTotal[s], isShareHeader)}</td>`;
     });
-    html += `<td class="col-num col-p-tot col-tot" style="font-weight: 800; background: #ede9fe; color: #5b21b6;">${isShareHeader ? '100%' : cellFmt(r.yTotal.total, false)}</td>`;
-    html += `<td class="col-num col-p-tot" style="font-weight: 800; color: #5b21b6; background: #f5f3ff;">${isShareHeader ? '-' : cellFmt(r.yTotal.share, true)}</td>`;
+    html += `<td class="col-num col-p-tot col-tot">${isShareHeader ? '<span class="cell-val">100%</span>' : cellFmt(r.yTotal.total, false)}</td>`;
+    html += `<td class="col-num col-p-tot">${isShareHeader ? '<span class="cell-zero">-</span>' : cellFmt(r.yTotal.share, true)}</td>`;
 
     html += `</tr>`;
   });
