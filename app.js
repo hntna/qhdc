@@ -8,7 +8,7 @@ const MANG_CONFIG = [
   { code: 'VT', name: 'Vô tuyến', tt: 'A', keywords: ['VÔ TUYẾN', 'VO TUYEN'] },
   { code: 'ML', name: 'Mạng lõi', tt: 'B', keywords: ['MẠNG LÕI', 'MANG LOI'] },
   { code: 'CDBR', name: 'CĐBR & Truyền hình', tt: 'C', keywords: ['CĐBR', 'CDBR', 'CỐ ĐỊNH BĂNG RỘNG', 'CO DINH BANG RONG'] },
-  { code: 'CNTT', name: 'Công nghệ thông tin', tt: 'D', keywords: ['CNTT+VÍ', 'CNTT + VÍ', 'CNTT', 'CÔNG NGHỆ THÔNG TIN'] },
+  { code: 'CNTT', name: 'Công nghệ thông tin', tt: 'D', keywords: ['CNTT+VÍ', 'CNTT + VÍ', 'CNTT', 'CÔNG NGHỆ THÔNG TIN', 'CONG NGHE THONG TIN'] },
   { code: 'TD', name: 'Truyền dẫn', tt: 'E', keywords: ['TRUYỀN DẪN', 'TRUYEN DAN'] },
   { code: 'CD', name: 'Cơ điện', tt: 'F', keywords: ['CƠ ĐIỆN', 'CO DIEN'] },
   { code: 'HT', name: 'Triển khai hạ tầng', tt: 'G', keywords: ['TRIỂN KHAI HẠ TẦNG', 'TRIEN KHAI HA TANG', 'HẠ TẦNG', 'HA TANG'] }
@@ -19,7 +19,7 @@ const ALL_SECTION_HEADERS = [
   'VÔ TUYẾN', 'VO TUYEN',
   'MẠNG LÕI', 'MANG LOI',
   'CĐBR', 'CDBR',
-  'CNTT+VÍ', 'CNTT + VÍ',
+  'CNTT+VÍ', 'CNTT + VÍ', 'CNTT', 'CÔNG NGHỆ THÔNG TIN', 'CONG NGHE THONG TIN',
   'TRUYỀN DẪN', 'TRUYEN DAN',
   'CƠ ĐIỆN', 'CO DIEN',
   'TRIỂN KHAI HẠ TẦNG', 'TRIEN KHAI HA TANG'
@@ -930,10 +930,48 @@ function extractItemsForMang(mang, fileObj) {
 
   // Tìm dòng tiêu đề mảng ở Cột B (col index 1)
   let headerRow = -1;
-  for (let r = 7; r <= range.e.r; r++) {
+  for (let r = 0; r <= range.e.r; r++) {
     const cellB = ws[XLSX.utils.encode_cell({ r: r, c: 1 })];
     if (!cellB || cellB.v === undefined) continue;
-    const textB = String(cellB.v).trim().toUpperCase();
+    const textB = String(cellB.v).replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+    if (!textB) continue;
+
+    // Bỏ qua các dòng tiêu đề bảng chung (như TT, Nội dung, Đơn vị tính, Bảng tổng hợp chi tiết...)
+    if (textB.includes('NỘI DUNG') || textB.includes('NOI DUNG') ||
+        textB.includes('HẠNG MỤC') || textB.includes('HANG MUC') ||
+        textB.includes('ĐƠN VỊ TÍNH') || textB.includes('DON VI TINH') ||
+        textB.includes('BẢNG TỔNG HỢP') || textB.includes('BANG TONG HOP') ||
+        textB.includes('PHỤ LỤC') || textB.includes('PHU LUC') ||
+        textB === 'TT' || textB === 'STT') {
+      continue;
+    }
+
+    // Case đặc thù nhận diện cho mảng CNTT:
+    if (mang.code === 'CNTT') {
+      const cellA = ws[XLSX.utils.encode_cell({ r: r, c: 0 })];
+      const valA = cellA && cellA.v !== undefined ? String(cellA.v).trim().toUpperCase() : '';
+
+      // Case 1: Cột B chính xác là "CNTT"
+      if (textB === 'CNTT' || (typeof normalizeVietnameseSearchText === 'function' && normalizeVietnameseSearchText(textB) === 'cntt')) {
+        headerRow = r;
+        break;
+      }
+      // Case 2: Cột B có dạng "CNTT+VÍ", "CNTT + VÍ", "D. CNTT", "IV. CNTT", "CNTT & VÍ"
+      if (/^(?:(?:[A-Z0-9IVX]+|\d+)\s*[\.\:\-\)]\s*)?CNTT(?:\s*[\+\&]\s*V[IÍ])?$/i.test(textB)) {
+        headerRow = r;
+        break;
+      }
+      // Case 3: Cột A là "D" hoặc "IV" và Cột B có chứa "CNTT"
+      if (['D', 'IV'].includes(valA) && textB.includes('CNTT')) {
+        headerRow = r;
+        break;
+      }
+      // Case 4: Cột B là "CÔNG NGHỆ THÔNG TIN"
+      if (textB === 'CÔNG NGHỆ THÔNG TIN' || textB === 'CONG NGHE THONG TIN') {
+        headerRow = r;
+        break;
+      }
+    }
 
     const isMatch = mang.keywords.some(kw => textB === kw || (textB.includes(kw) && textB.length < kw.length + 5));
     if (isMatch) {
