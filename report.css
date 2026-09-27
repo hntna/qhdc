@@ -310,14 +310,14 @@ table.data-table.report-dt thead {
 
 .report-table th,
 table.data-table.report-dt th {
-  background: #1e293b;
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #0f172a;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   font-size: 0.8rem;
   text-transform: uppercase;
-  border-bottom: 2px solid #0f172a;
-  border-right: 1px solid #334155;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
   padding: 6px 10px;
   white-space: nowrap;
   vertical-align: middle;
@@ -595,17 +595,19 @@ table.data-table.report-dt tbody tr:hover {
   letter-spacing: 0.02em;
 }
 
+/* Cột cố định STT, Nội dung, Mã DV: Nền Slate sáng thanh lịch, chữ đen đậm tương phản cao */
 #tableTHTheoDV thead th.col-sticky-stt,
 #tableTHTheoDV thead th.col-sticky-nd,
 #tableTHTheoDV thead th.col-sticky-madv {
-  background: #0f172a !important;
-  color: #ffffff !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
   font-weight: 800;
-  border-right: 1px solid #334155 !important;
-  border-bottom: 2px solid #0f172a !important;
+  border-right: 1px solid #cbd5e1 !important;
+  border-bottom: 2px solid #94a3b8 !important;
   z-index: 36 !important;
 }
 
+/* Dòng 2 tiêu đề cột ngành: Nền sáng theo đúng tone màu của từng kỳ, KHÔNG dùng nền đen */
 #tableTHTheoDV thead tr:nth-child(2) th {
   position: sticky;
   top: 29px;
@@ -614,78 +616,108 @@ table.data-table.report-dt tbody tr:hover {
   text-align: right;
   font-weight: 700;
   font-size: 0.77rem;
-  background: #1e293b !important;
-  color: #f8fafc !important;
-  border-bottom: 2.5px solid #0f172a !important;
-  border-right: 1px solid #334155 !important;
+  background: #f8fafc;
+  color: #1e293b;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
+}
+
+/* Các cột ngành thuộc Năm 2027: Tone Blue sáng tươi mát, chữ xanh đậm */
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2027 {
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  border-right: 1px solid #bfdbfe !important;
+  border-bottom: 2px solid #3b82f6 !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-2027.col-tot {
-  background: #1e40af !important;
-  color: #ffffff !important;
+  background: #dbeafe !important;
+  color: #1e3a8a !important;
   font-weight: 800;
-  border-right: 1px solid #3b82f6 !important;
+  border-right: 1.5px solid #93c5fd !important;
+  border-bottom: 2px solid #2563eb !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-2027.period-sep {
-  background: #2563eb !important;
-  color: #ffffff !important;
+  background: #bfdbfe !important;
+  color: #1e3a8a !important;
   font-weight: 800;
-  border-right: 2.5px solid #0f172a !important;
+  border-right: 2px solid #94a3b8 !important;
+  border-bottom: 2px solid #2563eb !important;
+}
+
+/* Các cột ngành thuộc Năm 2028: Tone Mint/Emerald sáng dịu, chữ xanh lá đậm */
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-2028 {
+  background: #f0fdf4 !important;
+  color: #065f46 !important;
+  border-right: 1px solid #bbf7d0 !important;
+  border-bottom: 2px solid #10b981 !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-2028.col-tot {
-  background: #065f46 !important;
-  color: #ffffff !important;
+  background: #dcfce7 !important;
+  color: #064e3b !important;
   font-weight: 800;
-  border-right: 1px solid #10b981 !important;
+  border-right: 1.5px solid #86efac !important;
+  border-bottom: 2px solid #059669 !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-2028.period-sep {
-  background: #059669 !important;
-  color: #ffffff !important;
+  background: #bbf7d0 !important;
+  color: #064e3b !important;
   font-weight: 800;
-  border-right: 2.5px solid #0f172a !important;
+  border-right: 2px solid #94a3b8 !important;
+  border-bottom: 2px solid #059669 !important;
+}
+
+/* Các cột ngành thuộc Tổng kỳ 2027-2028: Tone Lavender tím sáng, chữ tím đậm */
+#tableTHTheoDV thead tr:nth-child(2) th.col-p-tot {
+  background: #faf5ff !important;
+  color: #5b21b6 !important;
+  border-right: 1px solid #e9d5ff !important;
+  border-bottom: 2px solid #8b5cf6 !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-tot.col-tot {
-  background: #5b21b6 !important;
-  color: #ffffff !important;
+  background: #f3e8ff !important;
+  color: #4c1d95 !important;
   font-weight: 800;
-  border-right: 1px solid #8b5cf6 !important;
+  border-right: 1.5px solid #d8b4fe !important;
+  border-bottom: 2px solid #7c3aed !important;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th.col-p-tot:last-child {
-  background: #7c3aed !important;
-  color: #ffffff !important;
+  background: #e9d5ff !important;
+  color: #4c1d95 !important;
   font-weight: 800;
+  border-bottom: 2px solid #7c3aed !important;
 }
 
-/* Header Group Colors */
+/* Header Group Colors (Dòng 1): Tone màu tươi sáng, nổi bật rõ từng kỳ */
 .grp-2027 {
-  background: #1d4ed8 !important;
+  background: #2563eb !important;
   color: #ffffff !important;
   font-weight: 800;
-  border-bottom: 2px solid #1e40af !important;
-  border-right: 2.5px solid #0f172a !important;
+  border-bottom: 2px solid #1d4ed8 !important;
+  border-right: 2px solid #94a3b8 !important;
   text-align: center;
 }
 
 .grp-2028 {
-  background: #047857 !important;
+  background: #059669 !important;
   color: #ffffff !important;
   font-weight: 800;
-  border-bottom: 2px solid #065f46 !important;
-  border-right: 2.5px solid #0f172a !important;
+  border-bottom: 2px solid #047857 !important;
+  border-right: 2px solid #94a3b8 !important;
   text-align: center;
 }
 
 .grp-tot {
-  background: #6d28d9 !important;
+  background: #7c3aed !important;
   color: #ffffff !important;
   font-weight: 800;
-  border-bottom: 2px solid #5b21b6 !important;
-  border-right: 2px solid #cbd5e1 !important;
+  border-bottom: 2px solid #6d28d9 !important;
+  border-right: 1.5px solid #cbd5e1 !important;
   text-align: center;
 }
 
@@ -774,7 +806,7 @@ table.data-table.report-dt tbody tr:hover {
 .period-sep,
 #tableTHTheoDV td.period-sep,
 #tableTHTheoDV th.period-sep {
-  border-right: 2.5px solid #475569 !important;
+  border-right: 2px solid #94a3b8 !important;
 }
 
 /* ==================== ROW HIERARCHY LEVELS ==================== */
@@ -962,47 +994,50 @@ table.data-table.report-dt tbody tr:hover {
   font-weight: 600;
 }
 
-/* Strategy Table High Contrast Styles */
+/* Strategy Table High Contrast Styles (Sáng sủa, hài hòa, không dùng nền đen) */
 .table-strat thead tr:first-child th {
-  background: #1e293b;
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #0f172a;
   font-weight: 800;
-  border-bottom: 1.5px solid #0f172a;
-  border-right: 1px solid #334155;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
   padding: 6px 10px;
 }
 .table-strat thead th.strat-th-name {
-  background: #0f172a !important;
-  color: #ffffff !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-right: 1.5px solid #cbd5e1 !important;
 }
 .table-strat thead th.strat-th-qhdc {
-  background: #1e40af !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-  border-right: 2px solid #0f172a !important;
+  border-right: 2px solid #94a3b8 !important;
 }
 .table-strat thead th.strat-th-cl {
-  background: #92400e !important;
+  background: #d97706 !important;
   color: #ffffff !important;
-  border-right: 2px solid #0f172a !important;
+  border-right: 2px solid #94a3b8 !important;
 }
 .table-strat thead th.strat-th-eval {
-  background: #334155 !important;
+  background: #475569 !important;
   color: #ffffff !important;
 }
 .table-strat thead tr:nth-child(2) th {
-  background: #0f172a !important;
-  color: #f1f5f9 !important;
+  background: #f8fafc;
+  color: #1e293b;
   font-weight: 700;
   font-size: 0.78rem;
-  border-bottom: 2.5px solid #0f172a;
-  border-right: 1px solid #334155;
+  border-bottom: 2px solid #94a3b8;
+  border-right: 1px solid #cbd5e1;
   padding: 5px 8px;
 }
 .table-strat thead tr:nth-child(2) th.col-27,
 .table-strat thead tr:nth-child(2) th.col-28,
 .table-strat thead tr:nth-child(2) th.col-tot {
-  background: #1e3a8a !important;
-  color: #ffffff !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  border-right: 1px solid #bfdbfe !important;
 }
 .table-strat td {
   border-bottom: 1px solid #cbd5e1 !important;
