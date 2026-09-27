@@ -62,6 +62,10 @@ const state = {
     kl28: false,
     dg: false
   },
+  validationColumns: {
+    tt27: false,
+    tt28: false
+  },
   exportBlob: null,
   exportFileName: 'Masterlist 2027-2028_Mau.xlsx',
   strategyProfiles: [],                     // Danh sách profiles Chiến lược 5 năm
@@ -70,6 +74,8 @@ const state = {
   currentDraftName: null,                   // Tên bản lưu đang mở
   serverDrafts: []                          // Danh sách bản lưu trên server
 };
+window.state = state;
+window.rebuildExtractedData = rebuildExtractedData;
 
 // ==================== KHỞI TẠO & SỰ KIỆN GIAO DIỆN ====================
 
@@ -135,10 +141,26 @@ async function loadMultiSectorFile(file) {
       extractValidMaDVFromTemplate(state.templateWorkbook);
     }
 
+    const service = window.FirebaseService;
+    const select = document.getElementById('selectWorkspace');
+    const wsId = select ? select.value : null;
+
     const loadedMangs = [];
     let totalItemsLoaded = 0;
+    const skippedMangs = [];
 
     for (const mang of MANG_CONFIG) {
+      if (service && !service.isAdmin() && !service.isGuest()) {
+        const canAccess = service.canAccessSector(mang.code, wsId);
+        if (!canAccess) {
+          const testItems = extractItemsForMang(mang, fileObj);
+          if (testItems && testItems.length > 0) {
+            skippedMangs.push(mang.name);
+          }
+          continue;
+        }
+      }
+
       const items = extractItemsForMang(mang, fileObj);
       if (items && items.length > 0) {
         state.files[mang.code] = fileObj;
@@ -150,14 +172,24 @@ async function loadMultiSectorFile(file) {
     }
 
     if (loadedMangs.length === 0) {
-      showToast(`Không tìm thấy dữ liệu mảng nào trong file ${file.name}! Vui lòng kiểm tra lại cấu trúc sheet.`, 'warning');
+      if (skippedMangs.length > 0) {
+        const assigned = (service.getCurrentUser()?.assignedSectors || []).map(k => service.SECTOR_NAMES?.[k] || k).join(', ');
+        const wsName = select ? select.options[select.selectedIndex]?.textContent : 'Dự án hiện tại';
+        showToast(`Trong dự án "${wsName}", tài khoản của bạn chỉ được phân quyền quản lý mảng [${assigned || 'Không có mảng nào'}]. File chứa mảng (${skippedMangs.join(', ')}) nhưng bạn không có quyền nạp các mảng này!`, 'warning');
+      } else {
+        showToast(`Không tìm thấy dữ liệu mảng nào trong file ${file.name}! Vui lòng kiểm tra lại cấu trúc sheet.`, 'warning');
+      }
       return;
     }
 
     // Xóa cache kết quả xuất để tạo mới theo dữ liệu vừa nạp
     state.exportBlob = null;
     rebuildExtractedData();
-    showToast(`Đã nạp thành công ${loadedMangs.length} mảng: ${loadedMangs.join(', ')} (Tổng: ${totalItemsLoaded} dòng)!`, 'success');
+    if (skippedMangs.length > 0) {
+      showToast(`Đã nạp ${loadedMangs.join(', ')} (Đã bỏ qua các mảng bạn không có quyền: ${skippedMangs.join(', ')})`, 'info');
+    } else {
+      showToast(`Đã nạp thành công ${loadedMangs.length} mảng: ${loadedMangs.join(', ')} (Tổng: ${totalItemsLoaded} dòng)!`, 'success');
+    }
   } catch (err) {
     console.error('Lỗi khi nạp file dữ liệu sẵn có:', err);
     showToast(`Lỗi khi đọc file: ${err.message}`, 'error');
@@ -284,6 +316,17 @@ function initUploadHandlers() {
     const box = document.getElementById(`box_${key}`);
     const input = document.getElementById(`input_${key}`);
 
+    if (box) {
+      // Chặn mở dialog chọn file nếu mảng bị khóa quyền
+      box.addEventListener('click', (e) => {
+        if (box.classList.contains('sector-locked')) {
+          e.preventDefault();
+          e.stopPropagation();
+          showToast(`Mảng [${key}] đang bị khóa quyền thao tác trong dự án này!`, 'warning');
+        }
+      }, true);
+    }
+
     if (input) {
       input.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -311,6 +354,11 @@ function initUploadHandlers() {
         e.stopPropagation();
         box.classList.remove('drag-over');
 
+        if (box.classList.contains('sector-locked')) {
+          showToast(`Mảng [${key}] đang bị khóa do bạn chưa được phân quyền trong dự án này!`, 'warning');
+          return;
+        }
+
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
           assignFileToKey(key, e.dataTransfer.files[0]);
         }
@@ -334,6 +382,20 @@ function detectMangFromFileName(fileName) {
 
 // Gán file cho mảng: TỰ ĐỘNG TRÍCH XUẤT VÀ THAY THẾ DỮ LIỆU CỦA MẢNG ĐÓ
 async function assignFileToKey(key, file) {
+  const service = window.FirebaseService;
+  const select = document.getElementById('selectWorkspace');
+  const wsId = select ? select.value : null;
+
+  if (service && !service.isAdmin() && !service.isGuest()) {
+    const canAccess = service.canAccessSector(key, wsId);
+    if (!canAccess) {
+      const mang = MANG_CONFIG.find(m => m.code === key);
+      const name = mang ? mang.name : key;
+      showToast(`Bạn không có quyền nạp/chỉnh sửa mảng [${name}] trong dự án này!`, 'warning');
+      return;
+    }
+  }
+
   try {
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array', cellFormula: true, cellStyles: true });
@@ -369,11 +431,8 @@ async function assignFileToKey(key, file) {
   }
 }
 
-// Xóa file của 1 mảng
-function removeFile(key) {
-  state.files[key] = null;
-  state.extractedByMang[key] = []; // Xóa trắng dữ liệu mảng tương ứng
-
+// Reset giao diện ô upload sau khi hủy/xóa file
+function resetUploadBoxUI(key) {
   const box = document.getElementById(`box_${key}`);
   const infoBar = document.getElementById(`info_${key}`);
   if (box) box.classList.remove('has-file');
@@ -383,9 +442,65 @@ function removeFile(key) {
       <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_${key}').click()">Chọn file</button>
     `;
   }
+}
+window.resetUploadBoxUI = resetUploadBoxUI;
 
+// Xóa file/dữ liệu của 1 mảng (đồng bộ bộ nhớ RAM + Firestore)
+async function deleteSectorData(sectorKey, options = {}) {
+  const { askConfirm = false, deleteServer = true } = options;
+  const mang = MANG_CONFIG.find(m => m.code === sectorKey);
+  const mangName = mang ? mang.name : sectorKey;
+
+  if (askConfirm) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa toàn bộ dữ liệu của mảng [${mangName}] khỏi phiên làm việc và dự án hiện tại?`)) {
+      return false;
+    }
+  }
+
+  // 1. Xóa trên Firestore nếu deleteServer = true
+  const service = window.FirebaseService;
+  const select = document.getElementById('selectWorkspace');
+  const wsId = select ? select.value : null;
+
+  if (deleteServer && service && wsId && typeof service.deleteSectorDataFromFirestore === 'function') {
+    try {
+      await service.deleteSectorDataFromFirestore(wsId, sectorKey);
+    } catch (err) {
+      console.warn('Lỗi xóa trên server:', err);
+      showToast(`Không thể xóa dữ liệu mảng [${mangName}] trên hệ thống: ${err.message}`, 'error');
+      return false;
+    }
+  }
+
+  // 2. Xóa dữ liệu trong bộ nhớ state
+  if (state.files) state.files[sectorKey] = null;
+  if (state.extractedByMang) state.extractedByMang[sectorKey] = [];
+
+  // 3. Reset ô upload box của mảng
+  resetUploadBoxUI(sectorKey);
+
+  // 4. Rebuild toàn bộ dữ liệu & làm mới mọi bảng hiển thị
   rebuildExtractedData();
-  showToast(`Đã hủy file của mảng [${key}]`, 'info');
+  recalculateSubtotalFormulas();
+  renderPreviewTable();
+  renderValidationTable();
+  renderHierarchyTable();
+  if (typeof updateReportFromExtractedData === 'function') {
+    updateReportFromExtractedData(state.extractedData, state.extractedByMang);
+  }
+  if (typeof renderAllTabs === 'function') {
+    renderAllTabs();
+  }
+
+  if (askConfirm) {
+    showToast(`Đã xóa dữ liệu mảng [${mangName}] thành công!`, 'success');
+  }
+  return true;
+}
+window.deleteSectorData = deleteSectorData;
+
+function removeFile(key) {
+  deleteSectorData(key, { askConfirm: false, deleteServer: true });
 }
 
 // Cập nhật giao diện ô upload sau khi nhận file
@@ -400,10 +515,12 @@ function updateUploadBoxUI(key, fileName, sizeBytes) {
         <span class="file-name-text" style="color: #047857; font-weight: 700;" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
         <span style="font-size: 0.725rem; color: #64748b; font-weight: 600;">${sizeKb} KB</span>
       </div>
-      <button class="btn-remove-file" title="Xóa file mảng này" onclick="event.stopPropagation(); removeFile('${key}')">✕</button>
+      <button class="btn-remove-file" title="Xóa dữ liệu mảng này" onclick="event.stopPropagation(); deleteSectorData('${key}', { askConfirm: true, deleteServer: true })">✕</button>
     `;
   }
 }
+
+window.updateUploadBoxUI = updateUploadBoxUI;
 
 // Tự động ghép nối dữ liệu 7 mảng theo thứ tự chuẩn
 function rebuildExtractedData() {
@@ -488,7 +605,7 @@ function rebuildExtractedData() {
   const btnSaveServer = document.getElementById('btnSaveToServer');
   if (btnSaveServer) {
     btnSaveServer.disabled = !hasData;
-    btnSaveServer.title = hasData ? 'Lưu bản hiện tại lên Server để sau này nạp lại và tiếp tục chỉnh sửa' : 'Vui lòng nạp dữ liệu trước khi lưu lên Server';
+    btnSaveServer.title = hasData ? 'Lưu dữ liệu các mảng đang nạp vào dự án hiện hành' : 'Vui lòng nạp dữ liệu trước khi lưu';
   }
   const banner = document.getElementById('exportReadyBanner');
   if (banner) banner.style.display = hasData ? 'flex' : 'none';
@@ -532,31 +649,16 @@ function initActionButtons() {
 
   const btnSaveServer = document.getElementById('btnSaveToServer');
   if (btnSaveServer) {
-    btnSaveServer.addEventListener('click', openSaveDraftModal);
-  }
-
-  const btnConfirmSave = document.getElementById('btnConfirmSaveDraft');
-  if (btnConfirmSave) {
-    btnConfirmSave.addEventListener('click', confirmSaveDraft);
-  }
-
-  const searchDraftsInput = document.getElementById('searchDraftsInput');
-  if (searchDraftsInput) {
-    searchDraftsInput.addEventListener('input', renderServerDraftsTable);
-  }
-
-  const btnReset = document.getElementById('btnReset');
-  if (btnReset) {
-    btnReset.addEventListener('click', () => {
-      if (state.extractedData && state.extractedData.length > 0) {
-        if (confirm('Bạn có chắc chắn muốn làm mới toàn bộ dữ liệu để bắt đầu bản khác?')) {
-          location.reload();
-        }
+    btnSaveServer.addEventListener('click', () => {
+      if (typeof window.saveCurrentWorkspaceDataToFirebase === 'function') {
+        window.saveCurrentWorkspaceDataToFirebase();
       } else {
-        location.reload();
+        showToast('Chưa tải module FirebaseService, không lưu local để tránh lệch dữ liệu.', 'error');
       }
     });
   }
+
+
   const btnApply = document.getElementById('btnApplyHierarchy');
   if (btnApply) {
     btnApply.addEventListener('click', () => {
@@ -1121,6 +1223,13 @@ function validateRow(item) {
 }
 
 function addIssue(item, type, column, currentVal, expectedVal, message) {
+  const tt27 = (item.tt27 !== null && item.tt27 !== undefined && !isNaN(item.tt27))
+    ? item.tt27
+    : ((item.kl27 !== null && item.kl27 !== undefined && item.dg !== null && item.dg !== undefined) ? item.kl27 * item.dg : null);
+  const tt28 = (item.tt28 !== null && item.tt28 !== undefined && !isNaN(item.tt28))
+    ? item.tt28
+    : ((item.kl28 !== null && item.kl28 !== undefined && item.dg !== null && item.dg !== undefined) ? item.kl28 * item.dg : null);
+
   state.validationIssues.push({
     id: state.validationIssues.length + 1,
     type: type, // 'MATH', 'MISSING_CODE', 'MADV', 'INFO', 'FORMULA'
@@ -1132,6 +1241,8 @@ function addIssue(item, type, column, currentVal, expectedVal, message) {
     kl27: item.kl27, // Khối lượng 2027 gốc
     kl28: item.kl28, // Khối lượng 2028 gốc
     dg: item.dg,     // Đơn giá hiện tại
+    tt27: tt27,      // Thành tiền 2027
+    tt28: tt28,      // Thành tiền 2028
     column: column,
     currentVal: currentVal !== null && currentVal !== undefined ? String(currentVal) : 'Trống',
     expectedVal: expectedVal !== null && expectedVal !== undefined ? String(expectedVal) : '',
@@ -2156,9 +2267,43 @@ function getValidationIssueBadge(issue) {
   }
 }
 
+const VALIDATION_COLUMN_DEFS = [
+  { key: 'stt', label: 'STT', style: 'width: 55px; text-align: center;' },
+  { key: 'mang', label: 'Mảng', style: 'width: 75px; text-align: center;' },
+  { key: 'origRow', label: 'Dòng gốc', style: 'width: 90px; text-align: center;' },
+  { key: 'nd', label: 'Hạng mục đầu tư / mua sắm', style: 'width: 300px;' },
+  { key: 'kl27', label: 'KL 2027', className: 'num-cell', style: 'width: 95px;' },
+  { key: 'kl28', label: 'KL 2028', className: 'num-cell', style: 'width: 95px;' },
+  { key: 'dg', label: 'Đơn giá hiện tại', className: 'num-cell', style: 'width: 115px;' },
+  { key: 'tt27', label: 'Thành tiền 2027', className: 'num-cell', style: 'width: 130px;', optional: true },
+  { key: 'tt28', label: 'Thành tiền 2028', className: 'num-cell', style: 'width: 130px;', optional: true },
+  { key: 'type', label: 'Loại lỗi', style: 'width: 170px; text-align: center;' },
+  { key: 'detail', label: 'Chi tiết', style: 'width: 380px;' }
+];
+
+function getVisibleValidationColumns() {
+  return VALIDATION_COLUMN_DEFS.filter(col => !col.optional || (state.validationColumns && state.validationColumns[col.key]));
+}
+
+function renderValidationTableHeader() {
+  const thead = document.getElementById('validationTableHead');
+  if (!thead) return;
+  const ths = getVisibleValidationColumns().map(col => {
+    const cls = col.className ? ` class="${col.className}"` : '';
+    const st = col.style ? ` style="${col.style}"` : '';
+    return `<th${cls}${st}>${col.label}</th>`;
+  }).join('');
+  thead.innerHTML = `<tr>${ths}</tr>`;
+  if (typeof makeTableResizable === 'function') {
+    makeTableResizable('validationTable');
+  }
+}
+
 // Render bảng kiểm tra lỗi (Tab 1)
 function renderValidationTable() {
   const tbody = document.getElementById('validationTableBody');
+  renderValidationTableHeader();
+  const visibleColCount = getVisibleValidationColumns().length;
   const selectedType = document.querySelector('input[name="filterIssueType"]:checked')?.value || 'ALL';
   const keyword = (document.getElementById('searchValidationInput').value || '').trim().toLowerCase();
 
@@ -2179,7 +2324,7 @@ function renderValidationTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
+        <td colspan="${visibleColCount}" style="text-align: center; padding: 2rem; color: #059669; font-weight: 600;">
           🎉 Không có cảnh báo hoặc lỗi nào phù hợp với bộ lọc!
         </td>
       </tr>
@@ -2187,6 +2332,9 @@ function renderValidationTable() {
     document.getElementById('validationFooterText').textContent = `Hiển thị 0 / ${state.validationIssues.length} cảnh báo`;
     return;
   }
+
+  const showTT27 = Boolean(state.validationColumns && state.validationColumns.tt27);
+  const showTT28 = Boolean(state.validationColumns && state.validationColumns.tt28);
 
   const rowsHtml = filtered.map((issue, i) => {
     return `
@@ -2198,6 +2346,8 @@ function renderValidationTable() {
         <td class="num-cell" style="font-family: monospace; font-weight: 600;">${issue.kl27 !== null && issue.kl27 !== undefined ? formatNumber(issue.kl27) : '-'}</td>
         <td class="num-cell" style="font-family: monospace; font-weight: 600;">${issue.kl28 !== null && issue.kl28 !== undefined ? formatNumber(issue.kl28) : '-'}</td>
         <td class="num-cell" style="font-family: monospace; color: #0f172a; font-weight: 700;">${issue.dg !== null && issue.dg !== undefined && !isNaN(issue.dg) ? formatNumber(issue.dg) : '-'}</td>
+        ${showTT27 ? `<td class="num-cell" style="font-family: monospace; color: #4f46e5; font-weight: 600;">${issue.tt27 !== null && issue.tt27 !== undefined && !isNaN(issue.tt27) ? formatNumber(issue.tt27) : '-'}</td>` : ''}
+        ${showTT28 ? `<td class="num-cell" style="font-family: monospace; color: #059669; font-weight: 600;">${issue.tt28 !== null && issue.tt28 !== undefined && !isNaN(issue.tt28) ? formatNumber(issue.tt28) : '-'}</td>` : ''}
         <td style="text-align: center; white-space: nowrap;">${getValidationIssueBadge(issue)}</td>
         <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(issue.message)}">
           ${escapeHtml(issue.message)}
@@ -2695,12 +2845,13 @@ async function copyValidationTableToClipboard() {
   }
 
   // 1. Tạo dữ liệu TSV (Tab-Separated Values) cho text/plain
-  const headers = ['STT', 'Mảng', 'Vị trí', 'Hạng mục đầu tư / mua sắm', 'Khối lượng 27', 'Khối lượng 28', 'Đơn giá', 'Loại lỗi', 'Chi tiết'];
+  const visibleCols = getVisibleValidationColumns();
+  const headers = visibleCols.map(c => c.label);
   const tsvLines = [headers.join('\t')];
 
   trList.forEach(tr => {
     const tds = tr.querySelectorAll('td');
-    if (tds.length === 9) {
+    if (tds.length === headers.length) {
       const line = Array.from(tds).map(td => td.innerText.replace(/\r?\n|\r/g, ' ').trim()).join('\t');
       tsvLines.push(line);
     }
@@ -2711,32 +2862,29 @@ async function copyValidationTableToClipboard() {
   let htmlTable = '<table border="1" style="border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 10pt;">\r\n';
   htmlTable += '  <thead>\r\n';
   htmlTable += '    <tr style="background-color: #f1f5f9; font-weight: bold; color: #1e293b;">\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">STT</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">Mảng</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">Vị trí</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: left;">Hạng mục đầu tư / mua sắm</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: right;">Khối lượng 27</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: right;">Khối lượng 28</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: right;">Đơn giá</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">Loại lỗi</th>\r\n';
-  htmlTable += '      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: left;">Chi tiết</th>\r\n';
+  visibleCols.forEach(col => {
+    const isNum = Boolean(col.className && col.className.includes('num-cell'));
+    const isCenter = Boolean(col.style && col.style.includes('text-align: center'));
+    const align = isNum ? 'right' : (isCenter ? 'center' : 'left');
+    htmlTable += `      <th style="border: 1px solid #94a3b8; padding: 6px; text-align: ${align};">${escapeHtml(col.label)}</th>\r\n`;
+  });
   htmlTable += '    </tr>\r\n';
   htmlTable += '  </thead>\r\n';
   htmlTable += '  <tbody>\r\n';
 
   trList.forEach(tr => {
     const tds = tr.querySelectorAll('td');
-    if (tds.length === 9) {
+    if (tds.length === headers.length) {
       htmlTable += '    <tr>\r\n';
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center;">${escapeHtml(tds[0].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center; font-weight: bold;">${escapeHtml(tds[1].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center; color: #0284c7; font-weight: bold;">${escapeHtml(tds[2].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left;">${escapeHtml(tds[3].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace;">${escapeHtml(tds[4].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace;">${escapeHtml(tds[5].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace; font-weight: bold;">${escapeHtml(tds[6].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center; font-weight: bold;">${escapeHtml(tds[7].innerText.trim())}</td>\r\n`;
-      htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left;">${escapeHtml(tds[8].innerText.trim())}</td>\r\n`;
+      visibleCols.forEach((col, idx) => {
+        const isNum = Boolean(col.className && col.className.includes('num-cell'));
+        const isCenter = Boolean(col.style && col.style.includes('text-align: center'));
+        const align = isNum ? 'right' : (isCenter ? 'center' : 'left');
+        const mono = isNum ? ' font-family: monospace;' : '';
+        const bold = (col.key === 'mang' || col.key === 'origRow' || col.key === 'dg' || col.key === 'type') ? ' font-weight: bold;' : '';
+        const color = col.key === 'origRow' ? ' color: #0284c7;' : (col.key === 'tt27' ? ' color: #4f46e5;' : (col.key === 'tt28' ? ' color: #059669;' : ''));
+        htmlTable += `      <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: ${align};${mono}${bold}${color}">${escapeHtml(tds[idx].innerText.trim())}</td>\r\n`;
+      });
       htmlTable += '    </tr>\r\n';
     }
   });
@@ -2902,6 +3050,20 @@ function initFilterHandlers() {
   if (searchPrevInput) {
     searchPrevInput.addEventListener('input', renderPreviewTable);
   }
+
+  document.querySelectorAll('.val-column-toggle').forEach(input => {
+    const key = input.dataset.valColumn;
+    if (!key || !(key in state.validationColumns)) return;
+    input.checked = Boolean(state.validationColumns[key]);
+    const chip = input.closest('.chip');
+    if (chip) chip.classList.toggle('active', input.checked);
+    input.addEventListener('change', (event) => {
+      state.validationColumns[key] = event.target.checked;
+      const parentChip = event.target.closest('.chip');
+      if (parentChip) parentChip.classList.toggle('active', event.target.checked);
+      renderValidationTable();
+    });
+  });
 
   document.querySelectorAll('.preview-column-toggle').forEach(input => {
     const key = input.dataset.previewColumn;
@@ -5066,458 +5228,117 @@ function applyConvertedVTBToAppState() {
   closeVTBConverterModal();
 }
 
-// ==================== BẢN LƯU SERVER (SERVER DRAFTS) ====================
-
-async function initServerDrafts() {
-  await updateServerDraftBadge();
-}
-
-async function updateServerDraftBadge() {
-  const badge = document.getElementById('badgeServerDraftCount');
-  if (!badge) return;
-  try {
-    const drafts = await fetchAllDraftsList();
-    badge.textContent = drafts.length;
-    badge.style.display = drafts.length > 0 ? 'inline-block' : 'none';
-  } catch (e) {
-    badge.textContent = '0';
-  }
-}
-
-async function fetchAllDraftsList() {
-  let serverList = [];
-  try {
-    const res = await fetch('/api/drafts', { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.drafts)) {
-        serverList = data.drafts;
-      }
-    }
-  } catch (e) {
-    // Offline
-  }
-
-  const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
-  const map = new Map();
-  serverList.forEach(d => map.set(d.id, d));
-  localDrafts.forEach(d => {
-    if (!map.has(d.id)) map.set(d.id, d);
-  });
-
-  const allDrafts = Array.from(map.values());
-  allDrafts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-  state.serverDrafts = allDrafts;
-  return allDrafts;
-}
-
-function openSaveDraftModal() {
-  if (!state.extractedData || state.extractedData.length === 0) {
-    showToast('Chưa có dữ liệu để lưu! Vui lòng nạp ít nhất một mảng dữ liệu.', 'warning');
-    return;
-  }
-
-  const modal = document.getElementById('modalSaveDraft');
-  if (!modal) return;
-
-  const activeMangs = MANG_CONFIG.filter(m => (state.extractedByMang[m.code] || []).length > 0);
-  let sumTot = 0;
-  state.extractedData.forEach(it => {
-    if (!it.isGroup && !it.isMangHeader) {
-      if (it.tt27) sumTot += Number(it.tt27);
-      if (it.tt28) sumTot += Number(it.tt28);
-    }
-  });
-
-  document.getElementById('saveDraftMangsCount').textContent = `${activeMangs.length} mảng (${activeMangs.map(m => m.code).join(', ')})`;
-  document.getElementById('saveDraftRowCount').textContent = formatNumber(state.extractedData.length);
-  document.getElementById('saveDraftTotalVal').textContent = formatNumber(sumTot);
-
-  const now = new Date();
-  const timeStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  const nameInput = document.getElementById('inputSaveDraftName');
-  if (nameInput) {
-    nameInput.value = state.currentDraftName || `Bản lưu ngày ${timeStr}`;
-  }
-
-  const noteInput = document.getElementById('inputSaveDraftNote');
-  if (noteInput) noteInput.value = '';
-
-  const modeGroup = document.getElementById('saveDraftModeGroup');
-  if (modeGroup) {
-    if (state.currentDraftId) {
-      modeGroup.style.display = 'block';
-      const textOv = document.getElementById('textOverwriteDraftName');
-      if (textOv) textOv.textContent = state.currentDraftName || state.currentDraftId;
-      const rNew = document.querySelector('input[name="radioDraftSaveMode"][value="new"]');
-      if (rNew) rNew.checked = true;
-    } else {
-      modeGroup.style.display = 'none';
-    }
-  }
-
-  modal.style.display = 'flex';
-  if (window.lucide) lucide.createIcons();
-}
-
-function closeSaveDraftModal() {
-  const modal = document.getElementById('modalSaveDraft');
-  if (modal) modal.style.display = 'none';
-}
-
-async function confirmSaveDraft() {
-  const nameInput = document.getElementById('inputSaveDraftName');
-  const noteInput = document.getElementById('inputSaveDraftNote');
-  const name = (nameInput?.value || '').trim();
-  if (!name) {
-    showToast('Vui lòng nhập tên cho bản lưu!', 'warning');
-    nameInput?.focus();
-    return;
-  }
-  const note = (noteInput?.value || '').trim();
-  const modeRadio = document.querySelector('input[name="radioDraftSaveMode"]:checked');
-  const isOverwrite = (modeRadio && modeRadio.value === 'overwrite' && state.currentDraftId);
-
-  const btnConfirm = document.getElementById('btnConfirmSaveDraft');
-  const oldBtnHtml = btnConfirm.innerHTML;
-  btnConfirm.disabled = true;
-  btnConfirm.innerHTML = `<span class="spinner"></span> Đang lưu...`;
-
-  try {
-    let excelBase64 = null;
-    try {
-      if (state.templateBuffer) {
-        recalculateSubtotalFormulas();
-        const buffer = await buildCleanMasterlist(state.templateBuffer, state.extractedByMang, state.files);
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        const chunkSz = 0x8000;
-        for (let i = 0; i < bytes.length; i += chunkSz) {
-          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSz));
-        }
-        excelBase64 = btoa(binary);
-      }
-    } catch (e) {
-      console.warn('Lỗi tạo file Excel đính kèm bản lưu:', e);
-    }
-
-    const activeMangs = MANG_CONFIG.filter(m => (state.extractedByMang[m.code] || []).length > 0).map(m => m.code);
-    let sum27 = 0, sum28 = 0;
-    state.extractedData.forEach(it => {
-      if (!it.isGroup && !it.isMangHeader) {
-        if (it.tt27) sum27 += Number(it.tt27);
-        if (it.tt28) sum28 += Number(it.tt28);
-      }
-    });
-
-    const filesMeta = {};
-    for (const m of MANG_CONFIG) {
-      if (state.files[m.code]) {
-        filesMeta[m.code] = {
-          name: state.files[m.code].name,
-          size: state.files[m.code].size
-        };
-      }
-    }
-
-    const payload = {
-      id: isOverwrite ? state.currentDraftId : null,
-      name: name,
-      note: note,
-      rowCount: state.extractedData.length,
-      mangs: activeMangs,
-      total2027: sum27,
-      total2028: sum28,
-      sessionData: {
-        extractedByMang: state.extractedByMang,
-        mangHeaderInfo: state.mangHeaderInfo,
-        groupsConfig: state.groupsConfig,
-        filesMeta: filesMeta
-      },
-      excelBase64: excelBase64
-    };
-
-    let savedDraft = null;
-    let savedOnServer = false;
-
-    try {
-      const res = await fetch('/api/save-draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const resData = await res.json();
-        if (resData.success && resData.draft) {
-          savedDraft = resData.draft;
-          savedOnServer = true;
-        }
-      }
-    } catch (netErr) {
-      console.warn('Không kết nối được server, lưu vào localStorage dự phòng:', netErr);
-    }
-
-    if (!savedOnServer) {
-      const now = new Date();
-      const localId = isOverwrite ? state.currentDraftId : `local_draft_${Date.now()}`;
-      savedDraft = {
-        id: localId,
-        name: name,
-        note: note,
-        timestamp: Date.now() / 1000,
-        formattedTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`,
-        rowCount: state.extractedData.length,
-        mangs: activeMangs,
-        total2027: sum27,
-        total2028: sum28,
-        sessionData: payload.sessionData,
-        isLocal: true
-      };
-      const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
-      const existIdx = localDrafts.findIndex(d => d.id === localId);
-      if (existIdx >= 0) localDrafts[existIdx] = savedDraft;
-      else localDrafts.unshift(savedDraft);
-      localStorage.setItem('qhdc_local_drafts', JSON.stringify(localDrafts));
-    }
-
-    state.currentDraftId = savedDraft.id;
-    state.currentDraftName = savedDraft.name;
-
-    closeSaveDraftModal();
-    showToast(`Đã lưu bản lưu "${name}" thành công!`, 'success');
-    updateServerDraftBadge();
-  } catch (err) {
-    console.error('Lỗi khi lưu bản lưu:', err);
-    showToast(`Lỗi khi lưu bản lưu: ${err.message}`, 'error');
-  } finally {
-    btnConfirm.disabled = false;
-    btnConfirm.innerHTML = oldBtnHtml;
-    if (window.lucide) lucide.createIcons();
-  }
-}
-
-function openServerDraftsModal() {
-  const modal = document.getElementById('modalServerDrafts');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  fetchAndRenderServerDrafts();
-  if (window.lucide) lucide.createIcons();
-}
-
-function closeServerDraftsModal() {
-  const modal = document.getElementById('modalServerDrafts');
-  if (modal) modal.style.display = 'none';
-}
-
-async function fetchAndRenderServerDrafts() {
-  const tbody = document.getElementById('serverDraftsTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = `
-    <tr>
-      <td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">
-        <span class="spinner"></span> Đang tải danh sách bản lưu...
-      </td>
-    </tr>
-  `;
-  await fetchAllDraftsList();
-  renderServerDraftsTable();
-}
-
-function renderServerDraftsTable() {
-  const tbody = document.getElementById('serverDraftsTableBody');
-  if (!tbody) return;
-  const keyword = (document.getElementById('searchDraftsInput')?.value || '').trim().toLowerCase();
-  let list = state.serverDrafts || [];
-  if (keyword) {
-    list = list.filter(d =>
-      (d.name || '').toLowerCase().includes(keyword) ||
-      (d.note || '').toLowerCase().includes(keyword) ||
-      (d.formattedTime || '').toLowerCase().includes(keyword) ||
-      (d.mangs || []).join(' ').toLowerCase().includes(keyword)
-    );
-  }
-
-  if (list.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b;">
-          ${keyword ? 'Không tìm thấy bản lưu nào phù hợp với từ khóa.' : 'Chưa có bản lưu nào trên server. Sau khi tải dữ liệu và chỉnh sửa, bạn hãy bấm "Lưu lên Server" để lưu trữ lại bản làm việc.'}
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  tbody.innerHTML = list.map((d, i) => {
-    const isCurrent = state.currentDraftId && state.currentDraftId === d.id;
-    const currentPill = isCurrent ? `<span style="font-size: 0.7rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 9999px; margin-left: 6px; font-weight: 700;">Đang mở</span>` : '';
-    const noteHtml = d.note ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 3px; font-style: italic;">${escapeHtml(d.note)}</div>` : '';
-    const mangBadges = (d.mangs || []).map(m => `<span class="badge-mang badge-mang-${m}" style="font-size: 0.65rem; padding: 1px 5px;">${m}</span>`).join(' ');
-    const totVal = (d.total2027 || 0) + (d.total2028 || 0);
-
-    return `
-      <tr>
-        <td style="text-align: center; font-weight: 700; color: #64748b;">${i + 1}</td>
-        <td>
-          <div style="font-weight: 700; color: #1e293b; display: flex; align-items: center;">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600 inline-block mr-1.5 shrink-0"></i>
-            <span>${escapeHtml(d.name)}</span>
-            ${currentPill}
-          </div>
-          ${noteHtml}
-        </td>
-        <td style="text-align: center; font-size: 0.775rem; color: #475569; font-weight: 600;">
-          ${escapeHtml(d.formattedTime || '-')}
-        </td>
-        <td style="text-align: center;">
-          <div style="font-weight: 700; font-size: 0.8rem; color: #0f172a;">${formatNumber(d.rowCount || 0)} dòng</div>
-          <div style="margin-top: 3px; display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;">${mangBadges}</div>
-        </td>
-        <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #047857; font-size: 0.825rem;">
-          ${totVal > 0 ? formatNumber(totVal) + ' USD' : '-'}
-        </td>
-        <td>
-          <div class="draft-card-actions">
-            <button type="button" class="btn btn-primary btn-xs" onclick="loadDraftIntoState('${d.id}')" title="Nạp bản này vào bảng làm việc để sửa tiếp">
-              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
-              <span>Nạp bản này</span>
-            </button>
-            ${(d.hasExcel || !d.isLocal) ? `
-              <button type="button" class="btn btn-outline btn-xs" onclick="downloadServerDraftExcel('${d.id}', '${escapeHtml(d.name)}')" title="Tải file Excel (.xlsx) của bản này về máy tính">
-                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i>
-                <span>Excel</span>
-              </button>
-            ` : ''}
-            <button type="button" class="btn btn-outline btn-xs" style="color: #e11d48; border-color: #fecdd3;" onclick="deleteServerDraft('${d.id}', '${escapeHtml(d.name)}')" title="Xóa bản lưu này khỏi server">
-              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  if (window.lucide) lucide.createIcons();
-}
-
-function downloadServerDraftExcel(draftId, draftName) {
-  const url = `/api/draft-excel?id=${encodeURIComponent(draftId)}`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${draftName || 'Masterlist_Draft'}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  showToast('Đang tải file Excel của bản lưu...', 'info');
-}
-
-async function deleteServerDraft(draftId, draftName) {
-  if (!confirm(`Bạn có chắc chắn muốn xóa bản lưu "${draftName}" khỏi server?`)) return;
-
-  try {
-    try {
-      await fetch(`/api/delete-draft?id=${encodeURIComponent(draftId)}`, { method: 'POST' });
-    } catch (e) {}
-
-    const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
-    const filtered = localDrafts.filter(d => d.id !== draftId);
-    localStorage.setItem('qhdc_local_drafts', JSON.stringify(filtered));
-
-    if (state.currentDraftId === draftId) {
-      state.currentDraftId = null;
-      state.currentDraftName = null;
-    }
-
-    showToast(`Đã xóa bản lưu "${draftName}"`, 'success');
-    fetchAndRenderServerDrafts();
-    updateServerDraftBadge();
-  } catch (err) {
-    showToast(`Lỗi khi xóa bản lưu: ${err.message}`, 'error');
-  }
-}
-
-async function loadDraftIntoState(draftId) {
-  try {
-    showToast('Đang tải dữ liệu bản lưu từ server...', 'info');
-    let draft = null;
-
-    try {
-      const res = await fetch(`/api/load-draft?id=${encodeURIComponent(draftId)}`);
-      if (res.ok) {
-        draft = await res.json();
-      }
-    } catch (e) {}
-
-    if (!draft) {
-      const localDrafts = JSON.parse(localStorage.getItem('qhdc_local_drafts') || '[]');
-      draft = localDrafts.find(d => d.id === draftId);
-    }
-
-    if (!draft) {
-      throw new Error('Không tìm thấy dữ liệu bản lưu!');
-    }
-
-    const sessionData = draft.sessionData || {};
-
-    if (sessionData.extractedByMang) {
-      state.extractedByMang = sessionData.extractedByMang;
-    }
-    if (sessionData.mangHeaderInfo) {
-      state.mangHeaderInfo = sessionData.mangHeaderInfo;
-    }
-    if (sessionData.groupsConfig) {
-      state.groupsConfig = sessionData.groupsConfig;
-    }
-
-    state.currentDraftId = draft.id;
-    state.currentDraftName = draft.name;
-
-    const filesMeta = sessionData.filesMeta || {};
-    for (const mang of MANG_CONFIG) {
-      const items = state.extractedByMang[mang.code] || [];
-      if (items.length > 0) {
-        const meta = filesMeta[mang.code] || {};
-        const fileName = meta.name || `${draft.name} (${mang.code})`;
-        const fileSize = meta.size || (items.length * 150);
-        updateUploadBoxUI(mang.code, fileName, fileSize);
-      } else {
-        resetUploadBoxUI(mang.code);
-      }
-    }
-
-    rebuildExtractedData();
-    recalculateSubtotalFormulas();
-    validateAllExtractedData();
-    renderPreviewTable();
-    renderValidationTable();
-    renderHierarchyTable();
-    syncStrategyComparisonRealtime();
-
-    state.exportBlob = null;
-    const btnDownload = document.getElementById('btnOpenResultFile');
-    if (btnDownload) btnDownload.disabled = false;
-    const btnSaveServer = document.getElementById('btnSaveToServer');
-    if (btnSaveServer) btnSaveServer.disabled = false;
-
-    closeServerDraftsModal();
-    showToast(`Đã nạp bản lưu "${draft.name}" thành công! (${state.extractedData.length} dòng)`, 'success');
-  } catch (err) {
-    console.error('Lỗi khi nạp bản lưu:', err);
-    showToast(`Không thể nạp bản lưu: ${err.message}`, 'error');
-  }
-}
+// ==================== BẢN LƯU SERVER & LÀM MỚI (ĐÃ GỠ BỎ THEO YÊU CẦU) ====================
+async function initServerDrafts() {}
+async function updateServerDraftBadge() {}
+function openServerDraftsModal() {}
+function closeServerDraftsModal() {}
+function openSaveDraftModal() {}
+function closeSaveDraftModal() {}
 
 window.openSaveDraftModal = openSaveDraftModal;
 window.closeSaveDraftModal = closeSaveDraftModal;
-window.confirmSaveDraft = confirmSaveDraft;
 window.openServerDraftsModal = openServerDraftsModal;
 window.closeServerDraftsModal = closeServerDraftsModal;
-window.fetchAndRenderServerDrafts = fetchAndRenderServerDrafts;
-window.renderServerDraftsTable = renderServerDraftsTable;
-window.loadDraftIntoState = loadDraftIntoState;
-window.downloadServerDraftExcel = downloadServerDraftExcel;
-window.deleteServerDraft = deleteServerDraft;
 
+// ==================== MODAL XÓA DỮ LIỆU MẢNG ====================
+window.openClearSectorModal = function() {
+  const modal = document.getElementById('modalClearSector');
+  if (!modal) return;
 
+  const service = window.FirebaseService;
+  const select = document.getElementById('selectWorkspace');
+  const wsId = select ? select.value : null;
+  const wsName = select ? select.options[select.selectedIndex]?.textContent : 'Dự án hiện tại';
 
+  const nameEl = document.getElementById('clearSectorWsName');
+  if (nameEl) nameEl.textContent = wsName;
+
+  const container = document.getElementById('clearSectorListContainer');
+  if (!container) return;
+
+  const isGst = service ? service.isGuest() : true;
+  const isAdm = service ? service.isAdmin() : false;
+
+  let html = '';
+  MANG_CONFIG.forEach(mang => {
+    const hasAccess = isAdm || (!isGst && service && service.canAccessSector(mang.code, wsId));
+    const items = (state.extractedByMang && state.extractedByMang[mang.code]) || [];
+    const rowCount = items.length;
+    const hasData = rowCount > 0;
+
+    let statusText = '';
+    let statusStyle = '';
+    if (!hasAccess) {
+      statusText = '🔒 Chưa được phân quyền mảng này';
+      statusStyle = 'color: #b91c1c; font-style: italic;';
+    } else if (hasData) {
+      statusText = `Có ${formatNumber(rowCount)} dòng dữ liệu`;
+      statusStyle = 'color: #059669; font-weight: 700;';
+    } else {
+      statusText = 'Chưa có dữ liệu';
+      statusStyle = 'color: #94a3b8;';
+    }
+
+    const disabledAttr = (!hasAccess || !hasData) ? 'disabled' : '';
+    const itemBg = !hasAccess ? 'opacity: 0.6; background: #fff5f5;' : (hasData ? 'background: #ffffff;' : 'background: #f8fafc;');
+
+    html += `
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; ${itemBg}">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <input type="checkbox" class="chk-clear-sector" value="${mang.code}" ${disabledAttr} style="width: 17px; height: 17px; cursor: ${disabledAttr ? 'not-allowed' : 'pointer'};">&nbsp;
+          <span class="badge-mang badge-mang-${mang.code}" style="font-size: 0.72rem; padding: 2px 7px;">${mang.code}</span>
+          <div>
+            <div style="font-weight: 700; font-size: 0.88rem; color: #1e293b;">${mang.name}</div>
+            <div style="font-size: 0.75rem; ${statusStyle}">${statusText}</div>
+          </div>
+        </div>
+        ${(hasAccess && hasData) ? `
+          <button type="button" class="btn btn-outline btn-xs" style="color: #e11d48; border-color: #fecdd3;" onclick="window.confirmClearSingleSector('${mang.code}', '${escapeHtml(mang.name)}')" title="Xóa dữ liệu mảng ${mang.name}">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa mảng này
+          </button>
+        ` : ''}
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  if (window.lucide) window.lucide.createIcons();
+  modal.style.display = 'flex';
+};
+
+window.closeClearSectorModal = function() {
+  const modal = document.getElementById('modalClearSector');
+  if (modal) modal.style.display = 'none';
+};
+
+window.confirmClearSingleSector = async function(secKey, secName) {
+  if (confirm(`Bạn có chắc chắn muốn xóa toàn bộ dữ liệu của mảng [${secName}] khỏi phiên làm việc và dự án hiện tại?`)) {
+    await deleteSectorData(secKey, { askConfirm: false, deleteServer: true });
+    window.openClearSectorModal();
+  }
+};
+
+window.handleClearSelectedSectors = async function() {
+  const chks = document.querySelectorAll('.chk-clear-sector:checked');
+  if (!chks.length) {
+    showToast('Vui lòng tích chọn ít nhất 1 mảng cần xóa!', 'warning');
+    return;
+  }
+  const selectedKeys = Array.from(chks).map(c => c.value);
+  const names = selectedKeys.map(k => {
+    const m = MANG_CONFIG.find(x => x.code === k);
+    return m ? m.name : k;
+  });
+
+  if (!confirm(`Bạn có chắc chắn muốn xóa toàn bộ dữ liệu của ${selectedKeys.length} mảng đã chọn:\n- ${names.join('\n- ')}\nkhỏi phiên làm việc và dự án hiện tại?`)) {
+    return;
+  }
+
+  for (const k of selectedKeys) {
+    await deleteSectorData(k, { askConfirm: false, deleteServer: true });
+  }
+
+  window.closeClearSectorModal();
+  showToast(`Đã xóa thành công ${selectedKeys.length} mảng: ${names.join(', ')}!`, 'success');
+};

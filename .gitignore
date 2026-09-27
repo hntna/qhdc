@@ -16,3 +16,10 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Backups & archives
+*.zip
+*.rar
+Masterlist 2027-2028_Mau/
+Masterlist 2027-2028_VTB_1509.xlsx
+
