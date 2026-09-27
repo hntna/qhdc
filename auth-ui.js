@@ -415,11 +415,16 @@
         select.appendChild(opt);
       });
 
-      if (selectedId && list.some(w => w.id === selectedId)) {
-        select.value = selectedId;
+      const savedWsId = (function () { try { return localStorage.getItem('qhdc_active_workspace_id'); } catch (e) { return null; } })();
+      const targetId = selectedId || savedWsId;
+
+      if (targetId && list.some(w => w.id === targetId)) {
+        select.value = targetId;
       } else if (list.length > 0) {
         select.value = list[0].id;
       }
+
+      try { localStorage.setItem('qhdc_active_workspace_id', select.value); } catch (e) {}
 
       updateWorkspaceBadgeText();
       applySectorPermissions();
@@ -443,6 +448,7 @@
 
   async function handleWorkspaceChange(e) {
     const wsId = e.target.value;
+    try { localStorage.setItem('qhdc_active_workspace_id', wsId); } catch (e) {}
     updateWorkspaceBadgeText();
     applySectorPermissions();
     if (wsId) {
