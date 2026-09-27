@@ -66,7 +66,7 @@ const reportState = {
   searchKeyword: '',
   selectedSectorFilter: 'ALL',
   selectedServiceFilter: 'ALL',
-  thdvPeriodView: 'ALL'
+  thdvPeriodView: '2027'
 };
 
 // Chuẩn hóa tên mảng
@@ -741,6 +741,7 @@ function renderTableTHTheoDV() {
   });
 
   tbody.innerHTML = html;
+  setTHDVPeriod(reportState.thdvPeriodView || '2027');
 }
 
 // Render Bảng tóm tắt theo mảng toàn mạng
@@ -1123,6 +1124,7 @@ function setReportUnit(unit) {
 function setTHDVPeriod(period) {
   reportState.thdvPeriodView = period;
   const tbl = document.getElementById('tableTHTheoDV');
+  const wrapper = document.querySelector('.th-dv-wrapper');
   const btns = document.querySelectorAll('#thdvPeriodButtons .period-control-btn');
   btns.forEach(b => {
     if (b.getAttribute('data-period') === period) b.classList.add('active');
@@ -1131,12 +1133,17 @@ function setTHDVPeriod(period) {
 
   if (!tbl) return;
   tbl.classList.remove('view-p-2027', 'view-p-2028', 'view-p-tot', 'view-single-period');
+  if (wrapper) wrapper.classList.remove('no-horizontal-scroll');
+
   if (period === '2027') {
     tbl.classList.add('view-p-2027', 'view-single-period');
+    if (wrapper) wrapper.classList.add('no-horizontal-scroll');
   } else if (period === '2028') {
     tbl.classList.add('view-p-2028', 'view-single-period');
+    if (wrapper) wrapper.classList.add('no-horizontal-scroll');
   } else if (period === 'TOT') {
     tbl.classList.add('view-p-tot', 'view-single-period');
+    if (wrapper) wrapper.classList.add('no-horizontal-scroll');
   }
 }
 
@@ -1243,7 +1250,7 @@ function copyCurrentTabTables() {
 
   if (subtab === 'subtabTongHop') {
     targetId = 'tableTHTheoDV';
-    name = 'Bảng Tổng hợp TH theo DV';
+    name = 'Bảng Tổng hợp chung (TH theo DV)';
   } else if (subtab === 'subtabStratDetail') {
     targetId = 'tableStrategy';
     name = 'Bảng Đối chiếu Chiến lược 5 năm';

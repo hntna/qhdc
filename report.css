@@ -314,11 +314,11 @@ table.data-table.report-dt th {
   color: #334155;
   font-weight: 800;
   letter-spacing: 0.03em;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   border-bottom: 1.5px solid #cbd5e1;
   border-right: 1px solid var(--border-subtle, #e2e8f0);
-  padding: 12px 16px;
+  padding: 6px 10px;
   white-space: nowrap;
   vertical-align: middle;
 }
@@ -332,8 +332,8 @@ table.data-table.report-dt th:last-child {
 table.data-table.report-dt td {
   border-bottom: 1px solid #f1f5f9;
   border-right: 1px solid #f1f5f9;
-  padding: 11px 16px;
-  line-height: 1.45;
+  padding: 5px 10px;
+  line-height: 1.35;
   white-space: nowrap;
   vertical-align: middle;
   color: var(--text-main, #141821);
@@ -476,17 +476,67 @@ table.data-table.report-dt tbody tr:hover {
   box-shadow: inset 0 0 6px rgba(15, 23, 42, 0.04);
 }
 
+.th-dv-wrapper.no-horizontal-scroll {
+  overflow-x: hidden !important;
+}
+
 #tableTHTheoDV {
   width: 100%;
   min-width: 2200px;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   text-align: left;
 }
 
+#tableTHTheoDV td {
+  padding: 0.32rem 0.45rem;
+  line-height: 1.35;
+  font-size: 0.81rem;
+}
+
 #tableTHTheoDV.view-single-period {
-  min-width: 1100px;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
+}
+
+#tableTHTheoDV.view-single-period .col-sticky-stt {
+  position: static !important;
+  width: 32px !important;
+  min-width: 32px !important;
+  padding: 0.32rem 0.2rem !important;
+}
+
+#tableTHTheoDV.view-single-period .col-sticky-nd {
+  position: static !important;
+  width: auto !important;
+  min-width: 160px !important;
+  max-width: none !important;
+  white-space: normal !important;
+  word-break: break-word;
+  padding: 0.32rem 0.45rem !important;
+}
+
+#tableTHTheoDV.view-single-period .col-sticky-madv {
+  position: static !important;
+  width: 55px !important;
+  min-width: 50px !important;
+  max-width: 55px !important;
+  box-shadow: none !important;
+  padding: 0.32rem 0.25rem !important;
+}
+
+#tableTHTheoDV.view-single-period thead th.col-sticky-madv {
+  box-shadow: none !important;
+}
+
+#tableTHTheoDV.view-single-period .col-num {
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0.32rem 0.3rem !important;
+  font-size: 0.79rem;
 }
 
 #tableTHTheoDV thead {
@@ -499,21 +549,21 @@ table.data-table.report-dt tbody tr:hover {
   position: sticky;
   top: 0;
   z-index: 31;
-  padding: 0.6rem 0.55rem;
+  padding: 0.4rem 0.35rem;
   text-align: center;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   letter-spacing: 0.02em;
 }
 
 #tableTHTheoDV thead tr:nth-child(2) th {
   position: sticky;
-  top: 34px;
+  top: 29px;
   z-index: 30;
-  padding: 0.5rem 0.45rem;
+  padding: 0.32rem 0.3rem;
   text-align: right;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.785rem;
   background: #f1f5f9;
   border-bottom: 2px solid #94a3b8;
   border-right: 1px solid #cbd5e1;
@@ -738,3 +788,104 @@ table.data-table.report-dt tbody tr:hover {
   border-color: #bfdbfe;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
+
+/* ==========================================================================
+   HEADER ACTION BUTTONS (Lưu, Xóa, Tải)
+   ========================================================================== */
+.header-actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 6px;
+}
+
+.btn-header-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  outline: none;
+}
+
+.btn-header-act-save {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+.btn-header-act-save:hover:not(:disabled) {
+  background: #dbeafe;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.15);
+}
+
+.btn-header-act-danger {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+}
+.btn-header-act-danger:hover:not(:disabled) {
+  background: #ffe4e6;
+  color: #be123c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(225, 29, 72, 0.15);
+}
+
+.btn-header-act-primary {
+  background: #ecfdf5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+.btn-header-act-primary:hover:not(:disabled) {
+  background: #d1fae5;
+  color: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(5, 150, 105, 0.15);
+}
+
+.btn-header-act:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   GLOBAL COMPACT TABLE STYLES (Giảm chiều cao row của tất cả các bảng)
+   ========================================================================== */
+.data-table thead th,
+.data-table:not(.strategy-table) thead th,
+.report-table thead th {
+  padding: 6px 10px !important;
+  font-size: 0.8rem !important;
+}
+
+.data-table tbody td,
+.data-table:not(.strategy-table) tbody td,
+.report-table tbody td,
+table.data-table.report-dt td {
+  padding: 5px 10px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.32 !important;
+}
+
+.strategy-table th,
+.strategy-table td {
+  padding: 4px 8px !important;
+  font-size: 0.8rem !important;
+  line-height: 1.32 !important;
+}
+
+.vtb-assignment-table td,
+.drafts-table td,
+.drafts-table th {
+  padding: 5px 8px !important;
+  font-size: 0.82rem !important;
+}
+

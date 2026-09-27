@@ -66,29 +66,6 @@
       <button class="nav-item" data-section="admin-workspaces" id="navItemAdminWorkspaces" title="Quản lý Dự án" style="display: none;"><i data-lucide="folder-kanban" class="w-5 h-5"></i><span>Quản lý Dự án</span></button>
       <button class="nav-item" data-section="admin-users" id="navItemAdminUsers" title="Quản lý User" style="display: none;"><i data-lucide="user-check" class="w-5 h-5"></i><span>Quản lý User</span></button>
     </nav>
-
-    <!-- Sidebar Footer Actions (Tải, Lưu, Xóa) -->
-    <div class="sidebar-footer-actions" id="sidebarFooterActions">
-      <div class="sidebar-action-card">
-        <div class="sidebar-action-header">
-          <span class="sidebar-action-title">Thao tác dự án</span>
-        </div>
-        <div class="sidebar-action-grid">
-          <button id="btnOpenResultFile" class="btn-sidebar-act btn-sidebar-act-primary" disabled title="Tải file kết quả tổng hợp về máy">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Tải</span>
-          </button>
-          <button id="btnSaveToServer" class="btn-sidebar-act btn-sidebar-act-secondary" disabled title="Lưu dữ liệu các mảng vào server">
-            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-            <span>Lưu</span>
-          </button>
-          <button id="btnOpenClearSectorModal" class="btn-sidebar-act btn-sidebar-act-danger" onclick="openClearSectorModal()" title="Xóa dữ liệu các mảng trong dự án">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-            <span>Xóa</span>
-          </button>
-        </div>
-      </div>
-    </div>
   </aside>
 
   <!-- Legacy badge counters & placeholders (giu nguyen id de test/app khong loi) -->
@@ -118,6 +95,22 @@
       </div>
 
       <div class="header-right-zone">
+        <!-- Nhóm nút thao tác dự án: Lưu, Xóa, Tải -->
+        <div class="header-actions-group" id="headerActionsGroup">
+          <button type="button" id="btnSaveToServer" class="btn-header-act btn-header-act-save" disabled title="Lưu dữ liệu các mảng vào server">
+            <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+            <span>Lưu</span>
+          </button>
+          <button type="button" id="btnOpenClearSectorModal" class="btn-header-act btn-header-act-danger" onclick="openClearSectorModal()" title="Xóa dữ liệu các mảng trong dự án">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>Xóa</span>
+          </button>
+          <button type="button" id="btnOpenResultFile" class="btn-header-act btn-header-act-primary" disabled title="Tải file kết quả tổng hợp về máy">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Tải</span>
+          </button>
+        </div>
+
         <!-- Chuông thông báo lỗi / cảnh báo -->
         <div class="header-notify-wrap" id="headerNotifyWrap" title="Số cảnh báo kiểm tra dữ liệu">
           <i data-lucide="bell" class="w-5 h-5 text-slate-600"></i>
@@ -328,8 +321,8 @@
         <!-- CDBR -->
         <div class="upload-box box-CDBR" id="box_CDBR" onclick="document.getElementById('input_CDBR').click()">
           <div class="upload-box-top">
-            <span class="mang-badge">CĐBR</span>
-            <span class="mang-desc">Cố định BR</span>
+            <span class="mang-badge">BRCĐ-TH</span>
+            <span class="mang-desc">BRCĐ-TH</span>
           </div>
           <div class="file-info-bar" id="info_CDBR">
             <span class="file-name-text" id="name_CDBR">Chưa có file</span>
@@ -977,7 +970,7 @@
       <div class="report-subtabs-nav">
         <button type="button" class="report-subtab-btn active" data-subtab="subtabTongHop">
           <i data-lucide="pie-chart" class="w-4 h-4"></i>
-          <span>Tổng hợp</span>
+          <span>Tổng hợp chung</span>
         </button>
         <button type="button" class="report-subtab-btn" data-subtab="subtabMang">
           <i data-lucide="layers" class="w-4 h-4"></i>
@@ -1065,10 +1058,10 @@
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <!-- Chế độ xem kỳ -->
               <div class="period-toggle-group" id="thdvPeriodButtons">
-                <button type="button" class="period-control-btn active" data-period="ALL" onclick="setTHDVPeriod('ALL')">
+                <button type="button" class="period-control-btn" data-period="ALL" onclick="setTHDVPeriod('ALL')">
                   Tất cả (33 cột)
                 </button>
-                <button type="button" class="period-control-btn" data-period="2027" onclick="setTHDVPeriod('2027')">
+                <button type="button" class="period-control-btn active" data-period="2027" onclick="setTHDVPeriod('2027')">
                   Năm 2027 (10 cột)
                 </button>
                 <button type="button" class="period-control-btn" data-period="2028" onclick="setTHDVPeriod('2028')">
@@ -1093,8 +1086,8 @@
             </div>
           </div>
 
-          <div class="th-dv-wrapper">
-            <table class="report-table" id="tableTHTheoDV">
+          <div class="th-dv-wrapper no-horizontal-scroll">
+            <table class="report-table view-p-2027 view-single-period" id="tableTHTheoDV">
               <thead>
                 <tr>
                   <th class="col-sticky-stt" rowspan="2">STT</th>
