@@ -3201,6 +3201,14 @@ class JSStyleMerger {
     return this.bordersList.length - 1;
   }
 
+  addXf(xfXml) {
+    const norm = normalizeXmlChunk(xfXml);
+    const idx = this.cellXfsList.indexOf(norm);
+    if (idx !== -1) return idx;
+    this.cellXfsList.push(norm);
+    return this.cellXfsList.length - 1;
+  }
+
   mapNumFmt(srcNumFmtId, srcNumFmtDict) {
     const id = parseInt(srcNumFmtId, 10);
     if (isNaN(id) || id < 164) return id || 0;
@@ -3384,6 +3392,44 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   const tmplStylesXml = await zip.file('xl/styles.xml').async('string');
   const merger = new JSStyleMerger(tmplStylesXml);
 
+  // Đảm bảo style ô số không bôi đậm cho các mục chi tiết (font Times New Roman 11 thường, border thin 4 cạnh, vertical center, numFmt 165)
+  const sDetailNumVert = merger.addXf(
+    '<xf numFmtId="165" fontId="13" fillId="0" borderId="3" xfId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>'
+  );
+
+  // Bộ định dạng chuẩn theo dòng 9 (P1 TỔNG ĐẦU TƯ VTTB 2027-2028):
+  // Hạng mục (Group): Times New Roman 11 Bold (fontId 32), Border thin 4 cạnh (borderId 3), No fill (fillId 0)
+  const STYLE_GROUP = {
+    A: 191, // Center
+    B: 318, // Left, wrapText
+    C: 314, // Center, wrapText
+    D: 310, // Center, numFmt 165, wrapText
+    E: 310, // Center, numFmt 165, wrapText
+    F: 310, // Center, numFmt 165, wrapText
+    G: 193, // Vertical center, numFmt 165
+    H: 193, // Vertical center, numFmt 165
+    I: 191, // Center
+    J: 191, // Center
+    K: 191, // Center
+    L: 191  // Center
+  };
+
+  // Mục chi tiết (Detail): Times New Roman 11 Regular (fontId 13), Border thin 4 cạnh (borderId 3), No fill (fillId 0)
+  const STYLE_DETAIL = {
+    A: 189, // Center
+    B: 376, // Left, wrapText
+    C: 311, // Center, wrapText
+    D: 312, // Center, numFmt 165, wrapText
+    E: 312, // Center, numFmt 165, wrapText
+    F: 312, // Center, numFmt 165, wrapText
+    G: sDetailNumVert, // Vertical center, numFmt 165
+    H: sDetailNumVert, // Vertical center, numFmt 165
+    I: 189, // Center
+    J: 189, // Center
+    K: 189, // Center
+    L: 189  // Center
+  };
+
   // Thu thập style và thông tin dòng gốc từ từng file mảng đầu vào
   const mangSourceData = {};
   if (filesObj) {
@@ -3496,57 +3542,77 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
       const srcRow = sourceRows[it.origRow];
       const srcCells = srcRow ? srcRow.cells : {};
 
-      const sA = srcCells['A'] !== undefined && srcCells['A'] !== null ? srcCells['A'] : (it.isGroup ? 320 : 400);
-      const sB = srcCells['B'] !== undefined && srcCells['B'] !== null ? srcCells['B'] : (it.isGroup ? 321 : 557);
-      const sC = srcCells['C'] !== undefined && srcCells['C'] !== null ? srcCells['C'] : 397;
-      const sD = srcCells['D'] !== undefined && srcCells['D'] !== null ? srcCells['D'] : 323;
-      const sE = srcCells['E'] !== undefined && srcCells['E'] !== null ? srcCells['E'] : 323;
-      const sF = srcCells['F'] !== undefined && srcCells['F'] !== null ? srcCells['F'] : 323;
-      const sG = srcCells['G'] !== undefined && srcCells['G'] !== null ? srcCells['G'] : 323;
-      const sH = srcCells['H'] !== undefined && srcCells['H'] !== null ? srcCells['H'] : 323;
-      const sI = srcCells['I'] !== undefined && srcCells['I'] !== null ? srcCells['I'] : 399;
-      const sJ = srcCells['J'] !== undefined && srcCells['J'] !== null ? srcCells['J'] : 399;
-      const sK = srcCells['K'] !== undefined && srcCells['K'] !== null ? srcCells['K'] : 399;
-      const sL = srcCells['L'] !== undefined && srcCells['L'] !== null ? srcCells['L'] : 399;
+      const isGroup = !!it.isGroup;
+      const styles = isGroup ? STYLE_GROUP : STYLE_DETAIL;
 
       const cellMap = {};
-      if (it.tt) cellMap['A'] = `<c r="A${rNum}" s="${sA}" t="inlineStr"><is><t>${escapeXml(it.tt)}</t></is></c>`;
-      else if ('A' in srcCells) cellMap['A'] = `<c r="A${rNum}" s="${sA}"/>`;
-
-      if (it.nd) cellMap['B'] = `<c r="B${rNum}" s="${sB}" t="inlineStr"><is><t>${escapeXml(it.nd)}</t></is></c>`;
-      else if ('B' in srcCells) cellMap['B'] = `<c r="B${rNum}" s="${sB}"/>`;
-
-      if (it.dvt) cellMap['C'] = `<c r="C${rNum}" s="${sC}" t="inlineStr"><is><t>${escapeXml(it.dvt)}</t></is></c>`;
-      else if ('C' in srcCells) cellMap['C'] = `<c r="C${rNum}" s="${sC}"/>`;
-
-      if (it.kl27 !== null && it.kl27 !== undefined) cellMap['D'] = `<c r="D${rNum}" s="${sD}"><v>${it.kl27}</v></c>`;
-      else if ('D' in srcCells) cellMap['D'] = `<c r="D${rNum}" s="${sD}"/>`;
-
-      if (it.kl28 !== null && it.kl28 !== undefined) cellMap['E'] = `<c r="E${rNum}" s="${sE}"><v>${it.kl28}</v></c>`;
-      else if ('E' in srcCells) cellMap['E'] = `<c r="E${rNum}" s="${sE}"/>`;
-
-      if (it.dg !== null && it.dg !== undefined) cellMap['F'] = `<c r="F${rNum}" s="${sF}"><v>${it.dg}</v></c>`;
-      else if ('F' in srcCells) cellMap['F'] = `<c r="F${rNum}" s="${sF}"/>`;
-
-      if (!it.isGroup) {
-        cellMap['G'] = `<c r="G${rNum}" s="${sG}"><f>F${rNum}*D${rNum}</f></c>`;
-        cellMap['H'] = `<c r="H${rNum}" s="${sH}"><f>F${rNum}*E${rNum}</f></c>`;
+      if (it.tt !== undefined && it.tt !== null && String(it.tt).trim() !== '') {
+        cellMap['A'] = `<c r="A${rNum}" s="${styles.A}" t="inlineStr"><is><t>${escapeXml(it.tt)}</t></is></c>`;
       } else {
-        if ('G' in srcCells) cellMap['G'] = `<c r="G${rNum}" s="${sG}"/>`;
-        if ('H' in srcCells) cellMap['H'] = `<c r="H${rNum}" s="${sH}"/>`;
+        cellMap['A'] = `<c r="A${rNum}" s="${styles.A}"/>`;
       }
 
-      if (it.donViDT) cellMap['I'] = `<c r="I${rNum}" s="${sI}" t="inlineStr"><is><t>${escapeXml(it.donViDT)}</t></is></c>`;
-      else if ('I' in srcCells) cellMap['I'] = `<c r="I${rNum}" s="${sI}"/>`;
+      if (it.nd !== undefined && it.nd !== null && String(it.nd).trim() !== '') {
+        cellMap['B'] = `<c r="B${rNum}" s="${styles.B}" t="inlineStr"><is><t>${escapeXml(it.nd)}</t></is></c>`;
+      } else {
+        cellMap['B'] = `<c r="B${rNum}" s="${styles.B}"/>`;
+      }
 
-      if (it.maMang) cellMap['J'] = `<c r="J${rNum}" s="${sJ}" t="inlineStr"><is><t>${escapeXml(it.maMang)}</t></is></c>`;
-      else if ('J' in srcCells) cellMap['J'] = `<c r="J${rNum}" s="${sJ}"/>`;
+      if (it.dvt !== undefined && it.dvt !== null && String(it.dvt).trim() !== '') {
+        cellMap['C'] = `<c r="C${rNum}" s="${styles.C}" t="inlineStr"><is><t>${escapeXml(it.dvt)}</t></is></c>`;
+      } else {
+        cellMap['C'] = `<c r="C${rNum}" s="${styles.C}"/>`;
+      }
 
-      if (it.maDV) cellMap['K'] = `<c r="K${rNum}" s="${sK}" t="inlineStr"><is><t>${escapeXml(it.maDV)}</t></is></c>`;
-      else if ('K' in srcCells) cellMap['K'] = `<c r="K${rNum}" s="${sK}"/>`;
+      if (it.kl27 !== null && it.kl27 !== undefined && it.kl27 !== '') {
+        cellMap['D'] = `<c r="D${rNum}" s="${styles.D}"><v>${it.kl27}</v></c>`;
+      } else {
+        cellMap['D'] = `<c r="D${rNum}" s="${styles.D}"/>`;
+      }
 
-      if (it.maLoai) cellMap['L'] = `<c r="L${rNum}" s="${sL}" t="inlineStr"><is><t>${escapeXml(it.maLoai)}</t></is></c>`;
-      else if ('L' in srcCells) cellMap['L'] = `<c r="L${rNum}" s="${sL}"/>`;
+      if (it.kl28 !== null && it.kl28 !== undefined && it.kl28 !== '') {
+        cellMap['E'] = `<c r="E${rNum}" s="${styles.E}"><v>${it.kl28}</v></c>`;
+      } else {
+        cellMap['E'] = `<c r="E${rNum}" s="${styles.E}"/>`;
+      }
+
+      if (it.dg !== null && it.dg !== undefined && it.dg !== '') {
+        cellMap['F'] = `<c r="F${rNum}" s="${styles.F}"><v>${it.dg}</v></c>`;
+      } else {
+        cellMap['F'] = `<c r="F${rNum}" s="${styles.F}"/>`;
+      }
+
+      if (!isGroup) {
+        cellMap['G'] = `<c r="G${rNum}" s="${styles.G}"><f>F${rNum}*D${rNum}</f></c>`;
+        cellMap['H'] = `<c r="H${rNum}" s="${styles.H}"><f>F${rNum}*E${rNum}</f></c>`;
+      } else {
+        cellMap['G'] = `<c r="G${rNum}" s="${styles.G}"/>`;
+        cellMap['H'] = `<c r="H${rNum}" s="${styles.H}"/>`;
+      }
+
+      if (it.donViDT !== undefined && it.donViDT !== null && String(it.donViDT).trim() !== '') {
+        cellMap['I'] = `<c r="I${rNum}" s="${styles.I}" t="inlineStr"><is><t>${escapeXml(it.donViDT)}</t></is></c>`;
+      } else {
+        cellMap['I'] = `<c r="I${rNum}" s="${styles.I}"/>`;
+      }
+
+      if (it.maMang !== undefined && it.maMang !== null && String(it.maMang).trim() !== '') {
+        cellMap['J'] = `<c r="J${rNum}" s="${styles.J}" t="inlineStr"><is><t>${escapeXml(it.maMang)}</t></is></c>`;
+      } else {
+        cellMap['J'] = `<c r="J${rNum}" s="${styles.J}"/>`;
+      }
+
+      if (it.maDV !== undefined && it.maDV !== null && String(it.maDV).trim() !== '') {
+        cellMap['K'] = `<c r="K${rNum}" s="${styles.K}" t="inlineStr"><is><t>${escapeXml(it.maDV)}</t></is></c>`;
+      } else {
+        cellMap['K'] = `<c r="K${rNum}" s="${styles.K}"/>`;
+      }
+
+      if (it.maLoai !== undefined && it.maLoai !== null && String(it.maLoai).trim() !== '') {
+        cellMap['L'] = `<c r="L${rNum}" s="${styles.L}" t="inlineStr"><is><t>${escapeXml(it.maLoai)}</t></is></c>`;
+      } else {
+        cellMap['L'] = `<c r="L${rNum}" s="${styles.L}"/>`;
+      }
 
       // Chuẩn hóa Group dòng (Outline Level 1..5) theo đúng cây phân cấp đã nhận dạng
       let ol = null;
@@ -3563,14 +3629,13 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
         }
       }
 
-      const htAttr = (srcRow && srcRow.ht) ? ` ht="${srcRow.ht}" customHeight="1"` : '';
-      const sRowAttr = (srcRow && srcRow.mappedRowS !== null) ? ` s="${srcRow.mappedRowS}" customFormat="1"` : (it.isGroup ? ' s="328"' : '');
+      const htVal = (srcRow && srcRow.ht) ? srcRow.ht : '15';
       const olAttr = ol ? ` outlineLevel="${ol}"` : '';
 
       childRows.push({
         idx, rNum,
-        rowAttrs: `${htAttr}${sRowAttr}${olAttr}`,
-        cellMap, it, sG, sH
+        rowAttrs: ` s="157" customFormat="1" ht="${htVal}" customHeight="1"${olAttr}`,
+        cellMap, it, sG: styles.G, sH: styles.H
       });
     }
 
@@ -3580,26 +3645,22 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
     const headerInfo = state.mangHeaderInfo ? state.mangHeaderInfo[code] : null;
     const secTT = (headerInfo && headerInfo.tt) ? headerInfo.tt : mang.tt;
     const secND = (headerInfo && headerInfo.nd) ? headerInfo.nd : mang.name.toUpperCase();
-    const srcHeaderRow = (headerInfo && sourceRows) ? sourceRows[headerInfo.origRow] : null;
-    const srcHeaderCells = srcHeaderRow ? srcHeaderRow.cells : {};
-
-    const sec_sA = srcHeaderCells['A'] !== undefined && srcHeaderCells['A'] !== null ? srcHeaderCells['A'] : 320;
-    const sec_sB = srcHeaderCells['B'] !== undefined && srcHeaderCells['B'] !== null ? srcHeaderCells['B'] : 321;
-    const sec_sG = srcHeaderCells['G'] !== undefined && srcHeaderCells['G'] !== null ? srcHeaderCells['G'] : 323;
-    const sec_sH = srcHeaderCells['H'] !== undefined && srcHeaderCells['H'] !== null ? srcHeaderCells['H'] : 323;
-    const sec_sJ = srcHeaderCells['J'] !== undefined && srcHeaderCells['J'] !== null ? srcHeaderCells['J'] : 324;
-    const secRowS = srcHeaderRow && srcHeaderRow.mappedRowS !== null ? ` s="${srcHeaderRow.mappedRowS}" customFormat="1"` : ' s="328" customFormat="1"';
 
     const secCellMap = {
-      'A': `<c r="A${secR}" s="${sec_sA}" t="inlineStr"><is><t>${escapeXml(secTT)}</t></is></c>`,
-      'B': `<c r="B${secR}" s="${sec_sB}" t="inlineStr"><is><t>${escapeXml(secND)}</t></is></c>`
+      'A': `<c r="A${secR}" s="${STYLE_GROUP.A}" t="inlineStr"><is><t>${escapeXml(secTT)}</t></is></c>`,
+      'B': `<c r="B${secR}" s="${STYLE_GROUP.B}" t="inlineStr"><is><t>${escapeXml(secND)}</t></is></c>`,
+      'C': `<c r="C${secR}" s="${STYLE_GROUP.C}"/>`,
+      'D': `<c r="D${secR}" s="${STYLE_GROUP.D}"/>`,
+      'E': `<c r="E${secR}" s="${STYLE_GROUP.E}"/>`,
+      'F': `<c r="F${secR}" s="${STYLE_GROUP.F}"/>`,
+      'G': secEnd > secStart ? `<c r="G${secR}" s="${STYLE_GROUP.G}"><f>SUBTOTAL(9,G${secStart + 1}:G${secEnd})</f></c>` : `<c r="G${secR}" s="${STYLE_GROUP.G}"/>`,
+      'H': secEnd > secStart ? `<c r="H${secR}" s="${STYLE_GROUP.H}"><f>SUBTOTAL(9,H${secStart + 1}:H${secEnd})</f></c>` : `<c r="H${secR}" s="${STYLE_GROUP.H}"/>`,
+      'I': `<c r="I${secR}" s="${STYLE_GROUP.I}"/>`,
+      'J': `<c r="J${secR}" s="${STYLE_GROUP.J}" t="inlineStr"><is><t>${escapeXml(code)}</t></is></c>`,
+      'K': `<c r="K${secR}" s="${STYLE_GROUP.K}"/>`,
+      'L': `<c r="L${secR}" s="${STYLE_GROUP.L}"/>`
     };
-    if (secEnd > secStart) {
-      secCellMap['G'] = `<c r="G${secR}" s="${sec_sG}"><f>SUBTOTAL(9,G${secStart + 1}:G${secEnd})</f></c>`;
-      secCellMap['H'] = `<c r="H${secR}" s="${sec_sH}"><f>SUBTOTAL(9,H${secStart + 1}:H${secEnd})</f></c>`;
-    }
-    secCellMap['J'] = `<c r="J${secR}" s="${sec_sJ}" t="inlineStr"><is><t>${code}</t></is></c>`;
-    newRowsXml.push(`<row r="${secR}" spans="1:17"${secRowS}>${COLS.map(c => secCellMap[c] || '').join('')}</row>`);
+    newRowsXml.push(`<row r="${secR}" spans="1:17" s="157" customFormat="1" ht="15" customHeight="1">${COLS.map(c => secCellMap[c] || '').join('')}</row>`);
 
     for (const itemObj of childRows) {
       const it = itemObj.it;
@@ -3618,8 +3679,8 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
           cEnd = itemRowMap[it.childEndIdxInMang];
         }
         if (cStart !== null && cEnd !== null) {
-          itemObj.cellMap['G'] = `<c r="G${itemObj.rNum}" s="${itemObj.sG}"><f>SUBTOTAL(9,G${cStart}:G${cEnd})</f></c>`;
-          itemObj.cellMap['H'] = `<c r="H${itemObj.rNum}" s="${itemObj.sH}"><f>SUBTOTAL(9,H${cStart}:H${cEnd})</f></c>`;
+          itemObj.cellMap['G'] = `<c r="G${itemObj.rNum}" s="${STYLE_GROUP.G}"><f>SUBTOTAL(9,G${cStart}:G${cEnd})</f></c>`;
+          itemObj.cellMap['H'] = `<c r="H${itemObj.rNum}" s="${STYLE_GROUP.H}"><f>SUBTOTAL(9,H${cStart}:H${cEnd})</f></c>`;
         }
       }
       newRowsXml.push(`<row r="${itemObj.rNum}" spans="1:17"${itemObj.rowAttrs}>${COLS.map(c => itemObj.cellMap[c] || '').join('')}</row>`);
