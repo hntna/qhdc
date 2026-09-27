@@ -5124,7 +5124,7 @@ async function performVTBConversion() {
 
 function formatNumberVTB(num) {
   if (num === null || num === undefined || isNaN(num)) return '-';
-  return Number(num).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+  return Number(num).toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
 function renderVTBConversionResult(res, fileName) {

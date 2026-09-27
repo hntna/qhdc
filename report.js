@@ -601,11 +601,11 @@ function buildStrategyComparison(tablesMang) {
 
 /* ==================== RENDERING UI ==================== */
 
-// Định dạng số
+// Định dạng số (ngăn cách thập phân là . thay vì ,)
 function fmtVal(num) {
   if (num === null || num === undefined || isNaN(num) || num === 0) return '0.00';
   const scaled = num * reportState.unitMultiplier;
-  return scaled.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return scaled.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function escapeHtml(text) {
