@@ -97,13 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // Nạp file phôi mẫu: Luôn tự động lấy file Masterlist 2027-2028_Mau.xlsx, fallback sang bản nhúng nếu offline
 async function initTemplateFile() {
   try {
-    const res = await fetch('Masterlist%202027-2028_Mau.xlsx', { cache: 'no-store' });
+    const res = await fetch(`Masterlist%202027-2028_Mau.xlsx?t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const buffer = await res.arrayBuffer();
       state.templateBuffer = buffer;
       state.templateWorkbook = XLSX.read(buffer, { type: 'array', cellFormula: true, cellStyles: true });
       extractValidMaDVFromTemplate(state.templateWorkbook);
-      console.log('Đã tự động nạp thành công file mẫu Masterlist 2027-2028_Mau.xlsx');
+      console.log('Đã tự động nạp thành công file mẫu Masterlist 2027-2028_Mau.xlsx (8 sheets, ' + buffer.byteLength + ' bytes)');
       return;
     }
   } catch (err) {

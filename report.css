@@ -370,21 +370,36 @@ table.data-table.report-dt tbody tr:hover {
 .col-tot {
   color: #0f172a;
   font-weight: 800;
+  width: 140px;
+  min-width: 120px;
 }
 
 .col-27 {
   color: var(--primary, #2563eb);
   font-weight: 700;
+  width: 130px;
+  min-width: 110px;
 }
 
 .col-28 {
   color: #047857;
   font-weight: 700;
+  width: 130px;
+  min-width: 110px;
 }
 
-.col-mang {
-  width: 440px;
-  min-width: 320px;
+.col-stt {
+  width: 50px !important;
+  min-width: 44px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+}
+
+.col-mang,
+.col-name {
+  width: auto;
+  min-width: 250px;
+  text-align: left;
 }
 
 /* Distinct Row Types */

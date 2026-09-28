@@ -822,14 +822,14 @@ function renderTableSummaryMang(summary) {
   rows.forEach((m, idx) => {
     html += `
       <tr>
+        <td class="col-stt" style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
         <td class="col-mang" style="font-weight: 700; color: #0f172a;">
-          <span style="display: inline-block; width: 22px; color: #64748b;">${idx + 1}.</span>
           ${escapeHtml(m.name)}
         </td>
         <td class="col-num col-tot">${fmtVal(m.tong)}</td>
         <td class="col-num col-27">${fmtVal(m.y2027)}</td>
         <td class="col-num col-28">${fmtVal(m.y2028)}</td>
-        <td class="col-num" style="color: #475569; font-weight: 700; width: 100px;">
+        <td class="col-num" style="color: #475569; font-weight: 700; width: 110px; text-align: right;">
           ${m.share ? m.share.toFixed(1) + '%' : '-'}
         </td>
       </tr>
@@ -839,13 +839,14 @@ function renderTableSummaryMang(summary) {
   // Hàng tổng cộng
   html += `
     <tr class="row-total-table">
+      <td class="col-stt" style="text-align: center; font-weight: 800; color: #065f46;">*</td>
       <td class="col-mang" style="font-weight: 800; font-size: 0.9rem; color: #065f46;">
         TỔNG CỘNG TOÀN MẠNG
       </td>
       <td class="col-num col-tot" style="font-size: 0.95rem; font-weight: 800; color: #065f46;">${fmtVal(summary.total_investment)}</td>
       <td class="col-num col-27" style="font-weight: 800; color: #065f46;">${fmtVal(summary.total_2027)}</td>
       <td class="col-num col-28" style="font-weight: 800; color: #065f46;">${fmtVal(summary.total_2028)}</td>
-      <td class="col-num" style="color: #065f46; font-weight: 800;">100%</td>
+      <td class="col-num" style="color: #065f46; font-weight: 800; text-align: right;">100%</td>
     </tr>
   `;
 
@@ -899,7 +900,8 @@ function renderTabMang() {
           <table class="report-table" id="table_mang_${tIdx}">
             <thead>
               <tr>
-                <th class="col-mang">Mảng</th>
+                <th class="col-stt" style="width: 50px; text-align: center;">STT</th>
+                <th class="col-mang">Danh mục / Hạng mục</th>
                 <th class="col-num col-tot">Tổng (<span class="unit-label-text">M$</span>)</th>
                 <th class="col-num col-27">2027 (<span class="unit-label-text">M$</span>)</th>
                 <th class="col-num col-28">2028 (<span class="unit-label-text">M$</span>)</th>
@@ -911,12 +913,15 @@ function renderTabMang() {
     filteredRows.forEach(r => {
       const rowClass = r.is_total ? 'row-total-table' : (r.is_sub ? 'row-sub-item' : '');
       const isCleanStt = r.stt && r.stt !== '-' && String(r.stt).length <= 4 && r.stt !== r.name;
-      const namePrefix = isCleanStt ? `<span style="display:inline-block;min-width:20px;margin-right:6px;color:#64748b;">${escapeHtml(r.stt)}.</span>` : (r.is_sub ? '<span style="color:#94a3b8;margin-right:6px;">-</span>' : '');
+      const sttText = isCleanStt ? r.stt : (r.is_sub ? '-' : (r.is_total ? '*' : ''));
 
       html += `
         <tr class="${rowClass}">
-          <td class="col-mang" style="${r.is_total ? 'font-weight: 800; color: #065f46;' : ''}">
-            ${namePrefix}${escapeHtml(r.name)}
+          <td class="col-stt" style="text-align: center; color: #64748b; font-weight: ${r.is_total ? '800' : '600'}; font-size: 0.8rem;">
+            ${escapeHtml(sttText)}
+          </td>
+          <td class="col-mang" style="${r.is_total ? 'font-weight: 800; color: #065f46;' : (r.is_sub ? 'padding-left: 24px; color: #475569;' : 'font-weight: 600;')}">
+            ${escapeHtml(r.name)}
           </td>
           <td class="col-num col-tot">${fmtVal(r.tong)}</td>
           <td class="col-num col-27">${fmtVal(r.y2027)}</td>
@@ -985,6 +990,7 @@ function renderTabDichVu() {
           <table class="report-table" id="table_dv_${tIdx}">
             <thead>
               <tr>
+                <th class="col-stt" style="width: 50px; text-align: center;">STT</th>
                 <th class="col-mang">Dịch vụ / Hạng mục</th>
                 <th class="col-num col-tot">Tổng (<span class="unit-label-text">M$</span>)</th>
                 <th class="col-num col-27">2027 (<span class="unit-label-text">M$</span>)</th>
@@ -998,12 +1004,15 @@ function renderTabDichVu() {
       const rowClass = r.is_total ? 'row-total-table' : (r.is_sub ? 'row-sub-item' : '');
       const displayName = r.service ? `${r.service} - ${r.mang || r.name}` : (r.mang || r.name);
       const isCleanStt = r.stt && r.stt !== '-' && String(r.stt).length <= 4 && r.stt !== r.name && r.stt !== r.mang;
-      const namePrefix = isCleanStt ? `<span style="display:inline-block;min-width:20px;margin-right:6px;color:#64748b;">${escapeHtml(r.stt)}.</span>` : (r.is_sub ? '<span style="color:#94a3b8;margin-right:6px;">-</span>' : '');
+      const sttText = isCleanStt ? r.stt : (r.is_sub ? '-' : (r.is_total ? '*' : ''));
 
       html += `
         <tr class="${rowClass}">
-          <td class="col-mang" style="${r.is_total ? 'font-weight: 800; color: #065f46;' : ''}">
-            ${namePrefix}${escapeHtml(displayName)}
+          <td class="col-stt" style="text-align: center; color: #64748b; font-weight: ${r.is_total ? '800' : '600'}; font-size: 0.8rem;">
+            ${escapeHtml(sttText)}
+          </td>
+          <td class="col-mang" style="${r.is_total ? 'font-weight: 800; color: #065f46;' : (r.is_sub ? 'padding-left: 24px; color: #475569;' : 'font-weight: 600;')}">
+            ${escapeHtml(displayName)}
           </td>
           <td class="col-num col-tot">${fmtVal(r.tong)}</td>
           <td class="col-num col-27">${fmtVal(r.y2027)}</td>
