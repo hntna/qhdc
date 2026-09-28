@@ -2254,6 +2254,13 @@ function resetHierarchyCodeFilters() {
 window.resetHierarchyCodeFilters = resetHierarchyCodeFilters;
 window.populateHierarchyFilterDropdowns = populateHierarchyFilterDropdowns;
 
+// Lấy danh sách tất cả các node con/cháu (cả group và leaf) của một nodeKey trong groupsConfig
+function getHierarchyDescendants(nodeKey) {
+  if (!nodeKey || !state.groupsConfig) return [];
+  return state.groupsConfig.filter(node => node.ancestors && node.ancestors.includes(nodeKey));
+}
+window.getHierarchyDescendants = getHierarchyDescendants;
+
 // Render bảng Cấu hình Nhóm hạng mục & Phân cấp (Tab 3)
 function renderHierarchyTable() {
   const tbody = document.getElementById('hierarchyTableBody');
@@ -2303,6 +2310,9 @@ function renderHierarchyTable() {
 
   // Xác định các itemIndex trong extractedData thỏa mãn bộ lọc mã
   let matchingItemIndices = null;
+  const matchingAncestorKeys = new Set();
+  const matchingNodeKeys = new Set();
+
   if (hasCodeFilter) {
     matchingItemIndices = new Set();
     state.extractedData.forEach((it, idx) => {
@@ -2310,11 +2320,13 @@ function renderHierarchyTable() {
 
       // 1. Kiểm tra Mã mảng
       if (fMang !== 'ALL') {
-        const itMang = (it.maMang || it.mangCode || (it.mangInfo && it.mangInfo.code) || '').toUpperCase().trim();
+        const actualMaMang = (it.maMang || '').toUpperCase().trim();
+        const fallbackMang = (it.mangCode || (it.mangInfo && it.mangInfo.code) || '').toUpperCase().trim();
         if (fMang === '__EMPTY__') {
-          if (itMang !== '') return;
+          if (actualMaMang !== '') return;
         } else {
-          if (itMang !== fMang) return;
+          const effectiveMang = actualMaMang || fallbackMang;
+          if (effectiveMang !== fMang) return;
         }
       }
 
@@ -2324,7 +2336,8 @@ function renderHierarchyTable() {
         if (fDV === '__EMPTY__') {
           if (itDV !== '') return;
         } else {
-          if (itDV !== fDV && !itDV.includes(fDV)) return;
+          const dvParts = itDV.split(/[\s,;/]+/).filter(Boolean);
+          if (itDV !== fDV && !dvParts.includes(fDV)) return;
         }
       }
 
@@ -2340,13 +2353,27 @@ function renderHierarchyTable() {
 
       matchingItemIndices.add(idx);
     });
+
+    // Thu thập các node khớp và toàn bộ chuỗi node cha/ông/mảng (ancestors) của chúng
+    state.groupsConfig.forEach(node => {
+      if (node.itemIndex >= 0 && matchingItemIndices.has(node.itemIndex)) {
+        matchingNodeKeys.add(node.key);
+        if (node.ancestors) {
+          node.ancestors.forEach(aKey => {
+            matchingAncestorKeys.add(aKey);
+            // Tự động mở rộng cây để người dùng nhìn thấy ngay kết quả
+            state.collapsedGroupKeys.delete(aKey);
+          });
+        }
+      }
+    });
   }
 
   let visibleNodes = state.groupsConfig.filter(node => {
     // 1. Bộ lọc cấp bậc
     if (!state.activeGroupLevels.has(node.levelNum)) return false;
 
-    // 2. Kiểm tra nhóm cha có bị thu gọn (collapse) không
+    // 2. Kiểm tra nhóm cha có bị thu gọn (collapse) không (nếu đang lọc theo mã thì các nhánh khớp đã được auto-expand)
     if (node.ancestors && node.ancestors.length > 0) {
       const isAncestorCollapsed = node.ancestors.some(ancestorKey => state.collapsedGroupKeys.has(ancestorKey));
       if (isAncestorCollapsed) return false;
@@ -2362,16 +2389,9 @@ function renderHierarchyTable() {
 
     // 4. Bộ lọc Mã mảng, Mã DV, Mã loại
     if (hasCodeFilter) {
-      if (node.itemIndex >= 0 && matchingItemIndices.has(node.itemIndex)) {
-        return true;
+      if (!matchingNodeKeys.has(node.key) && !matchingAncestorKeys.has(node.key)) {
+        return false;
       }
-      if (node.hasChildren || node.isMangHeader) {
-        // Node cha: giữ hiển thị nếu có con/cháu thỏa mãn bộ lọc mã
-        const descendants = getHierarchyDescendants(node.key);
-        const hasMatchingChild = descendants.some(d => d.itemIndex >= 0 && matchingItemIndices.has(d.itemIndex));
-        if (hasMatchingChild) return true;
-      }
-      return false;
     }
 
     return true;
