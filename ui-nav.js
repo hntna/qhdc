@@ -61,6 +61,12 @@
   }
   window.switchConfigTab = switchConfigTab;
 
+  window.showSection = showSection;
+  window.switchSection = function (key) {
+    if (key === 'tabConfig' || key === 'config') showSection('config');
+    else showSection(key);
+  };
+
   window.openConfigStrategyProfile = function () {
     showSection('config');
     switchConfigTab('configTabStrategyProfile');

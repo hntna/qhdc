@@ -166,7 +166,8 @@
       ...ws,
       visibility: vis,
       isPublic: vis === 'public',
-      isShared: vis === 'shared' || vis === 'public'
+      isShared: vis === 'shared' || vis === 'public',
+      strategyProfileId: ws.strategyProfileId || null
     };
   }
 
@@ -547,7 +548,7 @@
     return [];
   }
 
-  async function createWorkspace(name, visibility = 'shared') {
+  async function createWorkspace(name, visibility = 'shared', strategyProfileId = null) {
     if (isGuest()) throw new Error('Vui lòng đăng nhập để tạo danh mục.');
     requireFirestore();
     const cleanName = (name || '').trim();
@@ -562,6 +563,7 @@
       visibility: vis,
       isPublic: vis === 'public',
       isShared: vis === 'shared' || vis === 'public',
+      strategyProfileId: strategyProfileId || null,
       createdBy: currentUserProfile.username,
       creatorUid: currentUserProfile.uid,
       createdAt: new Date().toISOString()
@@ -574,7 +576,7 @@
     throw new Error('Chưa kết nối Firebase/Firestore.');
   }
 
-  async function updateWorkspace(workspaceId, { name, visibility }) {
+  async function updateWorkspace(workspaceId, { name, visibility, strategyProfileId }) {
     if (isGuest()) throw new Error('Vui lòng đăng nhập.');
     requireFirestore();
     const ws = await getWorkspaceById(workspaceId);
@@ -591,6 +593,14 @@
       ws.isPublic = visibility === 'public';
       ws.isShared = visibility === 'shared' || visibility === 'public';
     }
+    if (strategyProfileId !== undefined) {
+      ws.strategyProfileId = strategyProfileId || null;
+      try {
+        const localMap = JSON.parse(localStorage.getItem('qhdc_ws_strategy_profiles') || '{}');
+        localMap[workspaceId] = ws.strategyProfileId;
+        localStorage.setItem('qhdc_ws_strategy_profiles', JSON.stringify(localMap));
+      } catch (e) {}
+    }
     ws.updatedAt = new Date().toISOString();
 
     if (isFirestoreEnabled()) {
@@ -599,6 +609,66 @@
     }
 
     throw new Error('Chưa kết nối Firebase/Firestore.');
+  }
+
+  async function setWorkspaceStrategyProfile(workspaceId, strategyProfileId) {
+    if (isGuest()) throw new Error('Vui lòng đăng nhập.');
+    let ws = null;
+    try {
+      ws = await getWorkspaceById(workspaceId);
+    } catch (e) {
+      console.warn('getWorkspaceById warning:', e);
+    }
+
+    if (!ws) {
+      if (workspaceId === DEFAULT_WORKSPACE.id) {
+        ws = { ...DEFAULT_WORKSPACE };
+      } else {
+        ws = { id: workspaceId, name: 'Dự án', createdBy: currentUserProfile?.username || 'admin' };
+      }
+    }
+
+    if (!isAdmin() && !canManageWorkspace(ws)) {
+      throw new Error('Chỉ Quản trị viên (Admin) hoặc người tạo dự án mới có quyền gán Profile Chiến lược.');
+    }
+
+    ws.strategyProfileId = strategyProfileId || null;
+    ws.updatedAt = new Date().toISOString();
+
+    if (cachedWorkspaces) {
+      const idx = cachedWorkspaces.findIndex(w => w.id === workspaceId);
+      if (idx >= 0) cachedWorkspaces[idx] = ws;
+      else cachedWorkspaces.push(ws);
+    }
+
+    try {
+      const localMap = JSON.parse(localStorage.getItem('qhdc_ws_strategy_profiles') || '{}');
+      localMap[workspaceId] = ws.strategyProfileId;
+      localStorage.setItem('qhdc_ws_strategy_profiles', JSON.stringify(localMap));
+    } catch (e) {}
+
+    if (isFirestoreEnabled()) {
+      try {
+        await workspaceRef(workspaceId).set(normalizeWorkspace(ws), { merge: true });
+      } catch (err) {
+        console.warn('Lỗi ghi Firestore setWorkspaceStrategyProfile:', err);
+      }
+    }
+
+    return normalizeWorkspace(ws);
+  }
+
+  function getWorkspaceStrategyProfile(workspaceId) {
+    if (!workspaceId) return null;
+    if (cachedWorkspaces && cachedWorkspaces.length) {
+      const ws = cachedWorkspaces.find(w => w.id === workspaceId);
+      if (ws && ws.strategyProfileId) return ws.strategyProfileId;
+    }
+    try {
+      const localMap = JSON.parse(localStorage.getItem('qhdc_ws_strategy_profiles') || '{}');
+      if (localMap[workspaceId]) return localMap[workspaceId];
+    } catch (e) {}
+    return null;
   }
 
   async function toggleWorkspacePublic(workspaceId, isPublic) {
@@ -861,6 +931,8 @@
     listWorkspaces,
     createWorkspace,
     updateWorkspace,
+    setWorkspaceStrategyProfile,
+    getWorkspaceStrategyProfile,
     toggleWorkspacePublic,
     deleteWorkspace,
     canManageWorkspace,

@@ -4645,8 +4645,16 @@ function getStrategyProfileForWorkspace(workspaceId) {
   const service = window.FirebaseService;
   let targetProfileId = null;
 
-  if (workspaceId && service && typeof service.getWorkspaceStrategyProfile === 'function') {
-    targetProfileId = service.getWorkspaceStrategyProfile(workspaceId);
+  if (workspaceId) {
+    if (service && typeof service.getWorkspaceStrategyProfile === 'function') {
+      targetProfileId = service.getWorkspaceStrategyProfile(workspaceId);
+    }
+    if (!targetProfileId) {
+      try {
+        const localMap = JSON.parse(localStorage.getItem('qhdc_ws_strategy_profiles') || '{}');
+        if (localMap[workspaceId]) targetProfileId = localMap[workspaceId];
+      } catch (e) {}
+    }
   }
 
   // Nếu tìm thấy theo ID gán trực tiếp
@@ -4755,7 +4763,15 @@ async function adminSetProjectStrategyProfile(profileId) {
   }
 
   try {
-    await service.setWorkspaceStrategyProfile(wsId, profileId);
+    if (service && typeof service.setWorkspaceStrategyProfile === 'function') {
+      await service.setWorkspaceStrategyProfile(wsId, profileId);
+    } else if (service && typeof service.updateWorkspace === 'function') {
+      await service.updateWorkspace(wsId, { strategyProfileId: profileId });
+    } else {
+      const localMap = JSON.parse(localStorage.getItem('qhdc_ws_strategy_profiles') || '{}');
+      localMap[wsId] = profileId;
+      localStorage.setItem('qhdc_ws_strategy_profiles', JSON.stringify(localMap));
+    }
     state.activeStrategyProfileId = profileId;
     const foundProfile = state.strategyProfiles.find(p => p.id === profileId);
     const profileName = foundProfile ? foundProfile.name : profileId;
