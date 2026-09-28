@@ -558,46 +558,110 @@ function computeOverallSummary(tablesMang) {
   };
 }
 
-// Xây dựng bảng đối chiếu Chiến lược 5 năm
+// Xây dựng bảng đối chiếu Chiến lược 5 năm theo Profile của Dự án
 function buildStrategyComparison(tablesMang) {
-  const list = [];
-  tablesMang.forEach(t => {
-    const totRow = t.rows.find(r => r.is_total);
-    if (!totRow) return;
+  const profile = (typeof window.getActiveStrategyProfile === 'function') 
+    ? window.getActiveStrategyProfile() 
+    : ((window.state && window.state.strategyProfiles) ? window.state.strategyProfiles[0] : null);
 
-    const qTot = totRow.tong;
-    const q27 = totRow.y2027;
-    const q28 = totRow.y2028;
-    const s27 = totRow.strat_27 || 0.0;
-    const s28 = totRow.strat_28 || 0.0;
-    const s27_28 = s27 + s28;
-    const s5y = totRow.strat_tot || 0.0;
-    const delta = qTot - s27_28;
+  if (profile && typeof window.computeStrategyTableData === 'function') {
+    const computed = window.computeStrategyTableData(profile);
+    const itemDefs = (typeof STRATEGY_ITEM_DEFS !== 'undefined') ? STRATEGY_ITEM_DEFS : [
+      { stt: 1, key: 'VT', name: 'Vô tuyến' },
+      { stt: 2, key: 'ML', name: 'Mạng lõi' },
+      { stt: 3, key: 'CDBR', name: 'BRCĐ-TH' },
+      { stt: 4, key: 'CNTT', name: 'Công nghệ thông tin' },
+      { stt: 5, key: 'ATTT', name: 'An toàn thông tin' },
+      { stt: 6, key: 'PM', name: 'Phần mềm, công cụ' },
+      { stt: 7, key: 'VI', name: 'Ví điện tử' },
+      { stt: 8, key: 'TD_QUANG', name: 'Truyền dẫn quang' },
+      { stt: 9, key: 'TD_IP', name: 'Truyền dẫn IP' },
+      { stt: 10, key: 'CD_TT', name: 'Cơ điện tổng trạm' },
+      { stt: 11, key: 'CD_BTS', name: 'Cơ điện BTS' },
+      { stt: 12, key: 'HT', name: 'Hạ tầng' }
+    ];
 
-    let status = 'Vừa khớp';
-    let statusColor = 'green';
-    if (delta > 0.01) {
-      status = `Vượt CL +${delta.toFixed(2)} M$`;
-      statusColor = 'orange';
-    } else if (delta < -0.01) {
-      status = `Dưới CL ${delta.toFixed(2)} M$`;
-      statusColor = 'blue';
-    }
+    const list = [];
+    itemDefs.forEach(def => {
+      const c = computed ? computed[def.key] : null;
+      const q27 = c ? c.qhdc27 : 0;
+      const q28 = c ? c.qhdc28 : 0;
+      const qTot = c ? c.qhdcTong : 0;
+      const s27 = c ? c.strat27 : 0;
+      const s28 = c ? c.strat28 : 0;
+      const s27_28 = c ? c.stratTong : (s27 + s28);
+      const s5y = s27_28;
+      const delta = c ? c.diffTong : (qTot - s27_28);
 
-    list.push({
-      title: t.title,
-      qhdc_2027: q27,
-      qhdc_2028: q28,
-      qhdc_total: qTot,
-      strat_2027: s27,
-      strat_2028: s28,
-      strat_27_28: s27_28,
-      strat_5y: s5y,
-      delta: delta,
-      status: status,
-      status_color: statusColor
+      let status = 'Vừa khớp';
+      let statusColor = 'green';
+      if (delta > 0.01) {
+        status = `Vượt CL +${delta.toFixed(2)} M$`;
+        statusColor = 'orange';
+      } else if (delta < -0.01) {
+        status = `Dưới CL ${delta.toFixed(2)} M$`;
+        statusColor = 'blue';
+      }
+
+      list.push({
+        title: def.name,
+        key: def.key,
+        qhdc_2027: q27,
+        qhdc_2028: q28,
+        qhdc_total: qTot,
+        strat_2027: s27,
+        strat_2028: s28,
+        strat_27_28: s27_28,
+        strat_5y: s5y,
+        delta: delta,
+        status: status,
+        status_color: statusColor
+      });
     });
-  });
+    return list;
+  }
+
+  // Fallback nếu chưa khởi tạo profile
+  const list = [];
+  if (Array.isArray(tablesMang)) {
+    tablesMang.forEach(t => {
+      const totRow = t.rows ? t.rows.find(r => r.is_total) : null;
+      if (!totRow) return;
+
+      const qTot = totRow.tong;
+      const q27 = totRow.y2027;
+      const q28 = totRow.y2028;
+      const s27 = totRow.strat_27 || 0.0;
+      const s28 = totRow.strat_28 || 0.0;
+      const s27_28 = s27 + s28;
+      const s5y = totRow.strat_tot || 0.0;
+      const delta = qTot - s27_28;
+
+      let status = 'Vừa khớp';
+      let statusColor = 'green';
+      if (delta > 0.01) {
+        status = `Vượt CL +${delta.toFixed(2)} M$`;
+        statusColor = 'orange';
+      } else if (delta < -0.01) {
+        status = `Dưới CL ${delta.toFixed(2)} M$`;
+        statusColor = 'blue';
+      }
+
+      list.push({
+        title: t.title,
+        qhdc_2027: q27,
+        qhdc_2028: q28,
+        qhdc_total: qTot,
+        strat_2027: s27,
+        strat_2028: s28,
+        strat_27_28: s27_28,
+        strat_5y: s5y,
+        delta: delta,
+        status: status,
+        status_color: statusColor
+      });
+    });
+  }
 
   return list;
 }
@@ -1057,6 +1121,9 @@ function renderTabStrategy() {
   `;
 
   tbody.innerHTML = html;
+  if (typeof window.updateSubtabStratBanner === 'function') {
+    window.updateSubtabStratBanner();
+  }
 }
 
 /* ==================== CÁC HÀM TƯƠNG TÁC NGƯỜI DÙNG ==================== */
@@ -1378,3 +1445,5 @@ window.exportTHTheoDVExcel = exportTHTheoDVExcel;
 window.copyTableHtml = copyTableHtml;
 window.copyCurrentTabTables = copyCurrentTabTables;
 window.exportReportExcel = exportReportExcel;
+window.buildStrategyComparison = buildStrategyComparison;
+window.renderTabStrategy = renderTabStrategy;

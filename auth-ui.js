@@ -428,6 +428,9 @@
 
       updateWorkspaceBadgeText();
       applySectorPermissions();
+      if (select.value && window.syncStrategyProfileWithActiveWorkspace) {
+        window.syncStrategyProfileWithActiveWorkspace(select.value);
+      }
       // Tải dữ liệu workspace được chọn
       if (select.value) {
         loadSelectedWorkspaceData(select.value);
@@ -451,6 +454,9 @@
     try { localStorage.setItem('qhdc_active_workspace_id', wsId); } catch (e) {}
     updateWorkspaceBadgeText();
     applySectorPermissions();
+    if (wsId && window.syncStrategyProfileWithActiveWorkspace) {
+      window.syncStrategyProfileWithActiveWorkspace(wsId);
+    }
     if (wsId) {
       await loadSelectedWorkspaceData(wsId);
     }
@@ -559,6 +565,18 @@
     if (inputName) inputName.value = '';
     const sharedRadio = document.getElementById('newWsVisShared');
     if (sharedRadio) sharedRadio.checked = true;
+
+    // Nạp danh sách Strategy Profiles
+    const selProfile = document.getElementById('inputNewWsStrategyProfile');
+    if (selProfile) {
+      const profiles = (window.state && window.state.strategyProfiles) ? window.state.strategyProfiles : [];
+      selProfile.innerHTML = profiles.map(p => `
+        <option value="${p.id}" ${p.id === 'profile_default' ? 'selected' : ''}>
+          ${escapeHtml(p.name)}
+        </option>
+      `).join('');
+    }
+
     if (modal) modal.style.display = 'flex';
   }
 
@@ -573,6 +591,7 @@
     const inputName = document.getElementById('inputNewWsName');
     const name = inputName ? inputName.value.trim() : '';
     const visibility = document.querySelector('input[name="newWsVisibility"]:checked')?.value || 'shared';
+    const strategyProfileId = document.getElementById('inputNewWsStrategyProfile')?.value || null;
 
     if (!name) {
       showToast('Vui lòng nhập tên danh mục!', 'warning');
@@ -580,7 +599,7 @@
     }
 
     try {
-      const newWs = await service.createWorkspace(name, visibility);
+      const newWs = await service.createWorkspace(name, visibility, strategyProfileId);
       showToast(`Đã tạo danh mục "${name}" thành công!`, 'success');
       window.closeNewWorkspaceModal();
       await loadWorkspacesDropdown(newWs.id);
@@ -1056,14 +1075,26 @@
     const tbody = document.getElementById('adminWorkspacesTableBody');
     if (!tbody) return;
 
+    // Cập nhật dropdown strategy profile ở form tạo mới
+    const adminNewWsSel = document.getElementById('adminNewWsStrategyProfile');
+    if (adminNewWsSel) {
+      const profiles = (window.state && window.state.strategyProfiles) ? window.state.strategyProfiles : [];
+      adminNewWsSel.innerHTML = profiles.map(p => `
+        <option value="${p.id}" ${p.id === 'profile_default' ? 'selected' : ''}>
+          ${escapeHtml(p.name)}
+        </option>
+      `).join('');
+    }
+
     try {
       const workspaces = await service.adminGetAllWorkspaces();
       if (!workspaces.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #64748b;">Chưa có danh mục nào.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #64748b;">Chưa có danh mục nào.</td></tr>`;
         return;
       }
 
       const activeWsId = document.getElementById('selectWorkspace')?.value;
+      const profilesList = (window.state && window.state.strategyProfiles) ? window.state.strategyProfiles : [];
 
       tbody.innerHTML = workspaces.map((ws, idx) => {
         const isDefault = ws.id === 'ws_toan_quoc_2027_2028';
@@ -1098,6 +1129,26 @@
           </div>
         `;
 
+        // Profile Chiến lược 5 năm gắn với dự án này
+        const stratProfileId = ws.strategyProfileId;
+        let matchedProfile = profilesList.find(p => p.id === stratProfileId);
+        if (!matchedProfile) {
+          const n = (ws.name || '').toLowerCase();
+          if (n.includes('lào') || n.includes('lao')) {
+            matchedProfile = profilesList.find(p => p.id === 'profile_1789883317033' || (p.name || '').toLowerCase().includes('lào'));
+          } else if (n.includes('mozambique') || n.includes('movitel')) {
+            matchedProfile = profilesList.find(p => p.id === 'profile_1789854757103' || (p.name || '').toLowerCase().includes('mozambique'));
+          }
+        }
+        const profileName = matchedProfile ? matchedProfile.name : (stratProfileId ? stratProfileId : 'Chuẩn (Mặc định)');
+        const profileBadge = `
+          <div style="display:inline-flex; align-items:center; gap:4px;">
+            <span class="badge" style="background:#4338ca; color:#ffffff !important; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:6px;" title="${escapeHtml(profileName)}">
+              ${escapeHtml(profileName)}
+            </span>
+          </div>
+        `;
+
         // Dữ liệu các mảng đã có
         const loadedKeys = Object.keys(ws.sectorsLoaded || {});
         let sectorsContent = '<span style="color:#94a3b8; font-style:italic;">Chưa có dữ liệu</span>';
@@ -1122,6 +1173,7 @@
               <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">ID: ${escapeHtml(ws.id)}</div>
             </td>
             <td style="text-align:center;">${visibilityBadge}</td>
+            <td style="text-align:center;">${profileBadge}</td>
             <td>
               <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
                 ${sectorsContent}
@@ -1134,7 +1186,7 @@
             <td style="text-align:center;">
               <div style="display:inline-flex; gap:6px;">
                 ${canManage ? `
-                <button type="button" class="btn btn-outline btn-xs" onclick="window.openEditWorkspaceModal('${ws.id}', '${escapeHtml(ws.name).replace(/'/g, "\\'")}', '${visibility}')" title="Sửa thông tin danh mục">
+                <button type="button" class="btn btn-outline btn-xs" onclick="window.openEditWorkspaceModal('${ws.id}', '${escapeHtml(ws.name).replace(/'/g, "\\'")}', '${visibility}', '${escapeHtml(ws.strategyProfileId || '')}')" title="Sửa thông tin danh mục">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Sửa
                 </button>
                 ` : ''}
@@ -1191,6 +1243,7 @@
 
     const name = inputName ? inputName.value.trim() : '';
     const visibility = document.querySelector('input[name="adminNewWsVisibility"]:checked')?.value || 'shared';
+    const strategyProfileId = document.getElementById('adminNewWsStrategyProfile')?.value || null;
 
     if (!name) {
       showToast('Vui lòng nhập tên danh mục!', 'warning');
@@ -1201,7 +1254,7 @@
     btnSubmit.innerHTML = `<span class="spinner"></span> Đang tạo...`;
 
     try {
-      const newWs = await service.createWorkspace(name, visibility);
+      const newWs = await service.createWorkspace(name, visibility, strategyProfileId);
       showToast(`Đã tạo danh mục "${name}" thành công!`, 'success');
       if (inputName) inputName.value = '';
       const sharedRadio = document.getElementById('adminNewWsVisShared');
@@ -1218,13 +1271,29 @@
   }
 
   // Modal Sửa Danh mục
-  window.openEditWorkspaceModal = function (wsId, name, visibility) {
+  window.openEditWorkspaceModal = function (wsId, name, visibility, currentStratProfileId) {
     const modal = document.getElementById('modalEditWorkspace');
     if (!modal) return;
     document.getElementById('editWsId').value = wsId;
     document.getElementById('editWsName').value = name;
     const radio = document.querySelector(`input[name="editWsVisibility"][value="${visibility || 'shared'}"]`);
     if (radio) radio.checked = true;
+
+    // Nạp dropdown Strategy Profile
+    const selProfile = document.getElementById('editWsStrategyProfile');
+    if (selProfile) {
+      const profiles = (window.state && window.state.strategyProfiles) ? window.state.strategyProfiles : [];
+      let activeProfileId = currentStratProfileId;
+      if (!activeProfileId && window.FirebaseService && window.FirebaseService.getWorkspaceStrategyProfile) {
+        activeProfileId = window.FirebaseService.getWorkspaceStrategyProfile(wsId);
+      }
+      selProfile.innerHTML = profiles.map(p => `
+        <option value="${p.id}" ${p.id === activeProfileId ? 'selected' : ''}>
+          ${escapeHtml(p.name)}
+        </option>
+      `).join('');
+    }
+
     modal.style.display = 'flex';
   };
 
@@ -1238,6 +1307,7 @@
     const wsId = document.getElementById('editWsId').value;
     const name = document.getElementById('editWsName').value.trim();
     const visibility = document.querySelector('input[name="editWsVisibility"]:checked')?.value || 'shared';
+    const strategyProfileId = document.getElementById('editWsStrategyProfile')?.value || null;
 
     if (!name) {
       showToast('Tên danh mục không được để trống!', 'warning');
@@ -1245,10 +1315,16 @@
     }
 
     try {
-      await service.updateWorkspace(wsId, { name, visibility });
+      await service.updateWorkspace(wsId, { name, visibility, strategyProfileId });
       showToast('Đã cập nhật danh mục thành công!', 'success');
       window.closeEditWorkspaceModal();
-      await loadWorkspacesDropdown(document.getElementById('selectWorkspace')?.value);
+
+      const currentActiveId = document.getElementById('selectWorkspace')?.value;
+      if (wsId === currentActiveId && window.syncStrategyProfileWithActiveWorkspace) {
+        window.syncStrategyProfileWithActiveWorkspace(wsId);
+      }
+
+      await loadWorkspacesDropdown(currentActiveId);
       renderAdminWorkspacesTable();
     } catch (err) {
       showToast(`Lỗi: ${err.message}`, 'error');

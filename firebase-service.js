@@ -58,11 +58,33 @@
           visibility: 'public',
           isPublic: true,
           isShared: true,
+          strategyProfileId: 'profile_default',
           createdBy: 'admin',
           createdAt: new Date().toISOString()
         }
       ];
       setLocalData(STORAGE_KEYS.WORKSPACES, wsList);
+    } else {
+      // Auto-link profile cho các workspace cũ nếu chưa gán
+      let changed = false;
+      wsList.forEach(w => {
+        if (!w.strategyProfileId) {
+          const n = (w.name || '').toLowerCase();
+          if (n.includes('lào') || n.includes('lao')) {
+            w.strategyProfileId = 'profile_1789883317033';
+            changed = true;
+          } else if (n.includes('mozambique') || n.includes('movitel')) {
+            w.strategyProfileId = 'profile_1789854757103';
+            changed = true;
+          } else if (w.id === 'ws_toan_quoc_2027_2028') {
+            w.strategyProfileId = 'profile_default';
+            changed = true;
+          }
+        }
+      });
+      if (changed) {
+        setLocalData(STORAGE_KEYS.WORKSPACES, wsList);
+      }
     }
     return wsList;
   }
@@ -388,7 +410,7 @@
     });
   }
 
-  async function createWorkspace(name, visibility = 'shared') {
+  async function createWorkspace(name, visibility = 'shared', strategyProfileId = null) {
     if (isGuest()) throw new Error('Vui lòng đăng nhập để tạo danh mục.');
     const cleanName = (name || '').trim();
     if (!cleanName) throw new Error('Tên danh mục không được để trống.');
@@ -403,6 +425,7 @@
       visibility: vis,
       isPublic: vis === 'public',
       isShared: vis === 'shared' || vis === 'public',
+      strategyProfileId: strategyProfileId || null,
       createdBy: currentUserProfile.username,
       creatorUid: currentUserProfile.uid,
       createdAt: new Date().toISOString()
@@ -412,7 +435,7 @@
     return newWs;
   }
 
-  async function updateWorkspace(workspaceId, { name, visibility }) {
+  async function updateWorkspace(workspaceId, { name, visibility, strategyProfileId }) {
     if (isGuest()) throw new Error('Vui lòng đăng nhập.');
     const list = getLocalData(STORAGE_KEYS.WORKSPACES, []);
     const ws = list.find(w => w.id === workspaceId);
@@ -429,10 +452,35 @@
       ws.isPublic = visibility === 'public';
       ws.isShared = visibility === 'shared' || visibility === 'public';
     }
+    if (strategyProfileId !== undefined) {
+      ws.strategyProfileId = strategyProfileId || null;
+    }
     ws.updatedAt = new Date().toISOString();
 
     setLocalData(STORAGE_KEYS.WORKSPACES, list);
     return ws;
+  }
+
+  async function setWorkspaceStrategyProfile(workspaceId, strategyProfileId) {
+    if (isGuest()) throw new Error('Vui lòng đăng nhập.');
+    const list = getLocalData(STORAGE_KEYS.WORKSPACES, []);
+    const ws = list.find(w => w.id === workspaceId);
+    if (!ws) throw new Error('Không tìm thấy danh mục/dự án.');
+
+    if (!isAdmin() && !canManageWorkspace(ws)) {
+      throw new Error('Chỉ Quản trị viên (Admin) hoặc người tạo dự án mới có quyền gán Profile Chiến lược.');
+    }
+
+    ws.strategyProfileId = strategyProfileId || null;
+    ws.updatedAt = new Date().toISOString();
+    setLocalData(STORAGE_KEYS.WORKSPACES, list);
+    return ws;
+  }
+
+  function getWorkspaceStrategyProfile(workspaceId) {
+    const list = getLocalData(STORAGE_KEYS.WORKSPACES, []);
+    const ws = list.find(w => w.id === workspaceId);
+    return ws ? ws.strategyProfileId : null;
   }
 
   async function toggleWorkspacePublic(workspaceId, isPublic) {
@@ -586,7 +634,7 @@
     });
   }
 
-  async function adminUpdateWorkspace(workspaceId, { name, visibility, isPublic, isShared }) {
+  async function adminUpdateWorkspace(workspaceId, { name, visibility, isPublic, isShared, strategyProfileId }) {
     if (!isAdmin()) throw new Error('Chỉ Admin mới có quyền cập nhật danh mục.');
     const list = getLocalData(STORAGE_KEYS.WORKSPACES, []);
     const ws = list.find(w => w.id === workspaceId);
@@ -610,6 +658,9 @@
       ws.isPublic = nextVisibility === 'public';
       ws.isShared = nextVisibility === 'shared' || nextVisibility === 'public';
     }
+    if (strategyProfileId !== undefined) {
+      ws.strategyProfileId = strategyProfileId || null;
+    }
     ws.updatedAt = new Date().toISOString();
 
     setLocalData(STORAGE_KEYS.WORKSPACES, list);
@@ -632,6 +683,8 @@
     listWorkspaces,
     createWorkspace,
     updateWorkspace,
+    setWorkspaceStrategyProfile,
+    getWorkspaceStrategyProfile,
     toggleWorkspacePublic,
     deleteWorkspace,
     canManageWorkspace,

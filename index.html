@@ -581,6 +581,14 @@
             <input type="text" id="adminNewWsNameInput" placeholder="VD: QHĐC Lào 2027–2028, QHĐC Timor 2027–2028..." required style="width: 100%; max-width: 600px; padding: 0.45rem 0.95rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.85rem; outline: none; background: #ffffff;">
           </div>
 
+          <div style="margin-bottom: 1.15rem;">
+            <label style="display: block; font-size: 0.825rem; font-weight: 700; color: #334155; margin-bottom: 5px;">Profile Chiến lược 5 năm áp dụng:</label>
+            <select id="adminNewWsStrategyProfile" class="select-input" style="width: 100%; max-width: 600px; padding: 0.45rem 0.95rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.85rem; outline: none; background: #ffffff; font-weight: 600; color: #0f172a;">
+              <!-- Dynamic options -->
+            </select>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Dự án sẽ sử dụng bộ số liệu Chiến lược 5 năm này để so sánh và đối chiếu.</div>
+          </div>
+
           <div style="margin-bottom: 1.25rem;">
             <label style="display: block; font-size: 0.825rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Chế độ phân quyền danh mục: <span style="font-weight: 500; font-size: 0.775rem; color: #64748b;">(Chọn 1 loại)</span></label>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -637,13 +645,14 @@
                 <th style="width: 50px; text-align: center;">STT</th>
                 <th>Tên Dự án / Danh mục</th>
                 <th style="width: 170px; text-align: center;">Phân quyền danh mục</th>
+                <th style="width: 190px; text-align: center;">Profile Chiến lược 5 năm</th>
                 <th>Dữ liệu các mảng đã nạp</th>
                 <th style="width: 140px; text-align: center;">Người tạo</th>
                 <th style="width: 130px; text-align: center;">Thao tác</th>
               </tr>
             </thead>
             <tbody id="adminWorkspacesTableBody">
-              <tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">Đang tải danh sách danh mục...</td></tr>
+              <tr><td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">Đang tải danh sách danh mục...</td></tr>
             </tbody>
           </table>
         </div>
@@ -792,27 +801,118 @@
             </div>
           </div>
 
+          <!-- Hierarchy Batch Toolbar -->
+          <div id="hierarchyBatchToolbar" style="display: none; padding: 0.65rem 1.25rem; background: #f0fdf4; border-bottom: 1.5px solid #86efac; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge badge-green" id="hierarchySelectedCount" style="font-size: 0.8rem; font-weight: 700; padding: 4px 10px;">Đã chọn: 0 dòng</span>
+              <span style="font-size: 0.825rem; color: #166534; font-weight: 600;">Thiết lập nhanh cho các dòng đã chọn:</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label style="font-size: 0.775rem; font-weight: 600; color: #374151;">Mã mảng:</label>
+                <select id="batchHierarchyMaMang" class="select-input" style="padding: 0.25rem 0.5rem; font-size: 0.775rem; width: 110px; height: 32px;">
+                  <option value="">-- Giữ nguyên --</option>
+                  <option value="VT">VT (Vô tuyến)</option>
+                  <option value="ML">ML (Mạng lõi)</option>
+                  <option value="CDBR">CDBR (Cố định BR)</option>
+                  <option value="CNTT">CNTT (Công nghệ TT)</option>
+                  <option value="TD">TD (Truyền dẫn)</option>
+                  <option value="CD">CD (Cơ điện)</option>
+                  <option value="HT">HT (Hạ tầng)</option>
+                  <option value="VI">VI (Ví điện tử)</option>
+                </select>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label style="font-size: 0.775rem; font-weight: 600; color: #374151;">Mã DV:</label>
+                <input type="text" id="batchHierarchyMaDV" class="input-cell" placeholder="-- Giữ nguyên --" list="listValidMaDV" style="padding: 0.25rem 0.5rem; font-size: 0.775rem; width: 130px; height: 32px; text-transform: uppercase;">
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <label style="font-size: 0.775rem; font-weight: 600; color: #374151;">Mã loại:</label>
+                <input type="text" id="batchHierarchyMaLoai" class="input-cell" placeholder="-- Giữ nguyên --" list="listValidMaLoai" style="padding: 0.25rem 0.5rem; font-size: 0.775rem; width: 110px; height: 32px; text-transform: uppercase;">
+              </div>
+
+              <button type="button" class="btn btn-primary btn-xs" onclick="applyBatchHierarchyCodes()" style="height: 32px; padding: 0 12px; font-weight: 600;">
+                <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                <span>Áp dụng</span>
+              </button>
+
+              <button type="button" class="btn btn-outline btn-xs" onclick="deselectAllHierarchyItems()" style="height: 32px; padding: 0 10px;">
+                <span>Bỏ chọn</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hierarchy Datalists -->
+          <datalist id="listValidMaMang">
+            <option value="VT">Vô tuyến</option>
+            <option value="ML">Mạng lõi</option>
+            <option value="CDBR">Cố định băng rộng & Truyền hình</option>
+            <option value="CNTT">Công nghệ thông tin</option>
+            <option value="TD">Truyền dẫn</option>
+            <option value="CD">Cơ điện</option>
+            <option value="HT">Hạ tầng</option>
+            <option value="VI">Ví điện tử</option>
+          </datalist>
+
+          <datalist id="listValidMaDV">
+            <option value="5G">Mạng 5G</option>
+            <option value="XGSPON">XGSPON</option>
+            <option value="AI/GPU">AI / GPU</option>
+            <option value="PMN">Private Mobile Network</option>
+            <option value="VPDD">2/3/4G vùng phủ</option>
+            <option value="DLDD">2/3/4G dung lượng</option>
+            <option value="VPGPON">Vùng phủ GPON</option>
+            <option value="DLGPON">Dung lượng Internet</option>
+            <option value="TH">Dung lượng Truyền hình</option>
+            <option value="KT">Kênh truyền</option>
+            <option value="Cloud_KD">Phục vụ KD Cloud</option>
+            <option value="DC">Data Center</option>
+            <option value="TTKD">Trực tiếp kinh doanh</option>
+            <option value="HTKD">Hỗ trợ KD & Quản trị</option>
+            <option value="PM">Phần mềm</option>
+            <option value="UCTT">Đảm bảo dự phòng UCTT</option>
+            <option value="VHKT">Vận hành khai thác & Nâng cao CL mạng</option>
+            <option value="KCTT">Củng cố kiên cố thường trình</option>
+            <option value="PCTT">Bền vững mạng lưới trong thiên tai</option>
+            <option value="VI">Ví điện tử</option>
+          </datalist>
+
+          <datalist id="listValidMaLoai">
+            <option value="VTTB">Vật tư thiết bị</option>
+            <option value="XL">Xây lắp</option>
+            <option value="CPK">Chi phí khác</option>
+            <option value="TBI">Thiết bị</option>
+          </datalist>
+
           <!-- Hierarchy Table -->
           <div class="table-wrapper">
             <table class="data-table" id="hierarchyTable">
               <thead>
                 <tr>
-                  <th style="width: 55px; text-align: center;">Dòng</th>
-                  <th style="width: 65px; text-align: center;">TT</th>
-                  <th style="width: 130px; text-align: center;">Cấp bậc</th>
-                  <th style="width: 90px; text-align: center;">Là Nhóm?</th>
+                  <th style="width: 38px; text-align: center;">
+                    <input type="checkbox" id="chkHierarchySelectAll" title="Chọn / Bỏ chọn tất cả" onchange="toggleSelectAllHierarchy(this.checked)" style="cursor: pointer;">
+                  </th>
+                  <th style="width: 50px; text-align: center;">Dòng</th>
+                  <th style="width: 60px; text-align: center;">TT</th>
+                  <th style="width: 120px; text-align: center;">Cấp bậc</th>
+                  <th style="width: 80px; text-align: center;">Là Nhóm?</th>
                   <th>Cây Hạng mục (Thụt lùi & Mở rộng / Thu gọn)</th>
-                  <th style="width: 65px; text-align: center;">ĐVT</th>
-                  <th class="num-cell" style="width: 90px;">KL 2027</th>
-                  <th class="num-cell" style="width: 90px;">KL 2028</th>
-                  <th class="num-cell" style="width: 110px;">Đơn giá (USD)</th>
+                  <th style="width: 85px; text-align: center;">Mã mảng</th>
+                  <th style="width: 105px; text-align: center;">Mã DV</th>
+                  <th style="width: 85px; text-align: center;">Mã loại</th>
+                  <th style="width: 60px; text-align: center;">ĐVT</th>
+                  <th class="num-cell" style="width: 85px;">KL 2027</th>
+                  <th class="num-cell" style="width: 85px;">KL 2028</th>
+                  <th class="num-cell" style="width: 100px;">Đơn giá (USD)</th>
                   <th>Công thức Subtotal G (2027)</th>
                   <th>Công thức Subtotal H (2028)</th>
                 </tr>
               </thead>
               <tbody id="hierarchyTableBody">
                 <tr>
-                  <td colspan="11" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                  <td colspan="15" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
                     Chưa có dữ liệu phân cấp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
                   </td>
                 </tr>
@@ -1242,6 +1342,42 @@
 
       <!-- ==================== SUBTAB 4: SO SÁNH VỚI CHIẾN LƯỢC 5 NĂM ==================== -->
       <div id="subtabStratDetail" class="report-subtab-content">
+        <!-- Banner Dự án & Profile Chiến lược 5 năm -->
+        <div id="stratProjectBanner" class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.25rem; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 42px; height: 42px; border-radius: 10px; background: #2563eb; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(37,99,235,0.25);">
+              <i data-lucide="scale" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 0.775rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Dự án hiện tại:</span>
+                <strong id="stratBannerProjectName" style="color: #0f172a; font-size: 0.95rem;">Dự án Toàn quốc</strong>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px; flex-wrap: wrap;">
+                <span style="font-size: 0.8rem; color: #475569; font-weight: 500;">Profile Chiến lược 5 năm áp dụng:</span>
+                <span id="stratBannerProfileBadge" class="badge" style="background: #4338ca; color: #ffffff; font-weight: 700; font-size: 0.75rem; padding: 2px 8px; border-radius: 6px;">Chiến lược 5 năm (Chuẩn)</span>
+                <span id="stratBannerUserNote" style="display: none; font-size: 0.75rem; color: #64748b; font-style: italic;">(Thiết lập bởi Quản trị viên)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Controls cho Admin & Shortcut -->
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div id="stratAdminProfileControl" style="display: none; align-items: center; gap: 8px;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">⚙️ Gán Profile:</span>
+              <select id="stratBannerProfileSelect" class="select-input" style="font-weight: 600; font-size: 0.825rem; padding: 0.35rem 0.75rem; border-radius: 8px; border: 1.5px solid #93c5fd; background: #ffffff; color: #0f172a;">
+                <!-- Render từ JS -->
+              </select>
+              <button type="button" id="btnStratApplyProfile" class="btn btn-primary btn-xs" onclick="window.adminSetProjectStrategyProfile()" title="Gán Profile Chiến lược này cho Dự án hiện tại">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Áp dụng cho Dự án
+              </button>
+            </div>
+            <button type="button" class="btn btn-outline btn-xs" onclick="switchConfigTab('configTabStrategyProfile'); switchSection('tabConfig');" title="Xem hoặc chỉnh sửa chi tiết các số liệu trong Profile Chiến lược">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-indigo-600"></i> Quản lý Profiles
+            </button>
+          </div>
+        </div>
+
         <!-- Bảng đối chiếu chi tiết từ file mẫu -->
         <div class="table-card" style="margin-bottom: 1.5rem;">
           <div class="table-card-header">
@@ -1674,6 +1810,15 @@
                    style="width: 100%; padding: 0.5rem 1rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.9rem; outline: none; background: #ffffff;">
             <div style="font-size: 0.775rem; color: #64748b; margin-top: 5px;">Mỗi danh mục là một kho lưu trữ 7 mảng độc lập để lập quy hoạch.</div>
           </div>
+          <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; color: #1e293b;">
+              Profile Chiến lược 5 năm áp dụng:
+            </label>
+            <select id="inputNewWsStrategyProfile" class="select-input" style="width: 100%; padding: 0.45rem 0.95rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.85rem; outline: none; background: #ffffff; font-weight: 600; color: #0f172a;">
+              <!-- Dynamic options -->
+            </select>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Dự án sẽ sử dụng bộ số liệu Chiến lược 5 năm này để so sánh và đối chiếu.</div>
+          </div>
           <div style="margin-bottom: 1.5rem;">
             <label style="display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: #1e293b;">
               Chế độ phân quyền danh mục: <span style="font-weight: 500; font-size: 0.775rem; color: #64748b;">(Chọn 1 loại)</span>
@@ -1787,6 +1932,15 @@
             Tên danh mục: <span style="color:#e11d48;">*</span>
           </label>
           <input type="text" id="editWsName" required style="width: 100%; padding: 0.5rem 1rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.9rem; outline: none; background: #ffffff;">
+        </div>
+        <div style="margin-bottom: 1.15rem;">
+          <label style="display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 6px; color: #1e293b;">
+            Profile Chiến lược 5 năm áp dụng:
+          </label>
+          <select id="editWsStrategyProfile" class="select-input" style="width: 100%; padding: 0.45rem 0.95rem; border: 1.5px solid #cbd5e1; border-radius: 9999px; font-size: 0.85rem; outline: none; background: #ffffff; font-weight: 600; color: #0f172a;">
+            <!-- Dynamic options -->
+          </select>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Admin thiết lập profile chiến lược 5 năm để bảng đối chiếu hiển thị chính xác theo dự án.</div>
         </div>
         <div style="margin-bottom: 1.5rem;">
           <label style="display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: #1e293b;">

@@ -1902,20 +1902,191 @@ window.toggleGroupCollapse = function(key) {
   renderHierarchyTable();
 };
 
+// ==================== CẤU HÌNH NHÓM HẠNG MỤC: PHÂN QUYỀN & MÃ MẢNG / DV / LOẠI ====================
+
+// Kiểm tra quyền chỉnh sửa của người dùng đối với một hạng mục/mảng
+function canUserEditItemSector(item) {
+  if (!item) return false;
+  const service = window.FirebaseService;
+  if (!service) return true; // Standalone / offline mode
+  if (service.isAdmin && service.isAdmin()) return true;
+  if (service.isGuest && service.isGuest()) return false;
+
+  const wsId = document.getElementById('selectWorkspace')?.value || null;
+  const sec = item.mangCode || item.maMang || (item.mangInfo && item.mangInfo.code);
+  if (!sec) return true;
+  return service.canAccessSector(sec, wsId);
+}
+
+// Cập nhật lại toàn bộ validation khi mã mảng, DV, loại thay đổi
+function revalidateAllData() {
+  state.validationIssues = [];
+  if (state.extractedData && state.extractedData.length > 0) {
+    state.extractedData.forEach(it => {
+      validateRow(it);
+    });
+  }
+  if (typeof updateValidationKPIs === 'function') updateValidationKPIs();
+  if (typeof renderValidationTable === 'function') renderValidationTable();
+}
+
+// Cập nhật trực tiếp Mã mảng, Mã DV, hoặc Mã loại cho 1 dòng
+function updateItemCode(idx, field, rawValue) {
+  const item = state.extractedData[idx];
+  if (!item) return;
+
+  if (!canUserEditItemSector(item)) {
+    showToast('Bạn không có quyền chỉnh sửa mảng này!', 'error');
+    renderHierarchyTable();
+    return;
+  }
+
+  const val = String(rawValue || '').trim().toUpperCase();
+  const oldVal = item[field] || '';
+  if (oldVal === val) return;
+
+  item[field] = val;
+
+  // Xóa cache Excel để xuất file mới có mã vừa sửa
+  state.exportBlob = null;
+
+  // Revalidate toàn bộ để cập nhật lỗi / cảnh báo
+  revalidateAllData();
+
+  // Cập nhật lại các báo cáo TH & So sánh
+  if (typeof updateReportFromExtractedData === 'function') {
+    updateReportFromExtractedData(state.extractedData, state.extractedByMang);
+  }
+}
+
+// Chọn / Bỏ chọn tất cả dòng hợp lệ trên bảng phân cấp
+function toggleSelectAllHierarchy(checked) {
+  const checkboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:not([disabled])');
+  checkboxes.forEach(cb => { cb.checked = checked; });
+  updateHierarchySelection();
+}
+
+// Cập nhật trạng thái thanh công cụ tác vụ hàng loạt theo số lượng đã chọn
+function updateHierarchySelection() {
+  const checkedBoxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:checked');
+  const toolbar = document.getElementById('hierarchyBatchToolbar');
+  const countSpan = document.getElementById('hierarchySelectedCount');
+  const selectAllCb = document.getElementById('chkHierarchySelectAll');
+  const allBoxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:not([disabled])');
+
+  const count = checkedBoxes.length;
+  if (toolbar) {
+    if (count > 0) {
+      toolbar.style.display = 'flex';
+      if (countSpan) countSpan.textContent = `Đã chọn: ${count} dòng`;
+    } else {
+      toolbar.style.display = 'none';
+    }
+  }
+  if (selectAllCb) {
+    selectAllCb.checked = allBoxes.length > 0 && count === allBoxes.length;
+    selectAllCb.indeterminate = count > 0 && count < allBoxes.length;
+  }
+}
+
+// Bỏ chọn toàn bộ dòng
+function deselectAllHierarchyItems() {
+  const checkboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item');
+  checkboxes.forEach(cb => { cb.checked = false; });
+  const selectAllCb = document.getElementById('chkHierarchySelectAll');
+  if (selectAllCb) {
+    selectAllCb.checked = false;
+    selectAllCb.indeterminate = false;
+  }
+  updateHierarchySelection();
+}
+
+// Áp dụng thiết lập nhanh Mã mảng, Mã DV, Mã loại cho các dòng đã chọn
+function applyBatchHierarchyCodes() {
+  const checkedBoxes = Array.from(document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:checked'));
+  if (checkedBoxes.length === 0) {
+    showToast('Vui lòng chọn ít nhất một dòng để thiết lập!', 'warning');
+    return;
+  }
+
+  const newMang = (document.getElementById('batchHierarchyMaMang')?.value || '').trim().toUpperCase();
+  const newDV = (document.getElementById('batchHierarchyMaDV')?.value || '').trim().toUpperCase();
+  const newLoai = (document.getElementById('batchHierarchyMaLoai')?.value || '').trim().toUpperCase();
+
+  if (!newMang && !newDV && !newLoai) {
+    showToast('Vui lòng chọn hoặc nhập ít nhất một mã (Mã mảng, Mã DV, hoặc Mã loại) để áp dụng!', 'warning');
+    return;
+  }
+
+  let updatedCount = 0;
+  let skippedCount = 0;
+
+  checkedBoxes.forEach(cb => {
+    const idx = parseInt(cb.getAttribute('data-index'), 10);
+    const item = state.extractedData[idx];
+    if (!item) return;
+
+    if (!canUserEditItemSector(item)) {
+      skippedCount++;
+      return;
+    }
+
+    if (newMang) item.maMang = newMang;
+    if (newDV) item.maDV = newDV;
+    if (newLoai) item.maLoai = newLoai;
+
+    updatedCount++;
+  });
+
+  // Xóa cache Excel
+  state.exportBlob = null;
+
+  // Revalidate toàn bộ dữ liệu
+  revalidateAllData();
+
+  // Cập nhật lại các báo cáo TH & So sánh
+  if (typeof updateReportFromExtractedData === 'function') {
+    updateReportFromExtractedData(state.extractedData, state.extractedByMang);
+  }
+
+  // Render lại bảng phân cấp để hiển thị mã mới
+  renderHierarchyTable();
+
+  // Reset các ô nhập của thanh batch
+  const mangSelect = document.getElementById('batchHierarchyMaMang');
+  if (mangSelect) mangSelect.value = '';
+  const dvInput = document.getElementById('batchHierarchyMaDV');
+  if (dvInput) dvInput.value = '';
+  const loaiInput = document.getElementById('batchHierarchyMaLoai');
+  if (loaiInput) loaiInput.value = '';
+
+  deselectAllHierarchyItems();
+
+  if (skippedCount > 0) {
+    showToast(`Đã áp dụng mã cho ${updatedCount} dòng! (${skippedCount} dòng bị bỏ qua do không có quyền)`, 'warning');
+  } else {
+    showToast(`Đã áp dụng mã thành công cho ${updatedCount} dòng!`, 'success');
+  }
+}
+
 // Render bảng Cấu hình Nhóm hạng mục & Phân cấp (Tab 3)
 function renderHierarchyTable() {
   const tbody = document.getElementById('hierarchyTableBody');
-  const keyword = (document.getElementById('searchGroupInput').value || '').trim().toLowerCase();
+  const keyword = (document.getElementById('searchGroupInput')?.value || '').trim().toLowerCase();
+
+  if (!tbody) return;
 
   if (state.groupsConfig.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <td colspan="15" style="text-align: center; padding: 2rem; color: var(--text-muted);">
           Chưa có dữ liệu phân cấp. Vui lòng nạp file và bấm "⚡ Tổng hợp & Kiểm tra".
         </td>
       </tr>
     `;
-    document.getElementById('hierarchyFooterText').textContent = `Hiển thị 0 mục`;
+    const footerText = document.getElementById('hierarchyFooterText');
+    if (footerText) footerText.textContent = `Hiển thị 0 mục`;
+    updateHierarchySelection();
     return;
   }
 
@@ -1928,7 +2099,9 @@ function renderHierarchyTable() {
     }
 
     if (keyword) {
-      const matchText = (node.nd || '') + ' ' + (node.tt || '') + ' ' + (node.mangName || '') + ' ' + (node.dvt || '');
+      const it = node.itemIndex >= 0 ? state.extractedData[node.itemIndex] : null;
+      const matchText = (node.nd || '') + ' ' + (node.tt || '') + ' ' + (node.mangName || '') + ' ' + (node.dvt || '')
+        + ' ' + (it ? (it.maMang || '') + ' ' + (it.maDV || '') + ' ' + (it.maLoai || '') : '');
       if (!matchText.toLowerCase().includes(keyword)) return false;
     }
 
@@ -1938,12 +2111,14 @@ function renderHierarchyTable() {
   if (visibleNodes.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+        <td colspan="15" style="text-align: center; padding: 2rem; color: var(--text-muted);">
           Không có hạng mục nào phù hợp với bộ lọc cấp bậc hoặc từ khóa.
         </td>
       </tr>
     `;
-    document.getElementById('hierarchyFooterText').textContent = `Hiển thị 0 / ${state.groupsConfig.length} mục`;
+    const footerText = document.getElementById('hierarchyFooterText');
+    if (footerText) footerText.textContent = `Hiển thị 0 / ${state.groupsConfig.length} mục`;
+    updateHierarchySelection();
     return;
   }
 
@@ -1960,6 +2135,7 @@ function renderHierarchyTable() {
     if (node.isMangHeader) {
       return `
         <tr class="row-cap-1 sec-${node.mangCode}" data-key="${node.key}" data-type="mang">
+          <td style="text-align: center; color: var(--text-muted);">-</td>
           <td style="text-align: center; font-weight: 800; color: #475569;">${node.origRow ? node.origRow : '-'}</td>
           <td style="font-weight: 800; font-size: 0.9rem;">${escapeHtml(node.tt)}</td>
           <td><span class="badge-lvl badge-lvl-1">CẤP 1</span></td>
@@ -1974,6 +2150,11 @@ function renderHierarchyTable() {
               </strong>
             </div>
           </td>
+          <td style="text-align: center;">
+            <span class="badge badge-blue" style="font-weight: 700; font-size: 0.75rem;">${escapeHtml(node.mangCode || '')}</span>
+          </td>
+          <td style="text-align: center; color: var(--text-muted);">-</td>
+          <td style="text-align: center; color: var(--text-muted);">-</td>
           <td style="text-align: center; color: var(--text-muted);">-</td>
           <td class="num-cell" style="color: var(--text-muted);">-</td>
           <td class="num-cell" style="color: var(--text-muted);">-</td>
@@ -1989,6 +2170,30 @@ function renderHierarchyTable() {
     const isGroup = !!(item && item.isGroup);
     const indentPx = isGroup ? Math.min(180, (node.levelNum - 1) * 24) : Math.min(180, ((node.ancestors ? node.ancestors.length : 1) * 20));
     const rowClass = isGroup ? `row-cap-${node.levelNum}` : 'row-leaf';
+    const canEdit = canUserEditItemSector(item);
+
+    // Checkbox column
+    let chkHtml = '';
+    if (canEdit) {
+      chkHtml = `<input type="checkbox" class="chk-hierarchy-item" data-index="${idx}" onchange="updateHierarchySelection()" style="cursor: pointer; width: 16px; height: 16px;">`;
+    } else {
+      chkHtml = `<input type="checkbox" disabled title="Bạn không có quyền chỉnh sửa mảng này" style="cursor: not-allowed; opacity: 0.35; width: 16px; height: 16px;">`;
+    }
+
+    // Code inputs / badges
+    let maMangHtml = '';
+    let maDVHtml = '';
+    let maLoaiHtml = '';
+
+    if (canEdit) {
+      maMangHtml = `<input type="text" class="hierarchy-code-input" value="${escapeHtml(item ? (item.maMang || '') : '')}" placeholder="Mã mảng" list="listValidMaMang" onchange="updateItemCode(${idx}, 'maMang', this.value)" style="width: 75px;">`;
+      maDVHtml = `<input type="text" class="hierarchy-code-input" value="${escapeHtml(item ? (item.maDV || '') : '')}" placeholder="Mã DV" list="listValidMaDV" onchange="updateItemCode(${idx}, 'maDV', this.value)" style="width: 95px;">`;
+      maLoaiHtml = `<input type="text" class="hierarchy-code-input" value="${escapeHtml(item ? (item.maLoai || '') : '')}" placeholder="Mã loại" list="listValidMaLoai" onchange="updateItemCode(${idx}, 'maLoai', this.value)" style="width: 75px;">`;
+    } else {
+      maMangHtml = `<span class="badge-code-locked" title="Chỉ xem: ${escapeHtml(item ? (item.maMang || '-') : '-')}">${escapeHtml(item ? (item.maMang || '-') : '-')}</span>`;
+      maDVHtml = `<span class="badge-code-locked" title="Chỉ xem: ${escapeHtml(item ? (item.maDV || '-') : '-')}">${escapeHtml(item ? (item.maDV || '-') : '-')}</span>`;
+      maLoaiHtml = `<span class="badge-code-locked" title="Chỉ xem: ${escapeHtml(item ? (item.maLoai || '-') : '-')}">${escapeHtml(item ? (item.maLoai || '-') : '-')}</span>`;
+    }
 
     let treeContentHtml = '';
     if (node.hasChildren) {
@@ -2019,7 +2224,7 @@ function renderHierarchyTable() {
     let levelCellHtml = '';
     if (isGroup) {
       levelCellHtml = `
-        <select class="select-input sel-level sel-level-${node.levelNum}" onchange="changeNodeLevel('${node.key}', ${idx}, this.value)">
+        <select class="select-input sel-level sel-level-${node.levelNum}" ${canEdit ? '' : 'disabled'} onchange="changeNodeLevel('${node.key}', ${idx}, this.value)">
           <option value="2" ${node.levelNum === 2 ? 'selected' : ''}>🔵 Cấp 2</option>
           <option value="3" ${node.levelNum === 3 ? 'selected' : ''}>🟢 Cấp 3</option>
           <option value="4" ${node.levelNum === 4 ? 'selected' : ''}>🟠 Cấp 4</option>
@@ -2035,17 +2240,21 @@ function renderHierarchyTable() {
 
     return `
       <tr class="${rowClass}" data-key="${node.key}" data-index="${idx}">
+        <td style="text-align: center;">${chkHtml}</td>
         <td style="text-align: center; color: var(--text-muted); font-size: 0.775rem; font-weight: 600;">${node.origRow ? node.origRow : (item && item.origRow ? item.origRow : idx + 1)}</td>
         <td style="font-weight: 700; font-family: monospace; font-size: 0.8rem;">${escapeHtml(node.tt)}</td>
         <td>${levelCellHtml}</td>
         <td style="text-align: center;">
-          <input type="checkbox" class="chk-is-group" ${isGroup ? 'checked' : ''} onchange="toggleItemIsGroup(${idx}, this.checked)" style="cursor: pointer; width: 16px; height: 16px;">
+          <input type="checkbox" class="chk-is-group" ${isGroup ? 'checked' : ''} ${canEdit ? '' : 'disabled'} onchange="toggleItemIsGroup(${idx}, this.checked)" style="cursor: pointer; width: 16px; height: 16px;">
         </td>
         <td>
           <div class="tree-indent-cell" style="padding-left: ${indentPx}px;">
             ${treeContentHtml}
           </div>
         </td>
+        <td style="text-align: center;">${maMangHtml}</td>
+        <td style="text-align: center;">${maDVHtml}</td>
+        <td style="text-align: center;">${maLoaiHtml}</td>
         <td style="text-align: center; font-size: 0.775rem;">${escapeHtml(item ? (item.dvt || '-') : '-')}</td>
         <td class="num-cell" style="font-size: 0.775rem;">${item && item.kl27 !== null && item.kl27 !== undefined ? formatNumber(item.kl27) : '-'}</td>
         <td class="num-cell" style="font-size: 0.775rem;">${item && item.kl28 !== null && item.kl28 !== undefined ? formatNumber(item.kl28) : '-'}</td>
@@ -2058,7 +2267,9 @@ function renderHierarchyTable() {
 
   tbody.innerHTML = rowsHtml;
   if (window.lucide) lucide.createIcons();
-  document.getElementById('hierarchyFooterText').textContent = `Hiển thị ${visibleNodes.length} / ${state.groupsConfig.length} mục`;
+  const footerText = document.getElementById('hierarchyFooterText');
+  if (footerText) footerText.textContent = `Hiển thị ${visibleNodes.length} / ${state.groupsConfig.length} mục`;
+  updateHierarchySelection();
 }
 
 // Thay đổi cấp bậc trực tiếp từ dropdown trong Tab 3 (tự động tịnh tiến liên hoàn các cấp con)
@@ -3427,14 +3638,7 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   }
   const zip = await JSZip.loadAsync(templateBuffer);
 
-  const tmplStylesXml = await zip.file('xl/styles.xml').async('string');
-  const merger = new JSStyleMerger(tmplStylesXml);
-
-  // Đảm bảo style ô số không bôi đậm cho các mục chi tiết (font Times New Roman 11 thường, border thin 4 cạnh, vertical center, numFmt 165)
-  const sDetailNumVert = merger.addXf(
-    '<xf numFmtId="165" fontId="13" fillId="0" borderId="3" xfId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>'
-  );
-
+  // Giữ nguyên 100% định dạng gốc của file mẫu (không sửa xl/styles.xml)
   // Bộ định dạng chuẩn theo dòng 9 (P1 TỔNG ĐẦU TƯ VTTB 2027-2028):
   // Hạng mục (Group): Times New Roman 11 Bold (fontId 32), Border thin 4 cạnh (borderId 3), No fill (fillId 0)
   const STYLE_GROUP = {
@@ -3453,6 +3657,7 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   };
 
   // Mục chi tiết (Detail): Times New Roman 11 Regular (fontId 13), Border thin 4 cạnh (borderId 3), No fill (fillId 0)
+  // Các style ID này đều là style gốc có sẵn 100% trong phôi Masterlist 2027-2028_Mau.xlsx
   const STYLE_DETAIL = {
     A: 189, // Center
     B: 376, // Left, wrapText
@@ -3460,8 +3665,8 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
     D: 312, // Center, numFmt 165, wrapText
     E: 312, // Center, numFmt 165, wrapText
     F: 312, // Center, numFmt 165, wrapText
-    G: sDetailNumVert, // Vertical center, numFmt 165
-    H: sDetailNumVert, // Vertical center, numFmt 165
+    G: 188, // Vertical center / center, numFmt 165
+    H: 188, // Vertical center / center, numFmt 165
     I: 189, // Center
     J: 189, // Center
     K: 189, // Center
@@ -3761,7 +3966,7 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   }
 
   zip.file(masterlistSheetPath, sheet1Xml);
-  zip.file('xl/styles.xml', merger.buildMergedStylesXml());
+  // Không ghi đè xl/styles.xml - bảo tồn nguyên bản 100% định dạng file mẫu cho tất cả các sheet và các dòng 1-9
 
   // Xóa calcChain để Excel tự tính toán lại công thức từ đầu khi mở file, tránh lỗi cache
   zip.remove('xl/calcChain.xml');
@@ -4089,22 +4294,193 @@ async function moveStrategyRow(key, direction) {
   showToast(saved ? 'Đã cập nhật thứ tự hiển thị dòng.' : 'Đã đổi thứ tự dòng, nhưng chưa lưu được vào bộ nhớ trình duyệt.', saved ? 'success' : 'warning');
 }
 
+// Lấy Profile Chiến lược 5 năm gắn với Workspace/Dự án
+function getStrategyProfileForWorkspace(workspaceId) {
+  if (!state.strategyProfiles || state.strategyProfiles.length === 0) return null;
+  const service = window.FirebaseService;
+  let targetProfileId = null;
+
+  if (workspaceId && service && typeof service.getWorkspaceStrategyProfile === 'function') {
+    targetProfileId = service.getWorkspaceStrategyProfile(workspaceId);
+  }
+
+  // Nếu tìm thấy theo ID gán trực tiếp
+  if (targetProfileId) {
+    const found = state.strategyProfiles.find(p => p.id === targetProfileId);
+    if (found) return found;
+  }
+
+  // Auto-detect theo tên dự án nếu chưa gán thủ công
+  const select = document.getElementById('selectWorkspace');
+  let wsName = '';
+  if (select && workspaceId) {
+    const opt = Array.from(select.options).find(o => o.value === workspaceId);
+    if (opt) wsName = (opt.textContent || '').toLowerCase();
+  }
+
+  if (wsName.includes('lào') || wsName.includes('lao')) {
+    const lao = state.strategyProfiles.find(p => p.id === 'profile_1789883317033' || (p.name || '').toLowerCase().includes('lào'));
+    if (lao) return lao;
+  }
+  if (wsName.includes('mozambique') || wsName.includes('movitel')) {
+    const moz = state.strategyProfiles.find(p => p.id === 'profile_1789854757103' || (p.name || '').toLowerCase().includes('mozambique'));
+    if (moz) return moz;
+  }
+
+  // Fallback về profile_default hoặc profile đầu tiên
+  return state.strategyProfiles.find(p => p.id === 'profile_default') || state.strategyProfiles[0];
+}
+
 // Lấy profile đang active
 function getActiveStrategyProfile() {
   if (!state.strategyProfiles || state.strategyProfiles.length === 0) return null;
+
+  // Ưu tiên profile của dự án/workspace đang active
+  const select = document.getElementById('selectWorkspace');
+  const wsId = select ? select.value : null;
+  if (wsId) {
+    const wsProfile = getStrategyProfileForWorkspace(wsId);
+    if (wsProfile) {
+      state.activeStrategyProfileId = wsProfile.id;
+      return wsProfile;
+    }
+  }
+
   const found = state.strategyProfiles.find(p => p.id === state.activeStrategyProfileId);
   return found || state.strategyProfiles[0];
+}
+
+// Đồng bộ Profile Chiến lược tương ứng khi người dùng đổi Dự án (Workspace)
+function syncStrategyProfileWithActiveWorkspace(workspaceId) {
+  if (!workspaceId) {
+    const select = document.getElementById('selectWorkspace');
+    workspaceId = select ? select.value : null;
+  }
+  if (!workspaceId) return;
+
+  const profile = getStrategyProfileForWorkspace(workspaceId);
+  if (profile) {
+    state.activeStrategyProfileId = profile.id;
+    const sel = document.getElementById('selectStrategyProfile');
+    if (sel) sel.value = profile.id;
+  }
+
+  // Cập nhật giao diện
+  renderStrategyProfileSelect();
+  renderStrategyComparisonTable();
+  updateSubtabStratBanner();
+
+  // Nếu đã nạp dữ liệu report, cập nhật lại cả tab So sánh chiến lược
+  if (typeof reportState !== 'undefined' && reportState.rawResponse) {
+    if (typeof buildStrategyComparison === 'function') {
+      reportState.rawResponse.strategy_comparison = buildStrategyComparison(reportState.rawResponse.tables_mang);
+    }
+    if (typeof renderTabStrategy === 'function') {
+      renderTabStrategy();
+    }
+  }
+}
+
+// Admin gán Profile Chiến lược 5 năm cho Dự án hiện tại
+async function adminSetProjectStrategyProfile(profileId) {
+  const service = window.FirebaseService;
+  if (!service) return;
+
+  if (service.isGuest()) {
+    showToast('Vui lòng đăng nhập tài khoản Quản trị viên để gán Profile!', 'warning');
+    if (typeof openLoginModal === 'function') openLoginModal();
+    return;
+  }
+
+  const selectWs = document.getElementById('selectWorkspace');
+  const wsId = selectWs ? selectWs.value : null;
+  if (!wsId) {
+    showToast('Chưa chọn Dự án nào!', 'warning');
+    return;
+  }
+
+  if (!profileId) {
+    const selBanner = document.getElementById('stratBannerProfileSelect');
+    if (selBanner) profileId = selBanner.value;
+  }
+
+  if (!profileId) {
+    showToast('Vui lòng chọn Profile Chiến lược!', 'warning');
+    return;
+  }
+
+  try {
+    await service.setWorkspaceStrategyProfile(wsId, profileId);
+    state.activeStrategyProfileId = profileId;
+    const foundProfile = state.strategyProfiles.find(p => p.id === profileId);
+    const profileName = foundProfile ? foundProfile.name : profileId;
+    const wsName = selectWs ? selectWs.options[selectWs.selectedIndex]?.textContent : 'Dự án';
+
+    showToast(`Đã thiết lập Profile Chiến lược "${profileName}" cho "${wsName}" thành công!`, 'success');
+
+    // Đồng bộ lại
+    syncStrategyProfileWithActiveWorkspace(wsId);
+    if (typeof renderAdminWorkspacesTable === 'function') {
+      renderAdminWorkspacesTable();
+    }
+  } catch (err) {
+    showToast(`Lỗi gán profile: ${err.message}`, 'error');
+  }
+}
+
+// Cập nhật Banner hiển thị thông tin Dự án & Profile Chiến lược 5 năm
+function updateSubtabStratBanner() {
+  const banner = document.getElementById('stratProjectBanner');
+  if (!banner) return;
+
+  const service = window.FirebaseService;
+  const isAdmin = service ? service.isAdmin() : false;
+
+  const selectWs = document.getElementById('selectWorkspace');
+  const wsName = (selectWs && selectWs.selectedIndex >= 0) ? selectWs.options[selectWs.selectedIndex].textContent : 'Dự án Toàn quốc';
+
+  const profile = getActiveStrategyProfile();
+  const profileName = profile ? profile.name : 'Chưa thiết lập';
+
+  const nameEl = document.getElementById('stratBannerProjectName');
+  if (nameEl) nameEl.textContent = wsName;
+
+  const badgeEl = document.getElementById('stratBannerProfileBadge');
+  if (badgeEl) badgeEl.textContent = profileName;
+
+  const userNote = document.getElementById('stratBannerUserNote');
+  if (userNote) userNote.style.display = isAdmin ? 'none' : 'inline';
+
+  const adminCtrl = document.getElementById('stratAdminProfileControl');
+  if (adminCtrl) {
+    if (isAdmin) {
+      adminCtrl.style.display = 'flex';
+      const selBanner = document.getElementById('stratBannerProfileSelect');
+      if (selBanner && state.strategyProfiles) {
+        selBanner.innerHTML = state.strategyProfiles.map(p => `
+          <option value="${p.id}" ${p.id === (profile ? profile.id : state.activeStrategyProfileId) ? 'selected' : ''}>
+            ${escapeHtml(p.name)}
+          </option>
+        `).join('');
+      }
+    } else {
+      adminCtrl.style.display = 'none';
+    }
+  }
+  if (window.lucide) window.lucide.createIcons();
 }
 
 // Hiển thị danh sách profile lên dropdown
 function renderStrategyProfileSelect() {
   const sel = document.getElementById('selectStrategyProfile');
-  if (!sel) return;
-  sel.innerHTML = state.strategyProfiles.map(p => `
-    <option value="${p.id}" ${p.id === state.activeStrategyProfileId ? 'selected' : ''}>
-      ${escapeHtml(p.name)}
-    </option>
-  `).join('');
+  if (sel) {
+    sel.innerHTML = state.strategyProfiles.map(p => `
+      <option value="${p.id}" ${p.id === state.activeStrategyProfileId ? 'selected' : ''}>
+        ${escapeHtml(p.name)}
+      </option>
+    `).join('');
+  }
+  updateSubtabStratBanner();
 }
 
 // Trích xuất số liệu QHĐC tự động thời gian thực (realtime) từ Masterlist theo đúng công thức sheet So sanh CL
@@ -5451,3 +5827,21 @@ window.handleClearSelectedSectors = async function() {
   window.closeClearSectorModal();
   showToast(`Đã xóa thành công ${selectedKeys.length} mảng: ${names.join(', ')}!`, 'success');
 };
+
+// ==================== XUẤT RA WINDOW CHO PROFILE CHIẾN LƯỢC & DỰ ÁN ====================
+window.getActiveStrategyProfile = getActiveStrategyProfile;
+window.computeStrategyTableData = computeStrategyTableData;
+window.getStrategyProfileForWorkspace = getStrategyProfileForWorkspace;
+window.syncStrategyProfileWithActiveWorkspace = syncStrategyProfileWithActiveWorkspace;
+window.adminSetProjectStrategyProfile = adminSetProjectStrategyProfile;
+window.updateSubtabStratBanner = updateSubtabStratBanner;
+window.renderStrategyComparisonTable = renderStrategyComparisonTable;
+
+// ==================== XUẤT RA WINDOW CHO CẤU HÌNH NHÓM & MÃ MẢNG / DV / LOẠI ====================
+window.canUserEditItemSector = canUserEditItemSector;
+window.updateItemCode = updateItemCode;
+window.toggleSelectAllHierarchy = toggleSelectAllHierarchy;
+window.updateHierarchySelection = updateHierarchySelection;
+window.deselectAllHierarchyItems = deselectAllHierarchyItems;
+window.applyBatchHierarchyCodes = applyBatchHierarchyCodes;
+window.revalidateAllData = revalidateAllData;
