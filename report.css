@@ -1009,50 +1009,43 @@ table.data-table.report-dt tbody tr:hover {
   font-weight: 600;
 }
 
-/* Strategy Table High Contrast Styles (Sáng sủa, hài hòa, không dùng nền đen) */
-.table-strat thead tr:first-child th {
-  background: #f1f5f9;
-  color: #0f172a;
-  font-weight: 800;
-  border-bottom: 2px solid #94a3b8;
-  border-right: 1px solid #cbd5e1;
-  padding: 6px 10px;
+/* Strategy Table High Contrast Styles (Chuẩn 11 cột khớp 100% sheet So sanh CL) */
+.table-strat th.strat-th-stt {
+  width: 50px !important;
+  text-align: center !important;
 }
-.table-strat thead th.strat-th-name {
-  background: #f1f5f9 !important;
-  color: #0f172a !important;
-  border-right: 1.5px solid #cbd5e1 !important;
+.table-strat th.strat-th-mang {
+  min-width: 220px !important;
+  text-align: left !important;
 }
-.table-strat thead th.strat-th-qhdc {
-  background: #2563eb !important;
-  color: #ffffff !important;
-  border-right: 2px solid #94a3b8 !important;
+.table-strat td.strat-cell-stt {
+  text-align: center !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
 }
-.table-strat thead th.strat-th-cl {
-  background: #d97706 !important;
-  color: #ffffff !important;
-  border-right: 2px solid #94a3b8 !important;
+.table-strat td.strat-cell-mang {
+  text-align: left !important;
+  font-weight: 600 !important;
 }
-.table-strat thead th.strat-th-eval {
-  background: #475569 !important;
-  color: #ffffff !important;
+.table-strat td.strat-cell-mang-total {
+  text-align: left !important;
+  font-weight: 800 !important;
 }
-.table-strat thead tr:nth-child(2) th {
-  background: #f8fafc;
-  color: #1e293b;
+.table-strat td:not(.strat-cell-mang):not(.strat-cell-mang-total):not(.strat-cell-stt) {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  padding-right: 0.85rem !important;
+}
+.table-strat .strat-border-group-right {
+  border-right: 2.5px solid #94a3b8 !important;
+}
+.table-strat .strat-diff-pos {
+  color: #b45309;
   font-weight: 700;
-  font-size: 0.78rem;
-  border-bottom: 2px solid #94a3b8;
-  border-right: 1px solid #cbd5e1;
-  padding: 5px 8px;
 }
-.table-strat thead tr:nth-child(2) th.col-27,
-.table-strat thead tr:nth-child(2) th.col-28,
-.table-strat thead tr:nth-child(2) th.col-tot {
-  background: #eff6ff !important;
-  color: #1e40af !important;
-  border-bottom: 2px solid #3b82f6 !important;
-  border-right: 1px solid #bfdbfe !important;
+.table-strat .strat-diff-neg {
+  color: #2563eb;
+  font-weight: 700;
 }
 .table-strat td {
   border-bottom: 1px solid #cbd5e1 !important;

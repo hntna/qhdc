@@ -1032,7 +1032,7 @@ function renderTabDichVu() {
   container.innerHTML = html || `<div style="text-align: center; padding: 3rem; color: #94a3b8;">Không tìm thấy kết quả phù hợp với bộ lọc</div>`;
 }
 
-// TAB 4: ĐỐI CHIẾU CHIẾN LƯỢC 5 NĂM
+// TAB 4: ĐỐI CHIẾU CHIẾN LƯỢC 5 NĂM (11 cột chuẩn theo sheet So sanh CL)
 function renderTabStrategy() {
   const tbody = document.getElementById('tableStrategyBody');
   if (!tbody) return;
@@ -1043,7 +1043,7 @@ function renderTabStrategy() {
   if (isGuest) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10" style="text-align: center; padding: 2.5rem; color: #b45309; background: #fffbeb;">
+        <td colspan="11" style="text-align: center; padding: 2.5rem; color: #b45309; background: #fffbeb;">
           <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔒</div>
           <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem;">Dữ liệu Kế hoạch Chiến lược 5 năm mang tính bảo mật</div>
           <div style="font-size: 0.8rem; color: #78350f;">Vui lòng đăng nhập tài khoản Chuyên viên hoặc Quản trị viên để xem đối chiếu chiến lược.</div>
@@ -1053,81 +1053,102 @@ function renderTabStrategy() {
     return;
   }
 
-  const compList = reportState.rawResponse?.strategy_comparison || [];
-  if (compList.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 2rem; color: #94a3b8;">Chưa có dữ liệu đối chiếu chiến lược</td></tr>`;
+  const profile = (typeof window.getActiveStrategyProfile === 'function')
+    ? window.getActiveStrategyProfile()
+    : null;
+
+  if (!profile) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 2.5rem; color: #94a3b8;">Chưa có dữ liệu Profile Chiến lược</td></tr>`;
     return;
   }
 
+  const computed = (typeof window.computeStrategyTableData === 'function')
+    ? window.computeStrategyTableData(profile)
+    : null;
+
+  if (!computed) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 2.5rem; color: #94a3b8;">Chưa thể tính toán số liệu đối chiếu chiến lược</td></tr>`;
+    return;
+  }
+
+  const rows = (typeof window.getStrategyDisplayRows === 'function')
+    ? window.getStrategyDisplayRows(profile)
+    : (window.STRATEGY_ROWS || [
+        { key: 'TONG', name: 'Tổng (m$)', isTotal: true, className: 'strat-row-total-all' },
+        { key: 'VT', stt: 1, name: 'Vô tuyến' },
+        { key: 'ML', stt: 2, name: 'Mạng lõi' },
+        { key: 'CDBR', stt: 3, name: 'BRCĐ-TH' },
+        { key: 'CNTT', stt: 4, name: 'Công nghệ thông tin' },
+        { key: 'ATTT', stt: 5, name: 'An toàn thông tin' },
+        { key: 'PM', stt: 6, name: 'Phần mềm, công cụ' },
+        { key: 'VI', stt: 7, name: 'Ví điện tử' },
+        { key: 'TD_QUANG', stt: 8, name: 'Truyền dẫn quang' },
+        { key: 'TD_IP', stt: 9, name: 'Truyền dẫn IP' },
+        { key: 'CD_TT', stt: 10, name: 'Cơ điện tổng trạm' },
+        { key: 'CD_BTS', stt: 11, name: 'Cơ điện BTS' },
+        { key: 'HT', stt: 12, name: 'Hạ tầng' }
+      ]);
+
+  const formatCell = (typeof window.formatStratCell === 'function')
+    ? window.formatStratCell
+    : (val, isDiff = false) => {
+        if (val === null || val === undefined) return '-';
+        const num = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(num)) return '-';
+        if (Math.abs(num) < 0.0001) {
+          if (isDiff) return '<span style="color:#64748b; font-weight:600;">0.00</span>';
+          return '-';
+        }
+        const formatted = Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (isDiff) {
+          if (num > 0) return `<span class="strat-diff-pos">+${formatted}</span>`;
+          else return `<span class="strat-diff-neg">-${formatted}</span>`;
+        }
+        return num < 0 ? `-${formatted}` : formatted;
+      };
+
   let html = '';
-  let sumQ27 = 0, sumQ28 = 0, sumQTot = 0;
-  let sumS27 = 0, sumS28 = 0, sumS27_28 = 0, sumS5Y = 0;
+  for (const r of rows) {
+    const c = computed[r.key];
+    if (!c) continue;
+    const trClass = r.className ? `class="${r.className}"` : '';
 
-  compList.forEach((c, idx) => {
-    sumQ27 += c.qhdc_2027;
-    sumQ28 += c.qhdc_2028;
-    sumQTot += c.qhdc_total;
-    sumS27 += c.strat_2027;
-    sumS28 += c.strat_2028;
-    sumS27_28 += c.strat_27_28;
-    sumS5Y += c.strat_5y;
-
-    const deltaClass = c.delta > 0.01 ? 'text-amber-600' : (c.delta < -0.01 ? 'text-blue-600' : 'text-emerald-600');
-    const badgeClass = c.status_color === 'orange' ? 'badge-orange' : (c.status_color === 'blue' ? 'badge-blue' : 'badge-green');
-
-    html += `
-      <tr>
-        <td style="font-weight: 700; color: #0f172a; min-width: 240px;">
-          <span style="display:inline-block;width:20px;color:#64748b;">${idx + 1}.</span>
-          ${escapeHtml(c.title)}
-        </td>
-        <td class="col-num col-27">${fmtVal(c.qhdc_2027)}</td>
-        <td class="col-num col-28">${fmtVal(c.qhdc_2028)}</td>
-        <td class="col-num col-tot" style="border-right: 2px solid #cbd5e1;">${fmtVal(c.qhdc_total)}</td>
-
-        <td class="col-num" style="color: #475569;">${fmtVal(c.strat_2027)}</td>
-        <td class="col-num" style="color: #475569;">${fmtVal(c.strat_2028)}</td>
-        <td class="col-num" style="font-weight: 800; color: #b45309;">${fmtVal(c.strat_27_28)}</td>
-        <td class="col-num" style="font-weight: 800; color: #92400e; border-right: 2px solid #cbd5e1;">${fmtVal(c.strat_5y)}</td>
-
-        <td class="col-num ${deltaClass}" style="font-weight: 800;">
-          ${c.delta > 0 ? '+' : ''}${fmtVal(c.delta)}
-        </td>
-        <td style="text-align: center;">
-          <span class="badge-status ${badgeClass}">${escapeHtml(c.status)}</span>
-        </td>
-      </tr>
-    `;
-  });
-
-  // Hàng tổng cộng đối chiếu
-  const totalDelta = sumQTot - sumS27_28;
-  const totDeltaClass = totalDelta > 0.01 ? 'text-amber-600' : (totalDelta < -0.01 ? 'text-blue-600' : 'text-emerald-600');
-  const totBadgeClass = totalDelta > 0.01 ? 'badge-orange' : (totalDelta < -0.01 ? 'badge-blue' : 'badge-green');
-  let totStatus = 'Khớp chiến lược';
-  if (totalDelta > 0.05) totStatus = `Vượt CL +${totalDelta.toFixed(2)} M$`;
-  else if (totalDelta < -0.05) totStatus = `Dưới CL ${totalDelta.toFixed(2)} M$`;
-
-  html += `
-    <tr class="row-total-table" style="background: #f8fafc; border-top: 2.5px solid #065f46;">
-      <td style="font-weight: 800; color: #065f46; font-size: 0.9rem;">TỔNG CỘNG TOÀN MẠNG</td>
-      <td class="col-num col-27" style="font-weight: 800;">${fmtVal(sumQ27)}</td>
-      <td class="col-num col-28" style="font-weight: 800;">${fmtVal(sumQ28)}</td>
-      <td class="col-num col-tot" style="font-weight: 800; border-right: 2px solid #cbd5e1; font-size: 0.95rem;">${fmtVal(sumQTot)}</td>
-
-      <td class="col-num" style="font-weight: 700; color: #475569;">${fmtVal(sumS27)}</td>
-      <td class="col-num" style="font-weight: 700; color: #475569;">${fmtVal(sumS28)}</td>
-      <td class="col-num" style="font-weight: 800; color: #b45309;">${fmtVal(sumS27_28)}</td>
-      <td class="col-num" style="font-weight: 800; color: #92400e; border-right: 2px solid #cbd5e1;">${fmtVal(sumS5Y)}</td>
-
-      <td class="col-num ${totDeltaClass}" style="font-weight: 800; font-size: 0.95rem;">
-        ${totalDelta > 0 ? '+' : ''}${fmtVal(totalDelta)}
-      </td>
-      <td style="text-align: center;">
-        <span class="badge-status ${totBadgeClass}">${totStatus}</span>
-      </td>
-    </tr>
-  `;
+    if (r.isTotal) {
+      // Dòng 1 trong body (Row 3 trong Excel: Tổng (m$))
+      html += `
+        <tr ${trClass} style="background: #f8fafc; font-weight: 800; border-bottom: 2px solid #cbd5e1;">
+          <td class="strat-cell-stt" style="font-weight: 800;"></td>
+          <td class="strat-cell-mang-total" style="font-weight: 800; color: #065f46; font-size: 0.875rem;">${escapeHtml(r.name)}</td>
+          <td class="strat-cell-qhdc" style="font-weight: 800;">${formatCell(c.qhdcTong)}</td>
+          <td class="strat-cell-qhdc" style="font-weight: 800;">${formatCell(c.qhdc27)}</td>
+          <td class="strat-cell-qhdc strat-border-group-right" style="font-weight: 800;">${formatCell(c.qhdc28)}</td>
+          <td class="strat-cell-strat" style="font-weight: 800; color: #5b21b6;">${formatCell(c.stratTong)}</td>
+          <td class="strat-cell-strat" style="font-weight: 800; color: #5b21b6;">${formatCell(c.strat27)}</td>
+          <td class="strat-cell-strat strat-border-group-right" style="font-weight: 800; color: #5b21b6;">${formatCell(c.strat28)}</td>
+          <td style="font-weight: 800;">${formatCell(c.diffTong, true)}</td>
+          <td style="font-weight: 800;">${formatCell(c.diff27, true)}</td>
+          <td style="font-weight: 800;">${formatCell(c.diff28, true)}</td>
+        </tr>
+      `;
+    } else {
+      // 12 Dòng chi tiết (Rows 4-15 trong Excel: VT, ML, CDBR, CNTT, ATTT, PM, VI, TD_QUANG, TD_IP, CD_TT, CD_BTS, HT)
+      html += `
+        <tr ${trClass}>
+          <td class="strat-cell-stt">${r.stt}</td>
+          <td class="strat-cell-mang" style="font-weight: 600; color: #0f172a;">${escapeHtml(r.name)}</td>
+          <td class="strat-cell-qhdc" style="font-weight: 700;">${formatCell(c.qhdcTong)}</td>
+          <td class="strat-cell-qhdc">${formatCell(c.qhdc27)}</td>
+          <td class="strat-cell-qhdc strat-border-group-right">${formatCell(c.qhdc28)}</td>
+          <td class="strat-cell-strat" style="font-weight: 700; color: #5b21b6;">${formatCell(c.stratTong)}</td>
+          <td class="strat-cell-strat" style="color: #475569;">${formatCell(c.strat27)}</td>
+          <td class="strat-cell-strat strat-border-group-right" style="color: #475569;">${formatCell(c.strat28)}</td>
+          <td>${formatCell(c.diffTong, true)}</td>
+          <td>${formatCell(c.diff27, true)}</td>
+          <td>${formatCell(c.diff28, true)}</td>
+        </tr>
+      `;
+    }
+  }
 
   tbody.innerHTML = html;
   if (typeof window.updateSubtabStratBanner === 'function') {

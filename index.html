@@ -1391,24 +1391,40 @@
             </button>
           </div>
           <div style="overflow-x: auto;">
-            <table class="report-table table-strat" id="tableStrategy">
+            <table class="report-table strategy-table table-strat" id="tableStrategy">
               <thead>
-                <tr>
-                  <th rowspan="2" class="strat-th-name" style="width: 280px; text-align: left;">Mảng / Lĩnh vực</th>
-                  <th colspan="3" class="strat-th-qhdc">QHĐC (<span class="unit-label-text">M$</span>)</th>
-                  <th colspan="4" class="strat-th-cl">CHIẾN LƯỢC 5 NĂM (<span class="unit-label-text">M$</span>)</th>
-                  <th colspan="2" class="strat-th-eval">ĐỐI CHIẾU & ĐÁNH GIÁ</th>
+                <tr class="strat-row-header-top">
+                  <th rowspan="2" class="strat-th-stt" style="width: 50px; text-align: center;">STT</th>
+                  <th rowspan="2" class="strat-th-mang" style="min-width: 220px; text-align: left;">MẢNG / LĨNH VỰC</th>
+                  <th colspan="3" class="strat-th-group strat-group-qhdc strat-border-group-right">
+                    <div class="strat-group-title">
+                      <i data-lucide="database" class="w-4 h-4"></i> QHĐC 2027-2028 (<span class="unit-label-text">M$</span>)
+                    </div>
+                  </th>
+                  <th colspan="3" class="strat-th-group strat-group-strat strat-border-group-right">
+                    <div class="strat-group-title">
+                      <i data-lucide="target" class="w-4 h-4"></i> CHIẾN LƯỢC 5 NĂM (<span class="unit-label-text">M$</span>)
+                    </div>
+                  </th>
+                  <th colspan="3" class="strat-th-group strat-group-diff">
+                    <div class="strat-group-title">
+                      <i data-lucide="git-compare" class="w-4 h-4"></i> CHÊNH LỆCH SO VỚI CHIẾN LƯỢC (<span class="unit-label-text">M$</span>)
+                    </div>
+                  </th>
                 </tr>
-                <tr>
-                  <th class="col-num col-27">2027</th>
-                  <th class="col-num col-28">2028</th>
-                  <th class="col-num col-tot" style="border-right: 2px solid #cbd5e1;">Tổng 27-28</th>
-                  <th class="col-num">CL 2027</th>
-                  <th class="col-num">CL 2028</th>
-                  <th class="col-num" style="font-weight: 800; color: #b45309;">Tổng CL 27-28</th>
-                  <th class="col-num" style="font-weight: 800; color: #92400e; border-right: 2px solid #cbd5e1;">Tổng CL 5 Năm</th>
-                  <th class="col-num">Chênh lệch (+/-)</th>
-                  <th style="width: 140px; text-align: center;">Trạng thái</th>
+                <tr class="strat-row-header-sub">
+                  <!-- Under QHDC -->
+                  <th class="strat-th-sub strat-sub-qhdc">TỔNG</th>
+                  <th class="strat-th-sub strat-sub-qhdc">2027</th>
+                  <th class="strat-th-sub strat-sub-qhdc strat-border-group-right">2028</th>
+                  <!-- Under Chiến lược -->
+                  <th class="strat-th-sub strat-sub-strat">TỔNG</th>
+                  <th class="strat-th-sub strat-sub-strat">2027</th>
+                  <th class="strat-th-sub strat-sub-strat strat-border-group-right">2028</th>
+                  <!-- Under Chênh lệch -->
+                  <th class="strat-th-sub strat-sub-diff">TỔNG</th>
+                  <th class="strat-th-sub strat-sub-diff">2027</th>
+                  <th class="strat-th-sub strat-sub-diff">2028</th>
                 </tr>
               </thead>
               <tbody id="tableStrategyBody">

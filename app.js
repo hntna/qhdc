@@ -3968,6 +3968,53 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
   zip.file(masterlistSheetPath, sheet1Xml);
   // Không ghi đè xl/styles.xml - bảo tồn nguyên bản 100% định dạng file mẫu cho tất cả các sheet và các dòng 1-9
 
+  // Cập nhật số liệu Profile Chiến lược 5 năm vào sheet "So sanh CL" (nếu có profile được kích hoạt)
+  try {
+    const profile = (typeof getActiveStrategyProfile === 'function') ? getActiveStrategyProfile() : null;
+    let stratSheetPath = 'xl/worksheets/sheet5.xml';
+    if (wbXml && relsXml) {
+      const matchStrat = wbXml.match(/<sheet\s+[^>]*?name="([^"]*So\s*sanh\s*CL[^"]*)"[^>]*?r:id="([^"]+)"/i) ||
+                         wbXml.match(/<sheet\s+[^>]*?r:id="([^"]+)"[^>]*?name="([^"]*So\s*sanh\s*CL[^"]*)"/i);
+      if (matchStrat) {
+        const rId = matchStrat[2] || matchStrat[1];
+        const relMatch = relsXml.match(new RegExp(`<Relationship\\s+[^>]*?Id="${rId}"[^>]*?Target="([^"]+)"`, 'i'));
+        if (relMatch) {
+          const target = relMatch[1].replace(/^\//, '');
+          stratSheetPath = target.startsWith('xl/') ? target : `xl/${target}`;
+        }
+      }
+    }
+    let stratXml = await zip.file(stratSheetPath)?.async('string');
+    if (stratXml && profile && profile.data) {
+      const pData = normalizeProfileData(profile.data);
+      const rowKeyMap = {
+        4: 'VT', 5: 'ML', 6: 'CDBR', 7: 'CNTT', 8: 'ATTT', 9: 'PM',
+        10: 'VI', 11: 'TD_QUANG', 12: 'TD_IP', 13: 'CD_TT', 14: 'CD_BTS', 15: 'HT'
+      };
+      for (const [rNum, key] of Object.entries(rowKeyMap)) {
+        const item = pData[key] || { strat27: 0, strat28: 0 };
+        const s27 = parseFloat(item.strat27) || 0;
+        const s28 = parseFloat(item.strat28) || 0;
+        const sTong = Math.round((s27 + s28) * 100) / 100;
+
+        const cellFPattern = new RegExp(`<c\\s+r="F${rNum}"[^>]*?(?:\\/>|>.*?<\\/c>)`);
+        const cellGPattern = new RegExp(`<c\\s+r="G${rNum}"[^>]*?(?:\\/>|>.*?<\\/c>)`);
+        const cellHPattern = new RegExp(`<c\\s+r="H${rNum}"[^>]*?(?:\\/>|>.*?<\\/c>)`);
+
+        const newF = `<c r="F${rNum}" s="670"><f>SUM(G${rNum}:H${rNum})</f><v>${sTong}</v></c>`;
+        const newG = `<c r="G${rNum}" s="670"><v>${s27}</v></c>`;
+        const newH = `<c r="H${rNum}" s="670"><v>${s28}</v></c>`;
+
+        if (cellFPattern.test(stratXml)) stratXml = stratXml.replace(cellFPattern, newF);
+        if (cellGPattern.test(stratXml)) stratXml = stratXml.replace(cellGPattern, newG);
+        if (cellHPattern.test(stratXml)) stratXml = stratXml.replace(cellHPattern, newH);
+      }
+      zip.file(stratSheetPath, stratXml);
+    }
+  } catch (errStrat) {
+    console.warn('Lưu ý: Không thể cập nhật sheet So sanh CL trong file Excel:', errStrat);
+  }
+
   // Xóa calcChain để Excel tự tính toán lại công thức từ đầu khi mở file, tránh lỗi cache
   zip.remove('xl/calcChain.xml');
 
@@ -5836,6 +5883,9 @@ window.syncStrategyProfileWithActiveWorkspace = syncStrategyProfileWithActiveWor
 window.adminSetProjectStrategyProfile = adminSetProjectStrategyProfile;
 window.updateSubtabStratBanner = updateSubtabStratBanner;
 window.renderStrategyComparisonTable = renderStrategyComparisonTable;
+window.formatStratCell = formatStratCell;
+window.getStrategyDisplayRows = getStrategyDisplayRows;
+window.STRATEGY_ROWS = STRATEGY_ROWS;
 
 // ==================== XUẤT RA WINDOW CHO CẤU HÌNH NHÓM & MÃ MẢNG / DV / LOẠI ====================
 window.canUserEditItemSector = canUserEditItemSector;
