@@ -1961,97 +1961,87 @@ function updateItemCode(idx, field, rawValue) {
   }
 }
 
-// Lấy toàn bộ các node con / cháu của một node theo key
-function getHierarchyDescendants(nodeKey) {
-  if (!state.groupsConfig || state.groupsConfig.length === 0) return [];
-  const target = state.groupsConfig.find(g => g.key === nodeKey);
-  if (!target) return [];
-  return state.groupsConfig.filter(g => 
-    g.key !== nodeKey && g.ancestors && g.ancestors.includes(nodeKey)
-  );
-}
-
-// Lấy danh sách các node con/cháu mà người dùng có quyền chỉnh sửa
-function getEditableDescendants(nodeKey) {
-  const descendants = getHierarchyDescendants(nodeKey);
-  return descendants.filter(g => {
-    if (g.itemIndex < 0) return false;
-    const it = state.extractedData[g.itemIndex];
-    return it && canUserEditItemSector(it);
+// Lấy danh sách các checkbox con/cháu ĐANG ĐƯỢC HIỂN THỊ trên bảng (không lấy các dòng bị ẩn/thu gọn/lọc)
+function getVisibleHierarchyDescendantCheckboxes(nodeKey) {
+  const visibleCheckboxes = Array.from(document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:not([disabled])'));
+  return visibleCheckboxes.filter(cb => {
+    const key = cb.getAttribute('data-key');
+    if (!key || key === nodeKey) return false;
+    const node = state.groupsConfig.find(g => g.key === key);
+    return node && node.ancestors && node.ancestors.includes(nodeKey);
   });
 }
 
-// Khi chọn/bỏ chọn một node: cấp cha sẽ tự động chọn/bỏ chọn liên hoàn toàn bộ các cấp con/cháu
+// Khi chọn/bỏ chọn một node: CHỈ chọn/bỏ chọn các cấp con/cháu ĐANG ĐƯỢC HIỂN THỊ trên màn hình
 function toggleHierarchyNodeSelection(nodeKey, isChecked) {
   if (!state.selectedHierarchyIndices) {
     state.selectedHierarchyIndices = new Set();
   }
 
-  const node = state.groupsConfig.find(g => g.key === nodeKey);
-  if (!node) return;
-
-  // 1. Cập nhật chính node này (nếu có itemIndex trong extractedData)
-  if (node.itemIndex >= 0) {
-    const it = state.extractedData[node.itemIndex];
-    if (it && canUserEditItemSector(it)) {
-      if (isChecked) {
-        state.selectedHierarchyIndices.add(node.itemIndex);
-      } else {
-        state.selectedHierarchyIndices.delete(node.itemIndex);
-      }
+  // 1. Cập nhật chính checkbox của node này trên màn hình
+  const targetCb = document.querySelector(`#hierarchyTableBody .chk-hierarchy-item[data-key="${nodeKey}"]`);
+  if (targetCb && !targetCb.disabled) {
+    targetCb.checked = isChecked;
+    targetCb.indeterminate = false;
+    const idx = parseInt(targetCb.getAttribute('data-index'), 10);
+    if (!isNaN(idx) && idx >= 0) {
+      if (isChecked) state.selectedHierarchyIndices.add(idx);
+      else state.selectedHierarchyIndices.delete(idx);
     }
   }
 
-  // 2. Cập nhật tất cả các cấp con / cháu của node này
-  const descendants = getHierarchyDescendants(nodeKey);
-  descendants.forEach(d => {
-    if (d.itemIndex >= 0) {
-      const it = state.extractedData[d.itemIndex];
-      if (it && canUserEditItemSector(it)) {
-        if (isChecked) {
-          state.selectedHierarchyIndices.add(d.itemIndex);
-        } else {
-          state.selectedHierarchyIndices.delete(d.itemIndex);
-        }
-      }
+  // 2. CHỈ chọn / bỏ chọn các cấp con/cháu ĐANG ĐƯỢC HIỂN THỊ TRÊN MÀN HÌNH (bỏ qua dòng bị thu gọn / ẩn bởi bộ lọc)
+  const visibleDescCheckboxes = getVisibleHierarchyDescendantCheckboxes(nodeKey);
+  visibleDescCheckboxes.forEach(cb => {
+    cb.checked = isChecked;
+    cb.indeterminate = false;
+    const idx = parseInt(cb.getAttribute('data-index'), 10);
+    if (!isNaN(idx) && idx >= 0) {
+      if (isChecked) state.selectedHierarchyIndices.add(idx);
+      else state.selectedHierarchyIndices.delete(idx);
     }
   });
 
-  // 3. Đồng bộ lại trạng thái checked / indeterminate cho các checkbox trên DOM
+  // 3. Đồng bộ lại trạng thái checked / indeterminate cho các cấp cha đang hiển thị
   syncHierarchyDOMCheckboxes();
   updateHierarchySelection();
 }
 
-// Đồng bộ trạng thái checked / indeterminate cho toàn bộ checkbox trên DOM theo state.selectedHierarchyIndices
+// Đồng bộ trạng thái checked / indeterminate cho toàn bộ checkbox trên DOM theo các dòng đang hiển thị
 function syncHierarchyDOMCheckboxes() {
-  const checkboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item');
-  if (!state.selectedHierarchyIndices) {
-    state.selectedHierarchyIndices = new Set();
-  }
+  const allCheckboxes = Array.from(document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item'));
+  if (allCheckboxes.length === 0) return;
 
-  checkboxes.forEach(cb => {
+  // Lấy levelNum và sort giảm dần (từ cấp con/chi tiết sâu nhất lên cấp cha/mảng)
+  const itemsWithLevel = allCheckboxes.map(cb => {
     const key = cb.getAttribute('data-key');
-    if (!key) return;
     const node = state.groupsConfig.find(g => g.key === key);
+    const lvl = node ? (node.levelNum || 99) : 99;
+    return { cb, key, node, lvl };
+  });
+
+  itemsWithLevel.sort((a, b) => b.lvl - a.lvl);
+
+  itemsWithLevel.forEach(({ cb, key, node }) => {
     if (!node) return;
 
     if (node.hasChildren || node.isMangHeader) {
-      // Node cha: tính trạng thái dựa trên các con/cháu
-      const editableDesc = getEditableDescendants(node.key);
-      if (editableDesc.length === 0) {
-        if (node.itemIndex >= 0) {
-          cb.checked = state.selectedHierarchyIndices.has(node.itemIndex);
-          cb.indeterminate = false;
-        } else {
-          cb.checked = false;
-          cb.indeterminate = false;
+      // Tìm các con/cháu đang hiển thị của node này
+      const visibleDesc = getVisibleHierarchyDescendantCheckboxes(key);
+      if (visibleDesc.length === 0) {
+        const idx = parseInt(cb.getAttribute('data-index'), 10);
+        if (!isNaN(idx) && idx >= 0 && state.selectedHierarchyIndices) {
+          cb.checked = state.selectedHierarchyIndices.has(idx);
         }
+        cb.indeterminate = false;
       } else {
-        const checkedCount = editableDesc.filter(d => state.selectedHierarchyIndices.has(d.itemIndex)).length;
-        if (checkedCount === editableDesc.length) {
+        const checkedCount = visibleDesc.filter(dCb => dCb.checked).length;
+        const someIndeterminate = visibleDesc.some(dCb => dCb.indeterminate);
+
+        if (checkedCount === visibleDesc.length) {
           cb.checked = true;
           cb.indeterminate = false;
-        } else if (checkedCount > 0) {
+        } else if (checkedCount > 0 || someIndeterminate) {
           cb.checked = false;
           cb.indeterminate = true;
         } else {
@@ -2060,66 +2050,60 @@ function syncHierarchyDOMCheckboxes() {
         }
       }
     } else {
-      // Node lá (chi tiết): dựa trên itemIndex
+      // Node lá
       const idx = parseInt(cb.getAttribute('data-index'), 10);
-      cb.checked = state.selectedHierarchyIndices.has(idx);
+      if (!isNaN(idx) && idx >= 0 && state.selectedHierarchyIndices) {
+        cb.checked = state.selectedHierarchyIndices.has(idx);
+      }
       cb.indeterminate = false;
     }
   });
 }
 
-// Chọn / Bỏ chọn tất cả dòng hợp lệ trên bảng phân cấp
+// Chọn / Bỏ chọn tất cả dòng hợp lệ ĐANG ĐƯỢC HIỂN THỊ trên bảng
 function toggleSelectAllHierarchy(checked) {
   if (!state.selectedHierarchyIndices) {
     state.selectedHierarchyIndices = new Set();
   }
-  if (checked) {
-    state.groupsConfig.forEach(g => {
-      if (g.itemIndex >= 0) {
-        const it = state.extractedData[g.itemIndex];
-        if (it && canUserEditItemSector(it)) {
-          state.selectedHierarchyIndices.add(g.itemIndex);
-        }
+  const visibleCheckboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:not([disabled])');
+  visibleCheckboxes.forEach(cb => {
+    cb.checked = checked;
+    cb.indeterminate = false;
+    const idx = parseInt(cb.getAttribute('data-index'), 10);
+    if (!isNaN(idx) && idx >= 0) {
+      if (checked) {
+        state.selectedHierarchyIndices.add(idx);
+      } else {
+        state.selectedHierarchyIndices.delete(idx);
       }
-    });
-  } else {
-    state.selectedHierarchyIndices.clear();
-  }
+    }
+  });
   syncHierarchyDOMCheckboxes();
   updateHierarchySelection();
 }
 
-// Cập nhật trạng thái thanh công cụ tác vụ hàng loạt theo số lượng đã chọn
+// Cập nhật trạng thái thanh công cụ tác vụ hàng loạt theo số lượng dòng đang hiển thị đã chọn
 function updateHierarchySelection() {
   const toolbar = document.getElementById('hierarchyBatchToolbar');
   const countSpan = document.getElementById('hierarchySelectedCount');
   const selectAllCb = document.getElementById('chkHierarchySelectAll');
 
-  const selectedCount = state.selectedHierarchyIndices ? state.selectedHierarchyIndices.size : 0;
+  const visibleCheckboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:not([disabled])');
+  const checkedBoxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:checked');
+  const count = checkedBoxes.length;
 
   if (toolbar) {
-    if (selectedCount > 0) {
+    if (count > 0) {
       toolbar.style.display = 'flex';
-      if (countSpan) countSpan.textContent = `Đã chọn: ${selectedCount} dòng`;
+      if (countSpan) countSpan.textContent = `Đã chọn: ${count} dòng`;
     } else {
       toolbar.style.display = 'none';
     }
   }
 
   if (selectAllCb) {
-    let totalEditable = 0;
-    if (state.groupsConfig && state.groupsConfig.length > 0) {
-      state.groupsConfig.forEach(g => {
-        if (g.itemIndex >= 0) {
-          const it = state.extractedData[g.itemIndex];
-          if (it && canUserEditItemSector(it)) {
-            totalEditable++;
-          }
-        }
-      });
-    }
-    selectAllCb.checked = totalEditable > 0 && selectedCount >= totalEditable;
-    selectAllCb.indeterminate = selectedCount > 0 && selectedCount < totalEditable;
+    selectAllCb.checked = visibleCheckboxes.length > 0 && count === visibleCheckboxes.length;
+    selectAllCb.indeterminate = count > 0 && count < visibleCheckboxes.length;
   }
 }
 
@@ -2128,17 +2112,25 @@ function deselectAllHierarchyItems() {
   if (state.selectedHierarchyIndices) {
     state.selectedHierarchyIndices.clear();
   }
-  syncHierarchyDOMCheckboxes();
+  const checkboxes = document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item');
+  checkboxes.forEach(cb => {
+    cb.checked = false;
+    cb.indeterminate = false;
+  });
+  const selectAllCb = document.getElementById('chkHierarchySelectAll');
+  if (selectAllCb) {
+    selectAllCb.checked = false;
+    selectAllCb.indeterminate = false;
+  }
   updateHierarchySelection();
 }
 
-// Áp dụng thiết lập nhanh Mã mảng, Mã DV, Mã loại cho các dòng đã chọn
+// Áp dụng thiết lập nhanh Mã mảng, Mã DV, Mã loại cho các dòng đang hiển thị đã chọn
 function applyBatchHierarchyCodes() {
-  const selectedIndices = (state.selectedHierarchyIndices && state.selectedHierarchyIndices.size > 0)
-    ? Array.from(state.selectedHierarchyIndices)
-    : Array.from(document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:checked'))
-        .map(cb => parseInt(cb.getAttribute('data-index'), 10))
-        .filter(idx => !isNaN(idx) && idx >= 0);
+  const checkedBoxes = Array.from(document.querySelectorAll('#hierarchyTableBody .chk-hierarchy-item:checked'));
+  const selectedIndices = checkedBoxes
+    .map(cb => parseInt(cb.getAttribute('data-index'), 10))
+    .filter(idx => !isNaN(idx) && idx >= 0);
 
   if (selectedIndices.length === 0) {
     showToast('Vui lòng chọn ít nhất một dòng để thiết lập!', 'warning');
