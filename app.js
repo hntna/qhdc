@@ -528,6 +528,7 @@ function rebuildExtractedData() {
   state.extractedData = [];
   state.validationIssues = [];
   state.selectedHierarchyIndices = new Set();
+  window._hierarchyDVsCached = false;
 
   // Ghép các mảng theo đúng thứ tự chuẩn: VT -> ML -> CDBR -> CNTT -> TD -> CD -> HT
   for (const mang of MANG_CONFIG) {
@@ -2197,12 +2198,94 @@ function applyBatchHierarchyCodes() {
   }
 }
 
+// Đổ danh sách các Mã DV có trong hệ thống vào dropdown bộ lọc
+function populateHierarchyFilterDropdowns() {
+  const selDV = document.getElementById('filterHierarchyMaDV');
+  if (!selDV) return;
+
+  const currentVal = selDV.value || 'ALL';
+
+  if (selDV.options.length > 2 && window._hierarchyDVsCached) {
+    return;
+  }
+
+  const allDVs = new Set();
+  if (state.validMaDVSet) {
+    state.validMaDVSet.forEach(dv => allDVs.add(dv.toUpperCase()));
+  }
+  if (state.extractedData) {
+    state.extractedData.forEach(it => {
+      if (it.maDV) allDVs.add(it.maDV.toUpperCase().trim());
+    });
+  }
+
+  const defaultDVs = ['5G', 'XGSPON', 'AI/GPU', 'PMN', 'VPDD', 'DLDD', 'VPGPON', 'DLGPON', 'TH', 'KT', 'Cloud_KD', 'DC', 'TTKD', 'HTKD', 'PM', 'UCTT', 'VHKT', 'KCTT', 'PCTT', 'VI'];
+  defaultDVs.forEach(dv => allDVs.add(dv));
+
+  const sortedDVs = Array.from(allDVs).filter(Boolean).sort();
+
+  let optsHtml = `
+    <option value="ALL">Tất cả dịch vụ</option>
+    <option value="__EMPTY__">-- Chưa có mã DV --</option>
+  `;
+  sortedDVs.forEach(dv => {
+    optsHtml += `<option value="${escapeHtml(dv)}">${escapeHtml(dv)}</option>`;
+  });
+
+  selDV.innerHTML = optsHtml;
+  if (currentVal && (sortedDVs.includes(currentVal) || currentVal === '__EMPTY__' || currentVal === 'ALL')) {
+    selDV.value = currentVal;
+  }
+  window._hierarchyDVsCached = true;
+}
+
+// Xóa tất cả các bộ lọc Mã mảng, Mã DV, Mã loại
+function resetHierarchyCodeFilters() {
+  const selMang = document.getElementById('filterHierarchyMaMang');
+  if (selMang) selMang.value = 'ALL';
+  const selDV = document.getElementById('filterHierarchyMaDV');
+  if (selDV) selDV.value = 'ALL';
+  const selLoai = document.getElementById('filterHierarchyMaLoai');
+  if (selLoai) selLoai.value = 'ALL';
+
+  renderHierarchyTable();
+}
+
+window.resetHierarchyCodeFilters = resetHierarchyCodeFilters;
+window.populateHierarchyFilterDropdowns = populateHierarchyFilterDropdowns;
+
 // Render bảng Cấu hình Nhóm hạng mục & Phân cấp (Tab 3)
 function renderHierarchyTable() {
   const tbody = document.getElementById('hierarchyTableBody');
   const keyword = (document.getElementById('searchGroupInput')?.value || '').trim().toLowerCase();
 
   if (!tbody) return;
+
+  // Đổ option lọc Mã DV nếu chưa có
+  populateHierarchyFilterDropdowns();
+
+  const fMang = document.getElementById('filterHierarchyMaMang')?.value || 'ALL';
+  const fDV = (document.getElementById('filterHierarchyMaDV')?.value || 'ALL').trim().toUpperCase();
+  const fLoai = document.getElementById('filterHierarchyMaLoai')?.value || 'ALL';
+
+  const hasCodeFilter = (fMang !== 'ALL') || (fDV !== 'ALL') || (fLoai !== 'ALL');
+
+  // Nút xóa bộ lọc và badge thống kê
+  const btnReset = document.getElementById('btnResetHierarchyCodeFilters');
+  const filterBadge = document.getElementById('hierarchyFilterBadge');
+  if (btnReset) btnReset.style.display = hasCodeFilter ? 'inline-flex' : 'none';
+  if (filterBadge) {
+    if (hasCodeFilter) {
+      filterBadge.style.display = 'inline-block';
+      const filterLabels = [];
+      if (fMang !== 'ALL') filterLabels.push(fMang === '__EMPTY__' ? 'Chưa mảng' : `Mảng: ${fMang}`);
+      if (fDV !== 'ALL') filterLabels.push(fDV === '__EMPTY__' ? 'Chưa DV' : `DV: ${fDV}`);
+      if (fLoai !== 'ALL') filterLabels.push(fLoai === '__EMPTY__' ? 'Chưa loại' : `Loại: ${fLoai}`);
+      filterBadge.textContent = `Đang lọc: ${filterLabels.join(' | ')}`;
+    } else {
+      filterBadge.style.display = 'none';
+    }
+  }
 
   if (state.groupsConfig.length === 0) {
     tbody.innerHTML = `
@@ -2218,19 +2301,77 @@ function renderHierarchyTable() {
     return;
   }
 
+  // Xác định các itemIndex trong extractedData thỏa mãn bộ lọc mã
+  let matchingItemIndices = null;
+  if (hasCodeFilter) {
+    matchingItemIndices = new Set();
+    state.extractedData.forEach((it, idx) => {
+      if (it.isMangHeader) return;
+
+      // 1. Kiểm tra Mã mảng
+      if (fMang !== 'ALL') {
+        const itMang = (it.maMang || it.mangCode || (it.mangInfo && it.mangInfo.code) || '').toUpperCase().trim();
+        if (fMang === '__EMPTY__') {
+          if (itMang !== '') return;
+        } else {
+          if (itMang !== fMang) return;
+        }
+      }
+
+      // 2. Kiểm tra Mã DV
+      if (fDV !== 'ALL') {
+        const itDV = (it.maDV || '').toUpperCase().trim();
+        if (fDV === '__EMPTY__') {
+          if (itDV !== '') return;
+        } else {
+          if (itDV !== fDV && !itDV.includes(fDV)) return;
+        }
+      }
+
+      // 3. Kiểm tra Mã loại
+      if (fLoai !== 'ALL') {
+        const itLoai = (it.maLoai || '').toUpperCase().trim();
+        if (fLoai === '__EMPTY__') {
+          if (itLoai !== '') return;
+        } else {
+          if (itLoai !== fLoai) return;
+        }
+      }
+
+      matchingItemIndices.add(idx);
+    });
+  }
+
   let visibleNodes = state.groupsConfig.filter(node => {
+    // 1. Bộ lọc cấp bậc
     if (!state.activeGroupLevels.has(node.levelNum)) return false;
 
+    // 2. Kiểm tra nhóm cha có bị thu gọn (collapse) không
     if (node.ancestors && node.ancestors.length > 0) {
       const isAncestorCollapsed = node.ancestors.some(ancestorKey => state.collapsedGroupKeys.has(ancestorKey));
       if (isAncestorCollapsed) return false;
     }
 
+    // 3. Bộ lọc từ khóa tìm kiếm
     if (keyword) {
       const it = node.itemIndex >= 0 ? state.extractedData[node.itemIndex] : null;
       const matchText = (node.nd || '') + ' ' + (node.tt || '') + ' ' + (node.mangName || '') + ' ' + (node.dvt || '')
         + ' ' + (it ? (it.maMang || '') + ' ' + (it.maDV || '') + ' ' + (it.maLoai || '') : '');
       if (!matchText.toLowerCase().includes(keyword)) return false;
+    }
+
+    // 4. Bộ lọc Mã mảng, Mã DV, Mã loại
+    if (hasCodeFilter) {
+      if (node.itemIndex >= 0 && matchingItemIndices.has(node.itemIndex)) {
+        return true;
+      }
+      if (node.hasChildren || node.isMangHeader) {
+        // Node cha: giữ hiển thị nếu có con/cháu thỏa mãn bộ lọc mã
+        const descendants = getHierarchyDescendants(node.key);
+        const hasMatchingChild = descendants.some(d => d.itemIndex >= 0 && matchingItemIndices.has(d.itemIndex));
+        if (hasMatchingChild) return true;
+      }
+      return false;
     }
 
     return true;
@@ -2240,7 +2381,7 @@ function renderHierarchyTable() {
     tbody.innerHTML = `
       <tr>
         <td colspan="15" style="text-align: center; padding: 2rem; color: var(--text-muted);">
-          Không có hạng mục nào phù hợp với bộ lọc cấp bậc hoặc từ khóa.
+          Không có hạng mục nào phù hợp với bộ lọc mã mảng, DV, loại, cấp bậc hoặc từ khóa.
         </td>
       </tr>
     `;

@@ -801,6 +801,64 @@
             </div>
           </div>
 
+          <!-- Thanh Bộ lọc Mã (Mã mảng, Mã DV, Mã loại) -->
+          <div class="hierarchy-code-filter-bar" style="margin-top: 0.5rem; margin-bottom: 0.5rem; padding: 0.5rem 1rem; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b; display: inline-flex; align-items: center; gap: 6px;">
+                <i data-lucide="filter" class="w-4 h-4 text-indigo-600"></i> Lọc theo mã:
+              </span>
+
+              <!-- Lọc Mã mảng -->
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <label for="filterHierarchyMaMang" style="font-size: 0.775rem; font-weight: 600; color: #475569;">Mã mảng:</label>
+                <select id="filterHierarchyMaMang" class="select-input" onchange="renderHierarchyTable()" style="padding: 0.28rem 0.6rem; font-size: 0.785rem; min-width: 130px; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; font-weight: 600;">
+                  <option value="ALL">Tất cả mảng</option>
+                  <option value="__EMPTY__">-- Chưa có mã mảng --</option>
+                  <option value="VT">VT (Vô tuyến)</option>
+                  <option value="ML">ML (Mạng lõi)</option>
+                  <option value="CDBR">CDBR (Cố định BR)</option>
+                  <option value="CNTT">CNTT (Công nghệ TT)</option>
+                  <option value="TD">TD (Truyền dẫn)</option>
+                  <option value="CD">CD (Cơ điện)</option>
+                  <option value="HT">HT (Hạ tầng)</option>
+                  <option value="VI">VI (Ví điện tử)</option>
+                </select>
+              </div>
+
+              <!-- Lọc Mã DV -->
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <label for="filterHierarchyMaDV" style="font-size: 0.775rem; font-weight: 600; color: #475569;">Mã DV:</label>
+                <select id="filterHierarchyMaDV" class="select-input" onchange="renderHierarchyTable()" style="padding: 0.28rem 0.6rem; font-size: 0.785rem; min-width: 140px; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; font-weight: 600;">
+                  <option value="ALL">Tất cả dịch vụ</option>
+                  <option value="__EMPTY__">-- Chưa có mã DV --</option>
+                </select>
+              </div>
+
+              <!-- Lọc Mã loại -->
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <label for="filterHierarchyMaLoai" style="font-size: 0.775rem; font-weight: 600; color: #475569;">Mã loại:</label>
+                <select id="filterHierarchyMaLoai" class="select-input" onchange="renderHierarchyTable()" style="padding: 0.28rem 0.6rem; font-size: 0.785rem; min-width: 130px; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; font-weight: 600;">
+                  <option value="ALL">Tất cả loại</option>
+                  <option value="__EMPTY__">-- Chưa có mã loại --</option>
+                  <option value="VTTB">VTTB (Vật tư thiết bị)</option>
+                  <option value="XL">XL (Xây lắp)</option>
+                  <option value="CPK">CPK (Chi phí khác)</option>
+                  <option value="TBI">TBI (Thiết bị)</option>
+                </select>
+              </div>
+
+              <!-- Nút Xóa bộ lọc -->
+              <button type="button" id="btnResetHierarchyCodeFilters" class="btn btn-outline btn-xs" onclick="resetHierarchyCodeFilters()" style="display: none; height: 30px; padding: 0 10px; font-weight: 600; color: #dc2626; border-color: #fca5a5;">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Xóa lọc mã
+              </button>
+            </div>
+
+            <!-- Thống kê lọc -->
+            <div id="hierarchyFilterBadge" style="display: none; font-size: 0.75rem; font-weight: 700; color: #4338ca; background: #e0e7ff; padding: 3px 10px; border-radius: 9999px;">
+              Đang lọc
+            </div>
+          </div>
+
           <!-- Hierarchy Batch Toolbar -->
           <div id="hierarchyBatchToolbar" style="display: none; padding: 0.65rem 1.25rem; background: #f0fdf4; border-bottom: 1.5px solid #86efac; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 10px;">
