@@ -976,7 +976,7 @@ button, input, select, textarea {
   color: #9a3412;
 }
 
-/* 5. TD (Truyền dẫn) - Unitel Lime Green (Xanh lá mạ rực rỡ) */
+/* 5. TD (Truyền dẫn quang) - Unitel Lime Green (Xanh lá mạ rực rỡ) */
 .upload-box.box-TD {
   background-color: #f7fee7;
   border: 1.5px solid #d9f99d;
@@ -996,6 +996,28 @@ button, input, select, textarea {
 .box-TD .file-info-bar {
   background: #ecfccb;
   color: #365314;
+}
+
+/* 5b. IP (Truyền dẫn IP) - Sky Blue / Azure (Xanh da trời công nghệ) */
+.upload-box.box-IP {
+  background-color: #f0f9ff;
+  border: 1.5px solid #bae6fd;
+}
+.upload-box.box-IP:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(2, 132, 199, 0.15);
+}
+.box-IP .mang-badge {
+  background: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.35);
+}
+.box-IP .mang-desc {
+  color: #0369a1;
+}
+.box-IP .file-info-bar {
+  background: #e0f2fe;
+  color: #0c4a6e;
 }
 
 /* 6. ML (Mạng lõi) - Lavender / Royal Violet (Thẻ 6 ảnh mẫu) */
@@ -2161,6 +2183,7 @@ tr.row-cap-4 {
 .badge-mang-CDBR { background: #0891b2; }
 .badge-mang-CNTT { background: #059669; }
 .badge-mang-TD { background: #8bd409; color: #ffffff !important; }
+.badge-mang-IP { background: #0284c7; color: #ffffff !important; }
 .badge-mang-CD { background: #e11d48; }
 .badge-mang-HT { background: #ea580c; }
 

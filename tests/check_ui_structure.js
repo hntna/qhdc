@@ -8,7 +8,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const REQUIRED_IDS = [
   'btnOpenVTBConverter','btnSaveToServer','btnOpenResultFile','btnReset',
   'btnLoadMultiFile','inputMultiFile','btnOpenServerDrafts','badgeServerDraftCount',
-  'input_VT','input_ML','input_CDBR','input_CNTT','input_TD','input_CD','input_HT',
+  'input_VT','input_ML','input_CDBR','input_CNTT','input_TD','input_IP','input_CD','input_HT',
   'tabValidation','tabPreview','tabHierarchy','tabStrategy',
   'badgeValidationCount','badgeRowCount','badgeGroupCount',
   'btnReindexTT','btnFixOutlineGroups','btnSplitWalletDV','btnSplitWalletMang',

@@ -478,9 +478,9 @@
         let totalLoadedRows = 0;
         const loadedKeys = [];
 
-        const allSectors = service.ALL_SECTORS || ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT'];
+        const allSectors = service.ALL_SECTORS || ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'IP', 'CD', 'HT'];
 
-        // Reset hoặc cập nhật từng mảng trong 7 mảng
+        // Reset hoặc cập nhật từng mảng trong 8 mảng
         allSectors.forEach(secKey => {
           const item = sectorsData[secKey];
           if (item && item.rows && item.rows.length) {

@@ -4,16 +4,17 @@
 (function () {
   'use strict';
 
-  // 7 mảng chuẩn của hệ thống
-  const ALL_SECTORS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT'];
+  // 8 mảng chuẩn của hệ thống
+  const ALL_SECTORS = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'IP', 'CD', 'HT'];
   const SECTOR_NAMES = {
     VT: 'Vô tuyến',
     ML: 'Mạng lõi',
-    CDBR: 'Cố định băng rộng',
+    CDBR: 'CĐBR & Truyền hình',
     CNTT: 'Công nghệ thông tin',
-    TD: 'Truyền dẫn',
+    TD: 'Truyền dẫn quang',
+    IP: 'Truyền dẫn IP',
     CD: 'Cơ điện',
-    HT: 'Hạ tầng'
+    HT: 'Triển khai hạ tầng'
   };
 
   const STORAGE_KEYS = {

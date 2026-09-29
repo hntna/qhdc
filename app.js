@@ -3,15 +3,16 @@
  * Client-side 100% (Offline, No Server)
  */
 
-// Định nghĩa 7 mảng nghiệp vụ và tiêu đề chuẩn
+// Định nghĩa 8 mảng nghiệp vụ và tiêu đề chuẩn
 const MANG_CONFIG = [
   { code: 'VT', name: 'Vô tuyến', tt: 'A', keywords: ['VÔ TUYẾN', 'VO TUYEN'] },
   { code: 'ML', name: 'Mạng lõi', tt: 'B', keywords: ['MẠNG LÕI', 'MANG LOI'] },
   { code: 'CDBR', name: 'CĐBR & Truyền hình', tt: 'C', keywords: ['CĐBR', 'CDBR', 'CỐ ĐỊNH BĂNG RỘNG', 'CO DINH BANG RONG'] },
   { code: 'CNTT', name: 'Công nghệ thông tin', tt: 'D', keywords: ['CNTT+VÍ', 'CNTT + VÍ', 'CNTT', 'CÔNG NGHỆ THÔNG TIN', 'CONG NGHE THONG TIN'] },
-  { code: 'TD', name: 'Truyền dẫn', tt: 'E', keywords: ['TRUYỀN DẪN', 'TRUYEN DAN'] },
-  { code: 'CD', name: 'Cơ điện', tt: 'F', keywords: ['CƠ ĐIỆN', 'CO DIEN'] },
-  { code: 'HT', name: 'Triển khai hạ tầng', tt: 'G', keywords: ['TRIỂN KHAI HẠ TẦNG', 'TRIEN KHAI HA TANG', 'HẠ TẦNG', 'HA TANG'] }
+  { code: 'TD', name: 'Truyền dẫn quang', tt: 'E', keywords: ['TRUYỀN DẪN QUANG', 'TRUYEN DAN QUANG', 'TRUYỀN DẪN', 'TRUYEN DAN'] },
+  { code: 'IP', name: 'Truyền dẫn IP', tt: 'F', keywords: ['TRUYỀN DẪN IP', 'TRUYEN DAN IP', 'IP'] },
+  { code: 'CD', name: 'Cơ điện', tt: 'G', keywords: ['CƠ ĐIỆN', 'CO DIEN'] },
+  { code: 'HT', name: 'Triển khai hạ tầng', tt: 'P2', keywords: ['TRIỂN KHAI HẠ TẦNG', 'TRIEN KHAI HA TANG', 'HẠ TẦNG', 'HA TANG'] }
 ];
 
 // Tất cả từ khóa phân cách mảng cấp 1
@@ -20,6 +21,8 @@ const ALL_SECTION_HEADERS = [
   'MẠNG LÕI', 'MANG LOI',
   'CĐBR', 'CDBR',
   'CNTT+VÍ', 'CNTT + VÍ', 'CNTT', 'CÔNG NGHỆ THÔNG TIN', 'CONG NGHE THONG TIN',
+  'TRUYỀN DẪN QUANG', 'TRUYEN DAN QUANG',
+  'TRUYỀN DẪN IP', 'TRUYEN DAN IP',
   'TRUYỀN DẪN', 'TRUYEN DAN',
   'CƠ ĐIỆN', 'CO DIEN',
   'TRIỂN KHAI HẠ TẦNG', 'TRIEN KHAI HA TANG'
@@ -36,6 +39,7 @@ const state = {
     CDBR: null,
     CNTT: null,
     TD: null,
+    IP: null,
     CD: null,
     HT: null
   },
@@ -46,6 +50,7 @@ const state = {
     CDBR: [],
     CNTT: [],
     TD: [],
+    IP: [],
     CD: [],
     HT: []
   },
@@ -310,8 +315,8 @@ function initUploadHandlers() {
     });
   }
 
-  // 2. Xử lý 7 ô mảng đầu vào
-  const keys = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'CD', 'HT'];
+  // 2. Xử lý 8 ô mảng đầu vào
+  const keys = ['VT', 'ML', 'CDBR', 'CNTT', 'TD', 'IP', 'CD', 'HT'];
 
   keys.forEach(key => {
     const box = document.getElementById(`box_${key}`);
@@ -371,7 +376,8 @@ function initUploadHandlers() {
 // Tự động nhận diện mảng từ tên file nếu người dùng chọn nhiều file
 function detectMangFromFileName(fileName) {
   const name = fileName.toUpperCase();
-  if (name.includes('_TD_') || name.includes('TRUYEN DAN') || name.includes('TRUYỀN DẪN') || name.includes('_TD') || name.includes('TD_IP')) return 'TD';
+  if (name.includes('TD_IP') || name.includes('TRUYEN DAN IP') || name.includes('TRUYỀN DẪN IP') || name.includes('_IP_') || name.includes('_IP.') || name.endsWith('_IP')) return 'IP';
+  if (name.includes('TD_QUANG') || name.includes('TRUYEN DAN QUANG') || name.includes('TRUYỀN DẪN QUANG') || name.includes('_TD_') || name.includes('TRUYEN DAN') || name.includes('TRUYỀN DẪN') || name.includes('_TD.') || name.endsWith('_TD')) return 'TD';
   if (name.includes('_CNTT_') || name.includes('CONG NGHE THONG TIN') || name.includes('CNTT')) return 'CNTT';
   if (name.includes('_VT_') || name.includes('VO TUYEN') || name.includes('VÔ TUYẾN')) return 'VT';
   if (name.includes('_ML_') || name.includes('MANG LOI') || name.includes('MẠNG LÕI')) return 'ML';
@@ -854,7 +860,7 @@ async function runProcessingPipeline() {
 
   try {
     if (!state.templateWorkbook) {
-      for (const k of ['TD', 'CNTT', 'VT', 'ML', 'CDBR', 'CD', 'HT']) {
+      for (const k of ['TD', 'IP', 'CNTT', 'VT', 'ML', 'CDBR', 'CD', 'HT']) {
         if (state.files[k]) {
           extractValidMaDVFromTemplate(state.files[k].workbook);
           if (state.validMaDVSet.size > 0) break;
@@ -1012,6 +1018,21 @@ function extractItemsForMang(mang, fileObj) {
       }
     }
 
+    // Phân biệt rõ ràng mảng Truyền dẫn quang (TD) và Truyền dẫn IP (IP)
+    if (mang.code === 'TD') {
+      if (textB.includes('IP') || textB.includes('TRUYỀN DẪN IP') || textB.includes('TRUYEN DAN IP')) {
+        continue;
+      }
+    }
+    if (mang.code === 'IP') {
+      const cellA = ws[XLSX.utils.encode_cell({ r: r, c: 0 })];
+      const valA = cellA && cellA.v !== undefined ? String(cellA.v).trim().toUpperCase() : '';
+      if (textB.includes('TRUYỀN DẪN IP') || textB.includes('TRUYEN DAN IP') || textB === 'IP' || (textB.includes('IP') && (textB.includes('TRUYỀN DẪN') || textB.includes('TRUYEN DAN') || ['E', 'F'].includes(valA)))) {
+        headerRow = r;
+        break;
+      }
+    }
+
     const isMatch = mang.keywords.some(kw => textB === kw || (textB.includes(kw) && textB.length < kw.length + 5));
     if (isMatch) {
       headerRow = r;
@@ -1050,7 +1071,7 @@ function extractItemsForMang(mang, fileObj) {
       const valA = cellA && cellA.v !== undefined ? String(cellA.v).trim().toUpperCase() : '';
       const valB = cellB && cellB.v !== undefined ? String(cellB.v).trim().toUpperCase() : '';
 
-      const isTopTT = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'P1', 'P2', 'P3'].includes(valA);
+      const isTopTT = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'P1', 'P2', 'P3'].includes(valA);
       const isMangKw = ALL_SECTION_HEADERS.some(kw => valB === kw || (valB.startsWith(kw) && valB.length < kw.length + 5));
 
       if (isTopTT && isMangKw) {
@@ -4268,8 +4289,9 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
 
   const totalRows = currentRow - 1;
   const cdEnd = sectionMapping['CD'] ? sectionMapping['CD'].end : null;
+  const ipEnd = sectionMapping['IP'] ? sectionMapping['IP'].end : null;
   const tdEnd = sectionMapping['TD'] ? sectionMapping['TD'].end : null;
-  const lastBeforeHt = cdEnd || tdEnd || totalRows;
+  const lastBeforeHt = cdEnd || ipEnd || tdEnd || totalRows;
 
   function updateRowSubtotals(rInt, startR, endR) {
     let rowStr = rows1To9[rInt] || '';

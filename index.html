@@ -214,9 +214,10 @@
             <option value="ML">ML (Mạng lõi)</option>
             <option value="CDBR">CĐBR (Cố định băng rộng)</option>
             <option value="CNTT">CNTT (Công nghệ thông tin)</option>
-            <option value="TD">TD (Truyền dẫn)</option>
+            <option value="TD">TD (Truyền dẫn quang)</option>
+            <option value="IP">IP (Truyền dẫn IP)</option>
             <option value="CD">CĐ (Cơ điện)</option>
-            <option value="HT">HT (Hạ tầng)</option>
+            <option value="HT">HT (Triển khai hạ tầng)</option>
           </select>
           <input type="text" id="searchPreviewInput" class="search-input" placeholder="Tìm tên hạng mục, mã DV, TT...">
           <button id="btnCopyPreviewTable" class="btn btn-outline" style="margin-left: auto;" title="Sao chép bảng để dán vào Excel">
@@ -293,7 +294,7 @@
         </div>
       </div>
 
-      <!-- Upload Grid: 7 Mảng -->
+      <!-- Upload Grid: 8 Mảng -->
       <div class="upload-grid">
 
         <!-- VT -->
@@ -352,13 +353,26 @@
         <div class="upload-box box-TD" id="box_TD" onclick="document.getElementById('input_TD').click()">
           <div class="upload-box-top">
             <span class="mang-badge">TD</span>
-            <span class="mang-desc">Truyền dẫn</span>
+            <span class="mang-desc">Truyền dẫn quang</span>
           </div>
           <div class="file-info-bar" id="info_TD">
             <span class="file-name-text" id="name_TD">Chưa có file</span>
             <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_TD').click()">Chọn file</button>
           </div>
           <input type="file" id="input_TD" accept=".xlsx,.xls" style="display: none;">
+        </div>
+
+        <!-- IP -->
+        <div class="upload-box box-IP" id="box_IP" onclick="document.getElementById('input_IP').click()">
+          <div class="upload-box-top">
+            <span class="mang-badge">IP</span>
+            <span class="mang-desc">Truyền dẫn IP</span>
+          </div>
+          <div class="file-info-bar" id="info_IP">
+            <span class="file-name-text" id="name_IP">Chưa có file</span>
+            <button class="btn btn-sm" onclick="event.stopPropagation(); document.getElementById('input_IP').click()">Chọn file</button>
+          </div>
+          <input type="file" id="input_IP" accept=".xlsx,.xls" style="display: none;">
         </div>
 
         <!-- CĐ -->
@@ -378,7 +392,7 @@
         <div class="upload-box box-HT" id="box_HT" onclick="document.getElementById('input_HT').click()">
           <div class="upload-box-top">
             <span class="mang-badge">HT</span>
-            <span class="mang-desc">Hạ tầng</span>
+            <span class="mang-desc">Triển khai hạ tầng</span>
           </div>
           <div class="file-info-bar" id="info_HT">
             <span class="file-name-text" id="name_HT">Chưa có file</span>
@@ -822,9 +836,10 @@
                   <option value="ML">ML (Mạng lõi)</option>
                   <option value="CDBR">CDBR (Cố định BR)</option>
                   <option value="CNTT">CNTT (Công nghệ TT)</option>
-                  <option value="TD">TD (Truyền dẫn)</option>
+                  <option value="TD">TD (Truyền dẫn quang)</option>
+                  <option value="IP">IP (Truyền dẫn IP)</option>
                   <option value="CD">CD (Cơ điện)</option>
-                  <option value="HT">HT (Hạ tầng)</option>
+                  <option value="HT">HT (Triển khai hạ tầng)</option>
                   <option value="VI">VI (Ví điện tử)</option>
                 </select>
               </div>
@@ -878,9 +893,10 @@
                   <option value="ML">ML (Mạng lõi)</option>
                   <option value="CDBR">CDBR (Cố định BR)</option>
                   <option value="CNTT">CNTT (Công nghệ TT)</option>
-                  <option value="TD">TD (Truyền dẫn)</option>
+                  <option value="TD">TD (Truyền dẫn quang)</option>
+                  <option value="IP">IP (Truyền dẫn IP)</option>
                   <option value="CD">CD (Cơ điện)</option>
-                  <option value="HT">HT (Hạ tầng)</option>
+                  <option value="HT">HT (Triển khai hạ tầng)</option>
                   <option value="VI">VI (Ví điện tử)</option>
                 </select>
               </div>
@@ -912,9 +928,10 @@
             <option value="ML">Mạng lõi</option>
             <option value="CDBR">Cố định băng rộng & Truyền hình</option>
             <option value="CNTT">Công nghệ thông tin</option>
-            <option value="TD">Truyền dẫn</option>
+            <option value="TD">Truyền dẫn quang</option>
+            <option value="IP">Truyền dẫn IP</option>
             <option value="CD">Cơ điện</option>
-            <option value="HT">Hạ tầng</option>
+            <option value="HT">Triển khai hạ tầng</option>
             <option value="VI">Ví điện tử</option>
           </datalist>
 

@@ -77,7 +77,7 @@ function normMangCode(m) {
   if (s === 'ML' || s.includes('MẠNG LÕI') || s.includes('MANG LOI')) return 'ML';
   if (s === 'CDBR' || s === 'CĐBR' || s.includes('CỐ ĐỊNH') || s.includes('CO DINH') || s.includes('BRCĐ')) return 'CDBR';
   if (s === 'CNTT' || s.includes('CÔNG NGHỆ THÔNG TIN') || s.includes('CONG NGHE THONG TIN')) return 'CNTT';
-  if (s === 'IP') return 'IP';
+  if (s === 'IP' || s.includes('TRUYỀN DẪN IP') || s.includes('TRUYEN DAN IP')) return 'IP';
   if (s === 'TD' || s.includes('TRUYỀN DẪN') || s.includes('TRUYEN DAN')) return 'TD';
   if (s === 'CD' || s === 'CĐ' || s.includes('CƠ ĐIỆN') || s.includes('CO DIEN')) return 'CD';
   if (s === 'HT' || s.includes('HẠ TẦNG') || s.includes('HA TANG')) return 'HT';
