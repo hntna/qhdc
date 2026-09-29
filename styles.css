@@ -865,6 +865,32 @@ button, input, select, textarea {
   transform: translateY(0);
 }
 
+.btn-clear-all {
+  padding: 0.58rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1.5px solid #fecdd3;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-clear-all:hover {
+  background: #e11d48;
+  color: #ffffff;
+  border-color: #be123c;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.3);
+  transform: translateY(-2px);
+}
+.btn-clear-all:active {
+  transform: translateY(0);
+}
+
 /* 7 MẢNG PASTEL TINTS & BOLD TEXT THEO ĐÚNG ẢNH MẪU */
 /* 1. VT (Vô tuyến) - Cobalt Blue (Thẻ 1 ảnh mẫu) */
 .upload-box.box-VT {

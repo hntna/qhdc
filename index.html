@@ -286,6 +286,10 @@
             <span>Nạp file có sẵn dữ liệu (1 hoặc nhiều mảng)</span>
           </button>
           <input type="file" id="inputMultiFile" accept=".xlsx,.xls" style="display: none;">
+          <button id="btnClearAllSectors" class="btn btn-clear-all" onclick="clearAllSectorsData()" title="Xóa toàn bộ dữ liệu của tất cả các mảng">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+            <span>Xóa hết các mảng</span>
+          </button>
         </div>
       </div>
 
@@ -2080,15 +2084,27 @@
         <p style="font-size: 0.85rem; color: #64748b; margin-top: 0; margin-bottom: 1rem;">
           Dự án đang làm việc: <strong id="clearSectorWsName" style="color: #1e293b;">...</strong>. Hệ thống chỉ cho phép xóa dữ liệu của những mảng bạn được phân quyền:
         </p>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #cbd5e1;">
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 700; color: #334155; cursor: pointer;">
+            <input type="checkbox" id="chkSelectAllClearSectors" onchange="toggleSelectAllClearSectors(this)" style="width: 17px; height: 17px; cursor: pointer;">
+            <span>Chọn tất cả các mảng</span>
+          </label>
+          <span style="font-size: 0.75rem; color: #64748b;">(Có thể chọn 1 hoặc nhiều mảng)</span>
+        </div>
         <div id="clearSectorListContainer" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.25rem;">
           <!-- Danh sách 7 mảng sinh động -->
         </div>
       </div>
-      <div class="modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
-        <button type="button" class="btn btn-outline btn-sm" onclick="closeClearSectorModal()">Đóng</button>
-        <button type="button" id="btnConfirmClearSelectedSectors" class="btn btn-danger btn-sm" onclick="handleClearSelectedSectors()">
-          <i data-lucide="trash-2" class="w-4 h-4"></i> Xóa các mảng đã chọn
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllSectorsData(true)" style="border-color: #fca5a5; color: #dc2626;" title="Xóa toàn bộ dữ liệu của tất cả các mảng">
+          <i data-lucide="trash-2" class="w-4 h-4"></i> Xóa hết tất cả mảng
         </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-outline btn-sm" onclick="closeClearSectorModal()">Đóng</button>
+          <button type="button" id="btnConfirmClearSelectedSectors" class="btn btn-danger btn-sm" onclick="handleClearSelectedSectors()">
+            <i data-lucide="trash-2" class="w-4 h-4"></i> Xóa các mảng đã chọn
+          </button>
+        </div>
       </div>
     </div>
   </div>

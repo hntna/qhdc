@@ -6203,6 +6203,14 @@ window.confirmClearSingleSector = async function(secKey, secName) {
   }
 };
 
+window.toggleSelectAllClearSectors = function(masterCheckbox) {
+  const isChecked = masterCheckbox ? masterCheckbox.checked : false;
+  const chks = document.querySelectorAll('.chk-clear-sector:not([disabled])');
+  chks.forEach(cb => {
+    cb.checked = isChecked;
+  });
+};
+
 window.handleClearSelectedSectors = async function() {
   const chks = document.querySelectorAll('.chk-clear-sector:checked');
   if (!chks.length) {
@@ -6225,6 +6233,53 @@ window.handleClearSelectedSectors = async function() {
 
   window.closeClearSectorModal();
   showToast(`Đã xóa thành công ${selectedKeys.length} mảng: ${names.join(', ')}!`, 'success');
+};
+
+// Xóa toàn bộ dữ liệu của tất cả các mảng
+window.clearAllSectorsData = async function(fromModal = false) {
+  const service = window.FirebaseService;
+  const select = document.getElementById('selectWorkspace');
+  const wsId = select ? select.value : null;
+  const wsName = select ? select.options[select.selectedIndex]?.textContent : 'Dự án hiện tại';
+
+  // Kiểm tra xem hiện có mảng nào đang có dữ liệu không
+  const activeMangs = MANG_CONFIG.filter(m => (state.extractedByMang && (state.extractedByMang[m.code] || []).length > 0));
+  if (activeMangs.length === 0) {
+    showToast('Hiện không có mảng nào có dữ liệu để xóa!', 'info');
+    return;
+  }
+
+  // Xác định các mảng được phép xóa theo phân quyền
+  const isAdm = service ? service.isAdmin() : false;
+  const isGst = service ? service.isGuest() : true;
+  const permittedMangs = activeMangs.filter(m => isAdm || (!isGst && service && service.canAccessSector(m.code, wsId)));
+
+  if (permittedMangs.length === 0) {
+    showToast(`Tài khoản của bạn không có quyền xóa dữ liệu các mảng trong dự án "${wsName}"!`, 'error');
+    return;
+  }
+
+  const names = permittedMangs.map(m => m.name).join(', ');
+  const confirmMsg = `⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ DỮ LIỆU CỦA ${permittedMangs.length} MẢNG:\n(${names})\n\nThao tác này sẽ xóa sạch dữ liệu trên giao diện và trên hệ thống dự án "${wsName}". Bạn có muốn tiếp tục không?`;
+
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  // Thực hiện xóa từng mảng
+  for (const mang of permittedMangs) {
+    await deleteSectorData(mang.code, { askConfirm: false, deleteServer: true });
+  }
+
+  // Xóa cache file xuất & tổng hợp lại
+  state.exportBlob = null;
+  rebuildExtractedData();
+
+  if (fromModal && typeof window.closeClearSectorModal === 'function') {
+    window.closeClearSectorModal();
+  }
+
+  showToast(`Đã xóa sạch toàn bộ dữ liệu của ${permittedMangs.length} mảng thành công!`, 'success');
 };
 
 // ==================== XUẤT RA WINDOW CHO PROFILE CHIẾN LƯỢC & DỰ ÁN ====================
