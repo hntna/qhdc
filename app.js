@@ -419,12 +419,14 @@ async function assignFileToKey(key, file) {
       const items = extractItemsForMang(mang, state.files[key]);
       // THAY THẾ hoàn toàn dữ liệu cũ của mảng này:
       state.extractedByMang[key] = items;
+      state.exportBlob = null;
       showToast(`Đã nhận diện và cập nhật ${items.length} dòng cho mảng [${mang.name}]!`, 'success');
     }
 
     updateUploadBoxUI(key, file.name, file.size);
 
     // Tự động tổng hợp lại toàn bộ dữ liệu 7 mảng
+    state.exportBlob = null;
     rebuildExtractedData();
   } catch (err) {
     console.error('Lỗi nạp file:', err);
@@ -474,6 +476,7 @@ async function deleteSectorData(sectorKey, options = {}) {
   }
 
   // 2. Xóa dữ liệu trong bộ nhớ state
+  state.exportBlob = null;
   if (state.files) state.files[sectorKey] = null;
   if (state.extractedByMang) state.extractedByMang[sectorKey] = [];
 
@@ -481,6 +484,7 @@ async function deleteSectorData(sectorKey, options = {}) {
   resetUploadBoxUI(sectorKey);
 
   // 4. Rebuild toàn bộ dữ liệu & làm mới mọi bảng hiển thị
+  state.exportBlob = null;
   rebuildExtractedData();
   recalculateSubtotalFormulas();
   renderPreviewTable();
@@ -525,6 +529,7 @@ window.updateUploadBoxUI = updateUploadBoxUI;
 
 // Tự động ghép nối dữ liệu 7 mảng theo thứ tự chuẩn
 function rebuildExtractedData() {
+  state.exportBlob = null; // Xóa cache kết quả xuất khi dữ liệu được tổng hợp lại
   state.extractedData = [];
   state.validationIssues = [];
   state.selectedHierarchyIndices = new Set();
@@ -751,13 +756,22 @@ function getTimestampedExportFileName() {
 }
 
 // Lấy buffer / blob của file kết quả mới nhất
-async function getResultFileBlob() {
-  // 1. Ưu tiên blob đã được build gần nhất trong phiên làm việc
-  if (state.exportBlob) {
+async function getResultFileBlob(forceRebuild = false) {
+  // 1. Nếu không ép buộc rebuild và đã có blob cache trong phiên
+  if (!forceRebuild && state.exportBlob) {
     return state.exportBlob;
   }
+
+  // Luôn đảm bảo nạp buffer template phôi
+  if (!state.templateBuffer && typeof getEmbeddedTemplateBuffer === 'function') {
+    state.templateBuffer = getEmbeddedTemplateBuffer();
+  }
+
   // 2. Nếu đã có dữ liệu bóc tách từ các mảng, tự động build buffer mới nhất
-  if (state.extractedData && state.extractedData.length > 0 && state.templateBuffer) {
+  const hasExtractedRows = (state.extractedData && state.extractedData.length > 0) ||
+                           MANG_CONFIG.some(m => (state.extractedByMang && state.extractedByMang[m.code] && state.extractedByMang[m.code].length > 0));
+
+  if (hasExtractedRows && state.templateBuffer) {
     try {
       recalculateSubtotalFormulas();
       const buffer = await buildCleanMasterlist(state.templateBuffer, state.extractedByMang, state.files);
@@ -767,6 +781,7 @@ async function getResultFileBlob() {
       console.warn('Lỗi tự động tạo buffer kết quả:', e);
     }
   }
+
   // 3. Dự phòng từ buffer template trong bộ nhớ
   if (state.templateBuffer) {
     return new Blob([state.templateBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -781,13 +796,32 @@ async function getResultFileBlob() {
 // Bấm "Download Excel": Tải file trực tiếp về máy tính với tên Masterlist 2027-2028_KQ_ddmmyyyy_hhmm.xlsx
 async function openResultFile() {
   const downloadFileName = getTimestampedExportFileName();
+  const btnOpenFile = document.getElementById('btnOpenResultFile');
+  const originalHtml = btnOpenFile ? btnOpenFile.innerHTML : '';
+  if (btnOpenFile) {
+    btnOpenFile.disabled = true;
+    btnOpenFile.innerHTML = '<span class="spinner"></span> Đang tạo file...';
+  }
 
-  const blob = await getResultFileBlob();
-  if (blob) {
-    triggerDownloadBlob(blob, downloadFileName);
-    showToast(`Đã tải về file: ${downloadFileName}`, 'success');
-  } else {
-    showToast('Chưa tìm thấy file kết quả để tải về!', 'error');
+  try {
+    // Luôn luôn force rebuild mới nhất từ state.extractedByMang
+    state.exportBlob = null;
+    const blob = await getResultFileBlob(true);
+    if (blob) {
+      triggerDownloadBlob(blob, downloadFileName);
+      showToast(`Đã tải về file: ${downloadFileName}`, 'success');
+    } else {
+      showToast('Chưa tìm thấy file kết quả để tải về!', 'error');
+    }
+  } catch (err) {
+    console.error('Lỗi khi tải file kết quả:', err);
+    showToast(`Lỗi khi tạo file kết quả: ${err.message}`, 'error');
+  } finally {
+    if (btnOpenFile) {
+      btnOpenFile.disabled = false;
+      btnOpenFile.innerHTML = originalHtml || '<i data-lucide="download" class="w-4 h-4"></i> Tải file KQ';
+      if (window.lucide && lucide.createIcons) lucide.createIcons();
+    }
   }
 }
 
@@ -828,13 +862,15 @@ async function runProcessingPipeline() {
       }
     }
 
-    const hasAnyInput = MANG_CONFIG.some(m => state.files[m.code] !== null);
+    const hasAnyInput = MANG_CONFIG.some(m => state.files[m.code] !== null || (state.extractedByMang && state.extractedByMang[m.code] && state.extractedByMang[m.code].length > 0));
     if (!hasAnyInput) {
       showToast('Vui lòng nạp ít nhất một file mảng đầu vào!', 'error');
       btn.disabled = false;
       btn.innerHTML = `<span>⚡</span> Tổng hợp & Kiểm tra`;
       return;
     }
+
+    state.exportBlob = null; // Xóa cache kết quả xuất cũ
 
     // Quét và cập nhật dữ liệu cho từng mảng được nạp
     for (const mang of MANG_CONFIG) {
@@ -3973,7 +4009,9 @@ async function buildCleanMasterlist(templateBuffer, extractedByMang, filesObj) {
 
   // Thu thập style và thông tin dòng gốc từ từng file mảng đầu vào
   const mangSourceData = {};
-  if (filesObj) {
+  const tmplStylesXml = await zip.file('xl/styles.xml')?.async('string');
+  const merger = (tmplStylesXml && typeof JSStyleMerger === 'function') ? new JSStyleMerger(tmplStylesXml) : null;
+  if (filesObj && merger) {
     for (const mang of MANG_CONFIG) {
       const code = mang.code;
       const fileObj = filesObj[code];

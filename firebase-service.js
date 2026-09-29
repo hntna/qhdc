@@ -44,6 +44,10 @@
       localStorage.setItem(key, JSON.stringify(val));
     } catch (e) {
       console.warn('Lỗi ghi localStorage:', e);
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014) {
+        throw new Error('Dung lượng lưu trữ của trình duyệt (localStorage) đã đầy. Vui lòng xóa bớt dữ liệu các dự án cũ!');
+      }
+      throw e;
     }
   }
 

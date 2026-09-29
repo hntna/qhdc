@@ -472,6 +472,7 @@
 
       const appState = window.state || (typeof state !== 'undefined' ? state : null);
       if (appState) {
+        appState.exportBlob = null; // Luôn xóa cache kết quả xuất khi tải dữ liệu dự án mới
         appState.extractedByMang = appState.extractedByMang || {};
         appState.files = appState.files || {};
         let totalLoadedRows = 0;
@@ -674,6 +675,7 @@
       }
 
       showToast(`Đã lưu thành công ${savedCount} mảng (${permittedMangs.join(', ')}) vào danh mục!`, 'success');
+      appState.exportBlob = null; // Xóa cache để lượt xuất sau tạo mới theo dữ liệu vừa lưu
       await loadWorkspacesDropdown(workspaceId);
     } catch (err) {
       console.error('Lỗi khi lưu Firestore:', err);
